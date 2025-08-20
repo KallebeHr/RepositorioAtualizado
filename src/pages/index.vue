@@ -1,8 +1,9 @@
 <template>
-  <HeaderNav />
-  <Home/>
+      <HeaderNav />
+      <Home/>
 </template>
 
 <script setup>
-  //
+
 </script>
+
