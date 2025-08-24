@@ -15,5 +15,7 @@ declare module 'vue' {
     Preloader: typeof import('./src/components/Preloader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    UserLogin: typeof import('./src/components/UserLogin.vue')['default']
+    UsersAdmin: typeof import('./src/components/usersAdmin.vue')['default']
   }
 }

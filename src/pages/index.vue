@@ -1,5 +1,4 @@
 <template>
-      <HeaderNav />
       <Home/>
 </template>
 

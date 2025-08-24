@@ -13,12 +13,8 @@
       </div>
 
       <!-- Drawer Vuetify -->
-      <v-navigation-drawer
-        v-model="drawer"
-        :location="$vuetify.display.mobile ? 'left' : undefined"
-        temporary
-        class="custom-drawer"
-      >
+      <v-navigation-drawer v-model="drawer" :location="$vuetify.display.mobile ? 'left' : undefined" temporary
+        class="custom-drawer">
         <!-- MENU -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">MENU</v-list-subheader>
@@ -90,31 +86,16 @@
       </nav>
 
       <!-- Barra de Pesquisa -->
-      <div
-        class="search-box"
-        :class="{ active: searchActive }"
-        ref="searchRef"
-      >
-        <input
-          v-if="!isMobile || searchActive"
-          ref="searchInputRef"
-          class="input"
-          type="text"
-          placeholder="Buscar por Cantor, Música ou Repertório"
-        />
-        <svg
-          viewBox="0 0 24 24"
-          class="search__icon"
-          @click="toggleSearch"
-        >
-          <path
-            d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 
+      <div class="search-box" :class="{ active: searchActive }" ref="searchRef">
+        <input v-if="!isMobile || searchActive" ref="searchInputRef" class="input" type="text"
+          placeholder="Buscar por Cantor, Música ou Repertório" />
+        <svg viewBox="0 0 24 24" class="search__icon" @click="toggleSearch">
+          <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 
                4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 
                5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 
                11c0-4.135 3.365-7.5 7.5-7.5s7.5 
                3.365 7.5 7.5-3.365 7.5-7.5 
-               7.5-7.5-3.365-7.5-7.5z"
-          />
+               7.5-7.5-3.365-7.5-7.5z" />
         </svg>
       </div>
     </div>
@@ -122,27 +103,41 @@
     <!-- Direita -->
     <div class="header-direito">
       <!-- Usuário -->
-      <div
-        class="user-menu"
-        @click.stop="toggleDropdown"
-        ref="userRef"
-        v-show="!(isMobile && searchActive)"
-      >
-        <span class="user-name">
-          Olá, Kallebe
-          <span v-if="hasNotification" class="user-indicator"></span>
-        </span>
-        <span class="arrow">▼</span>
+      <div class="user-menu" ref="userRef" v-show="!(isMobile && searchActive)">
+        <!-- Se usuário logado -->
+        <template v-if="userStore.user">
+<span class="user-name" @click.stop="toggleDropdown">
+  <template v-if="!userStore.loadingUser">
+    Olá, {{ userStore.user.name }}
+  </template>
+  <template v-else>
+    Olá...
+  </template>
+  <span v-if="hasNotification" class="user-indicator"></span>
+  <span class="arrow">▼</span>
+</span>
 
-        <!-- Dropdown -->
-        <div v-if="dropdownOpen" class="dropdown">
-          <ul>
-            <li><a href="#">🛒 Meu Carrinho</a></li>
-            <li><a href="#">🔑 Versão Premium</a></li>
-            <li><a href="#">🔔 Notificações</a></li>
-            <li><a href="#">🚪 Sair</a></li>
-          </ul>
-        </div>
+          <!-- Dropdown -->
+          <div v-if="dropdownOpen" class="dropdown">
+            <ul>
+              <li><a href="#">🛒 Meu Carrinho</a></li>
+              <li v-if="userStore.user?.role === 'admin'">
+                <a href="/admin"> ⚙   Administração</a>
+              </li>
+              <li><a href="#">🔑 Versão Premium</a></li>
+              <li><a href="#">🔔 Notificações</a></li>
+              <li><a href="#" @click.prevent="logout">🚪 Sair</a></li>
+            </ul>
+          </div>
+        </template>
+
+        <!-- Se usuário não logado -->
+        <template v-else>
+          <span class="auth-links">
+            <a href="#" class="LoginAndRegister" @click.prevent="goToAuth('login')">ENTRAR</a>
+            <a href="#" class="LoginAndRegister" @click.prevent="goToAuth('register')">REGISTRAR</a>
+          </span>
+        </template>
       </div>
     </div>
   </header>
@@ -150,6 +145,10 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { useUserStore } from "@/stores/userStore";
+import { useRouter } from "vue-router";
+import { signOut } from "firebase/auth"
+import { auth } from "@/firebase"
 
 const dropdownOpen = ref(false);
 const hasNotification = ref(true);
@@ -163,7 +162,11 @@ const searchInputRef = ref(null);
 const userRef = ref(null);
 const headerRef = ref(null);
 
+const router = useRouter();
+const userStore = useUserStore();
+
 const menuItems = [
+  {title:"INICIO", href:"/"},
   { title: "MÚSICAS", href: "#" },
   { title: "CANTORES", href: "#" },
   { title: "REPERTÓRIOS", href: "#" },
@@ -198,6 +201,24 @@ function toggleSearch() {
       searchInputRef.value?.focus();
     });
   }
+}
+async function logout() {
+  handleLogout()
+  try {
+    await signOut(auth)
+    userStore.clearUser()  // limpa o estado do Pinia
+    window.location.href = "/"  // recarrega a página
+  } catch (err) {
+    console.error("Erro ao sair:", err)
+  }
+}
+function goToAuth(mode) {
+  router.push({ path: '/RegisterAndLogin', query: { mode } })
+}
+
+async function handleLogout() {
+  await userStore.logout();
+  dropdownOpen.value = false;
 }
 
 // Fecha dropdown e search ao clicar fora
@@ -240,6 +261,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("click", handleClickOutside);
 });
 </script>
+
 
 <style scoped>
 /* HEADER */
@@ -320,7 +342,18 @@ onBeforeUnmount(() => {
   min-width: 300px;
   transition: all 0.3s ease;
 }
+.LoginAndRegister{
+    text-decoration: none;
+  color: #fff;
+  font-weight: 500;
+  transition: 0.2s;
+  margin: 10px;
 
+}
+.LoginAndRegister:hover{
+  color: #00d1b2;
+
+}
 .search-box .input {
   flex: 1;
   background: transparent;

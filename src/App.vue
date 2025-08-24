@@ -5,6 +5,7 @@
         <Preloader />
       </div>
       <div v-else key="content">
+        <HeaderNav />
         <router-view />
       </div>
     </transition>
@@ -21,7 +22,7 @@ onMounted(() => {
     if (document.readyState === "complete") {
       setTimeout(() => {
         isLoaded.value = true;
-      }, 3000); // tempo do preloader
+      }, 1000); // tempo do preloader
     }
   };
 });
