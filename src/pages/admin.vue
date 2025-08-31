@@ -1,5 +1,6 @@
 <template>
   <div class='container'>
+    <AddMusicAdmin />
     <usersAdmin />
   </div>
 </template>
@@ -14,5 +15,6 @@
     align-items: center;
     justify-self: center;
     height: auto;
+    flex-direction: column;
 }
 </style>

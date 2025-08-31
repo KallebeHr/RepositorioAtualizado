@@ -78,9 +78,7 @@
       <!-- Menu Principal -->
       <nav class="main-menu" v-if="!isMobile">
         <ul>
-          <li><a href="#">MÚSICAS</a></li>
-          <li><a href="#">CANTORES</a></li>
-          <li><a href="#">RITMOS</a></li>
+          <li><a href="/AllMusic">MÚSICAS E CANTORES</a></li>
           <li><a href="#">REPERTÓRIOS</a></li>
         </ul>
       </nav>

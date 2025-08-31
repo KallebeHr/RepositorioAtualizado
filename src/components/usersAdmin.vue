@@ -43,10 +43,6 @@
           <button class="message-btn" @click="sendMessage(user)">
             <i class="fas fa-envelope"></i> Mensagem
           </button>
-
-          <button class="delete-btn" @click="deleteUser(user)">
-            <i class="fas fa-trash"></i> Excluir
-          </button>
         </div>
       </div>
     </div>
