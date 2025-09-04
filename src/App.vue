@@ -5,6 +5,7 @@
         <Preloader />
       </div>
       <div v-else key="content">
+        <MusicPlayer />
         <HeaderNav />
         <router-view />
       </div>

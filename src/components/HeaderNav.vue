@@ -51,7 +51,7 @@
 
           <v-list-item class="drawer-item">
             <v-list-item-title>
-              <a href="https://instagram.com/seuapp" target="_blank">📸 Instagram</a>
+              <a href="https://www.instagram.com/repertorio___atualizado?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank">📸 Instagram</a>
             </v-list-item-title>
           </v-list-item>
 
@@ -165,8 +165,7 @@ const userStore = useUserStore();
 
 const menuItems = [
   {title:"INICIO", href:"/"},
-  { title: "MÚSICAS", href: "#" },
-  { title: "CANTORES", href: "#" },
+  { title: "MÚSICAS E CANTORES", href: "/AllMusic" },
   { title: "REPERTÓRIOS", href: "#" },
   { title: "RITMOS", href: "#" },
   { title: "PLAYLISTS", href: "#" },
