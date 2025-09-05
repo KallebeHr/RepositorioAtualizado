@@ -2,65 +2,69 @@
   <div class="upload-page">
     <header class="header">
       <h1 class="title">🚀 Upload de Música</h1>
-      <p class="subtitle">Adicione suas músicas, cadastre cantores e mantenha o repertório sempre atualizado!</p>
+      <p class="subtitle">Adicione suas músicas, cadastre estilos e cantores facilmente!</p>
     </header>
 
-    <div class="upload-card">
+    <div v-for="(form, index) in musicForms" :key="index" class="upload-card">
       <div class="upload-form">
         <div class="form-group">
           <label>Arquivo da Música</label>
-          <input type="file" @change="handleFileChange" accept="audio/*" />
+          <input type="file" @change="e => handleFileChange(e, index)" accept="audio/*" />
         </div>
 
         <div class="form-group">
           <label>Nome da Música</label>
-          <input v-model="title" type="text" placeholder="Digite o nome da música" />
+          <input v-model="form.title" type="text" placeholder="Digite o nome da música" />
         </div>
 
         <div class="form-group">
-          <label>Ritmo</label>
-          <select v-model="tipo">
-            <option disabled value="">Selecione o ritmo</option>
-            <option value="pagode">Pagode</option>
-            <option value="agosto">Agosto</option>
-            <option value="menos é mais">Menos é mais</option>
-            <option value="romance">Romance</option>
+          <label>Estilo</label>
+          <select v-model="form.tipo" @change="handleEstiloChange(form)">
+            <option disabled value="">Selecione o estilo</option>
+            <option v-for="e in estilos" :key="e.id" :value="e.nome">{{ e.nome }}</option>
+            <option value="__novo__">+ Adicionar novo estilo</option>
           </select>
+        </div>
+
+        <div v-if="form.tipo === '__novo__'" class="form-group">
+          <label>Novo Estilo</label>
+          <input v-model="novoEstilo" type="text" placeholder="Digite o novo estilo" />
+          <button class="secondary" @click="addEstilo(form)">Salvar Estilo</button>
         </div>
 
         <div class="form-group">
           <label>Cantor</label>
-          <select v-model="cantor" @change="handleCantorChange">
+          <select v-model="form.cantor" @change="handleCantorChange(form)">
             <option disabled value="">Selecione o cantor</option>
             <option v-for="c in cantores" :key="c.id" :value="c.nome">{{ c.nome }}</option>
             <option value="__novo__">+ Adicionar novo cantor</option>
           </select>
         </div>
 
-        <div v-if="cantor === '__novo__'" class="form-group">
+        <div v-if="form.cantor === '__novo__'" class="form-group">
           <label>Novo Cantor</label>
           <input v-model="novoCantor" type="text" placeholder="Digite o nome do novo cantor" />
-          <button class="secondary" @click="addCantor">Salvar Cantor</button>
+          <button class="secondary" @click="addCantor(form)">Salvar Cantor</button>
         </div>
 
         <div class="form-actions">
           <button
-            :disabled="!file || !title || !tipo || !cantor || uploading"
-            @click="uploadMusic"
+            :disabled="!form.file || !form.title || !form.tipo || !form.cantor || uploading"
+            @click="uploadMusic(form, index)"
             class="primary"
           >
             {{ uploading ? "Enviando..." : "Enviar Música" }}
           </button>
-
-          <button v-if="file" @click="addMoreMusic" class="secondary">
-            Adicionar Mais
-          </button>
         </div>
 
-        <div v-if="uploading" class="status uploading">Enviando {{ file?.name }}...</div>
+        <div v-if="uploading" class="status uploading">Enviando {{ form.file?.name }}...</div>
         <div v-if="error" class="status error">{{ error }}</div>
-        <div v-if="success" class="status success">Música enviada com sucesso! 🎵</div>
+        <div v-if="form.success" class="status success">Música enviada com sucesso! 🎵</div>
       </div>
+    </div>
+
+    <div class="add-more">
+      <button class="secondary" @click="addMoreForm">+ Adicionar mais música</button>
     </div>
   </div>
 </template>
@@ -71,35 +75,43 @@ import { db } from "@/firebase"
 import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore"
 import axios from "axios"
 
-const file = ref(null)
-const title = ref("")
-const tipo = ref("")
-const cantor = ref("")
-const novoCantor = ref("")
-const uploading = ref(false)
-const success = ref(false)
-const error = ref("")
+const musicForms = ref([{ file: null, title: "", tipo: "", cantor: "", success: false }])
 const cantores = ref([])
+const estilos = ref([])
+const novoCantor = ref("")
+const novoEstilo = ref("")
+const uploading = ref(false)
+const error = ref("")
 
-function handleFileChange(e) {
-  file.value = e.target.files[0]
-}
+const cantoresColRef = collection(db, "cantores")
+const estilosColRef = collection(db, "estilos")
 
 async function fetchCantores() {
-  const snapshot = await getDocs(collection(db, "cantores"))
+  const snapshot = await getDocs(cantoresColRef)
   cantores.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 }
-
-function handleCantorChange() {
-  if (cantor.value !== "__novo__") novoCantor.value = ""
+async function fetchEstilos() {
+  const snapshot = await getDocs(estilosColRef)
+  estilos.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 }
 
-async function addCantor() {
+function handleFileChange(e, index) {
+  musicForms.value[index].file = e.target.files[0]
+}
+
+function handleCantorChange(form) {
+  if (form.cantor !== "__novo__") novoCantor.value = ""
+}
+function handleEstiloChange(form) {
+  if (form.tipo !== "__novo__") novoEstilo.value = ""
+}
+
+async function addCantor(form) {
   if (!novoCantor.value) return
   try {
-    const docRef = await addDoc(collection(db, "cantores"), { nome: novoCantor.value })
+    const docRef = await addDoc(cantoresColRef, { nome: novoCantor.value })
     cantores.value.push({ id: docRef.id, nome: novoCantor.value })
-    cantor.value = novoCantor.value
+    form.cantor = novoCantor.value
     novoCantor.value = ""
   } catch (err) {
     console.error(err)
@@ -107,33 +119,45 @@ async function addCantor() {
   }
 }
 
-async function uploadMusic() {
-  if (!file.value || !title.value || !tipo.value || !cantor.value) return
+async function addEstilo(form) {
+  if (!novoEstilo.value) return
+  try {
+    const docRef = await addDoc(estilosColRef, { nome: novoEstilo.value })
+    estilos.value.push({ id: docRef.id, nome: novoEstilo.value })
+    form.tipo = novoEstilo.value
+    novoEstilo.value = ""
+  } catch (err) {
+    console.error(err)
+    error.value = "Erro ao salvar novo estilo."
+  }
+}
+
+async function uploadMusic(form, index) {
+  if (!form.file || !form.title || !form.tipo || !form.cantor) return
 
   uploading.value = true
   error.value = ""
-  success.value = false
+  form.success = false
 
   try {
     const formData = new FormData()
-    formData.append("file", file.value)
+    formData.append("file", form.file)
     const { data } = await axios.post("http://localhost:3001/upload-music", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     })
     const { fileId, downloadUrl } = data
 
     await addDoc(collection(db, "musicas"), {
-      title: title.value,
-      fileName: file.value.name,
+      title: form.title,
+      fileName: form.file.name,
       fileId,
       downloadUrl,
-      tipo: [tipo.value],
-      cantor: cantor.value,
+      tipo: [form.tipo],
+      cantor: form.cantor,
       createdAt: serverTimestamp(),
     })
 
-    success.value = true
-    addMoreMusic()
+    form.success = true
   } catch (err) {
     console.error(err)
     error.value = "Erro ao enviar a música."
@@ -142,15 +166,14 @@ async function uploadMusic() {
   }
 }
 
-function addMoreMusic() {
-  file.value = null
-  title.value = ""
-  tipo.value = ""
-  cantor.value = ""
-  success.value = false
+function addMoreForm() {
+  musicForms.value.push({ file: null, title: "", tipo: "", cantor: "", success: false })
 }
 
-onMounted(fetchCantores)
+onMounted(() => {
+  fetchCantores()
+  fetchEstilos()
+})
 </script>
 
 <style scoped>
@@ -158,7 +181,7 @@ onMounted(fetchCantores)
   width: 100%;
   min-height: 100vh;
   padding: 40px 20px;
-  background: #111;
+  background: #0d0d0d;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
 }
@@ -186,11 +209,16 @@ onMounted(fetchCantores)
 
 .upload-card {
   max-width: 600px;
-  margin: 0 auto;
+  margin: 0 auto 20px;
   padding: 30px;
   border-radius: 20px;
   background: #181818;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .upload-form {
@@ -258,4 +286,9 @@ button.secondary:hover {
 .status.uploading { color: #f1c40f; }
 .status.success { color: #1db954; }
 .status.error { color: #e74c3c; }
+
+.add-more {
+  text-align: center;
+  margin-top: 20px;
+}
 </style>
