@@ -146,39 +146,30 @@ async function addEstilo(index) {
 
 async function uploadMusic(index) {
   const form = forms.value[index]
-  if (!form.file || !form.title || !form.tipo || !form.cantor) return
+  console.log("🚀 Iniciando uploadMusic (teste) para:", form)
 
   form.uploading = true
   form.error = ""
   form.success = false
 
   try {
-    const formData = new FormData()
-    formData.append("file", form.file)
-    const { data } = await axios.post("/api/upload-music", formData, {
-  headers: { "Content-Type": "multipart/form-data" },
-})
+    console.log("📡 Fazendo requisição para /api/upload-music...")
+    const { data } = await axios.post("/api/upload-music", { teste: true })
 
-    const { fileId, downloadUrl } = data
+    console.log("✅ Resposta recebida:", data)
 
-    await addDoc(collection(db, "musicas"), {
-      title: form.title,
-      fileName: form.file.name,
-      fileId,
-      downloadUrl,
-      tipo: [form.tipo],
-      cantor: form.cantor,
-      createdAt: serverTimestamp(),
-    })
+    alert("Funcionou! Endpoint respondeu:\n" + JSON.stringify(data, null, 2))
 
     form.success = true
   } catch (err) {
-    console.error(err)
-    form.error = "Erro ao enviar a música."
+    console.error("❌ Erro ao chamar API:", err)
+    form.error = "Erro ao conectar com o servidor."
   } finally {
     form.uploading = false
+    console.log("⏹ Upload finalizado (modo teste)")
   }
 }
+
 
 function addMoreMusic() {
   forms.value.push({
