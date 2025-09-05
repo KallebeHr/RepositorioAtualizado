@@ -3,9 +3,9 @@ import { Howl } from "howler"
 
 export const usePlayerStore = defineStore("player", {
   state: () => ({
-    queue: [],          // [{ title, cantor, downloadUrl, fileName, fileId }]
+    queue: [],          
     currentIndex: -1,
-    sound: null,        // Howl
+    sound: null,        
     isPlaying: false,
     volume: 1.0,
   }),
@@ -55,7 +55,6 @@ export const usePlayerStore = defineStore("player", {
         onloaderror: (id, err) => console.error("[player] onloaderror", err),
         onplayerror: (id, err) => {
           console.error("[player] onplayerror", err)
-          // tentar sintonizar
           try { sound.once("unlock", () => sound.play()) } catch {}
         }
       })
@@ -69,13 +68,11 @@ export const usePlayerStore = defineStore("player", {
       }
       console.log("[player] play -> index", index, "track:", this.queue[index]?.title)
 
-      // parar anterior
       if (this.sound) {
         try { this.sound.stop(); this.sound.unload() } catch {}
         this.sound = null
       }
 
-      // setar atual
       this.currentIndex = index
       this.sound = this._createHowlForCurrent()
       if (!this.sound) return
@@ -123,7 +120,6 @@ export const usePlayerStore = defineStore("player", {
         this.play(this.currentIndex - 1)
       } else {
         console.log("[player] prev: já é a primeira")
-        // reinicia faixa
         if (this.sound) this.sound.seek(0)
       }
     },

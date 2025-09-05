@@ -2,7 +2,6 @@
   <div class="admin-container">
     <h1>Painel de Administração</h1>
 
-    <!-- Busca -->
     <div class="search-box">
       <input
         v-model="search"
@@ -11,7 +10,6 @@
       />
     </div>
 
-    <!-- Lista de usuários -->
     <div class="user-list">
       <div
         class="user-card"
@@ -62,13 +60,12 @@ const userStore = useUserStore()
 const users = ref([])
 const search = ref("")
 
-// ✅ Espera o user carregar antes de verificar role
 watch(
   () => userStore.user,
   async (val) => {
     if (val) {
       if (val.role !== "admin") {
-        router.replace("/") // não é admin
+        router.replace("/") 
       } else {
         await fetchUsers()
       }
@@ -77,7 +74,6 @@ watch(
   { immediate: true }
 )
 
-// Busca usuários
 async function fetchUsers() {
   const snapshot = await getDocs(collection(db, "users"))
   users.value = snapshot.docs.map(doc => ({
@@ -87,7 +83,6 @@ async function fetchUsers() {
   }))
 }
 
-// Filtrar usuários
 const filteredUsers = computed(() => {
   if (!search.value) return users.value
   return users.value.filter(u =>
@@ -98,7 +93,6 @@ const filteredUsers = computed(() => {
   )
 })
 
-// Toggle ativo/desativado
 async function toggleUserActive(user) {
   try {
     const userRef = doc(db, "users", user.uid)
@@ -109,7 +103,6 @@ async function toggleUserActive(user) {
   }
 }
 
-// Atualizar assinatura
 async function updateSubscription(user) {
   try {
     const userRef = doc(db, "users", user.uid)
@@ -119,7 +112,6 @@ async function updateSubscription(user) {
   }
 }
 
-// Enviar mensagem
 async function sendMessage(user) {
   const msg = prompt(`Enviar mensagem para ${user.firstName}:`)
   if (!msg) return
@@ -132,7 +124,6 @@ async function sendMessage(user) {
   }
 }
 
-// Excluir usuário
 async function deleteUser(user) {
   const confirmDelete = confirm(`Deseja realmente excluir ${user.firstName}?`)
   if (!confirmDelete) return

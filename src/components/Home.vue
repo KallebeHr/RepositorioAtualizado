@@ -1,9 +1,7 @@
 <template>
   <section class="home">
-    <!-- Camada de overlay -->
     <div class="overlay"></div>
 
-    <!-- Conteúdo principal -->
     <div class="content">
       <h1 class="title">O Repertório que <br /> Cresce com Você.</h1>
       <p class="subtitle">
@@ -15,7 +13,6 @@
         <button class="btn green">Garantir Meu Repertório</button>
       </div>
 
-      <!-- Caixa com plataformas -->
       <div class="platforms">
         <h3>Playlists para Todos os Seus Projetos</h3>
         <p>
@@ -35,7 +32,6 @@
 </template>
 
 <script setup>
-// Se quiser adicionar navegação depois
 </script>
 
 <style scoped>

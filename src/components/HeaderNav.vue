@@ -1,9 +1,7 @@
 <template>
   <header class="header-container" ref="headerRef">
-    <!-- Esquerda -->
     <div class="header-esquerda">
 
-      <!-- Logo / Menu Toggle -->
       <div class="logo" @click="drawer = !drawer">
         <div class="checkboxtoggler" :class="{ open: drawer }">
           <div class="line-1"></div>
@@ -12,7 +10,6 @@
         </div>
       </div>
 
-      <!-- Drawer Vuetify -->
       <v-navigation-drawer v-model="drawer" :location="$vuetify.display.mobile ? 'left' : undefined" temporary
         class="custom-drawer">
         <!-- MENU -->
@@ -25,7 +22,6 @@
           </v-list-item>
         </v-list>
 
-        <!-- LIVRARIA -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">LIVRARIA</v-list-subheader>
           <v-list-item v-for="item in libraryItems" :key="item.title" class="drawer-item">
@@ -35,7 +31,6 @@
           </v-list-item>
         </v-list>
 
-        <!-- CONFIGURAÇÕES -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">CONFIGURAÇÕES</v-list-subheader>
           <v-list-item v-for="item in settingsItems" :key="item.title" class="drawer-item">
@@ -45,7 +40,6 @@
           </v-list-item>
         </v-list>
 
-        <!-- EXTRAS -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">EXTRAS</v-list-subheader>
 
@@ -75,7 +69,6 @@
         </v-list>
       </v-navigation-drawer>
 
-      <!-- Menu Principal -->
       <nav class="main-menu" v-if="!isMobile">
         <ul>
           <li><a href="/AllMusic">MÚSICAS E CANTORES</a></li>
@@ -83,7 +76,6 @@
         </ul>
       </nav>
 
-      <!-- Barra de Pesquisa -->
       <div class="search-box" :class="{ active: searchActive }" ref="searchRef">
         <input v-if="!isMobile || searchActive" ref="searchInputRef" class="input" type="text"
           placeholder="Buscar por Cantor, Música ou Repertório" />
@@ -98,11 +90,8 @@
       </div>
     </div>
 
-    <!-- Direita -->
     <div class="header-direito">
-      <!-- Usuário -->
       <div class="user-menu" ref="userRef" v-show="!(isMobile && searchActive)">
-        <!-- Se usuário logado -->
         <template v-if="userStore.user">
 <span class="user-name" @click.stop="toggleDropdown">
   <template v-if="!userStore.loadingUser">
@@ -115,7 +104,6 @@
   <span class="arrow">▼</span>
 </span>
 
-          <!-- Dropdown -->
           <div v-if="dropdownOpen" class="dropdown">
             <ul>
               <li><a href="#">🛒 Meu Carrinho</a></li>
@@ -129,7 +117,6 @@
           </div>
         </template>
 
-        <!-- Se usuário não logado -->
         <template v-else>
           <span class="auth-links">
             <a href="#" class="LoginAndRegister" @click.prevent="goToAuth('login')">ENTRAR</a>
@@ -203,8 +190,8 @@ async function logout() {
   handleLogout()
   try {
     await signOut(auth)
-    userStore.clearUser()  // limpa o estado do Pinia
-    window.location.href = "/"  // recarrega a página
+    userStore.clearUser()  
+    window.location.href = "/"  
   } catch (err) {
     console.error("Erro ao sair:", err)
   }
@@ -218,9 +205,7 @@ async function handleLogout() {
   dropdownOpen.value = false;
 }
 
-// Fecha dropdown e search ao clicar fora
 function handleClickOutside(event) {
-  // fecha dropdown do usuário
   if (
     dropdownOpen.value &&
     userRef.value &&
@@ -229,7 +214,6 @@ function handleClickOutside(event) {
     dropdownOpen.value = false;
   }
 
-  // fecha a busca expandida no mobile
   if (
     searchActive.value &&
     searchRef.value &&
@@ -242,7 +226,6 @@ function handleClickOutside(event) {
 function handleResize() {
   const wasMobile = isMobile.value;
   isMobile.value = window.innerWidth <= 950;
-  // ao voltar para desktop, garante input normal
   if (!isMobile.value && wasMobile) {
     searchActive.value = false;
   }
@@ -261,7 +244,6 @@ onBeforeUnmount(() => {
 
 
 <style scoped>
-/* HEADER */
 .header-container {
   display: flex;
   align-items: center;
@@ -278,7 +260,6 @@ onBeforeUnmount(() => {
   gap: 20px;
 }
 
-/* TOGGLER MENU */
 .checkboxtoggler {
   width: 1.8em;
   display: flex;
@@ -296,7 +277,6 @@ onBeforeUnmount(() => {
   transition: 0.3s;
 }
 
-/* Animação do hamburger aberto */
 .checkboxtoggler.open .line-1 {
   transform: rotate(40deg) translate(0.2em, 0.3em);
 }
@@ -308,7 +288,6 @@ onBeforeUnmount(() => {
   transform-origin: left;
 }
 
-/* MENU */
 .main-menu ul {
   display: flex;
   list-style: none;
@@ -328,7 +307,6 @@ onBeforeUnmount(() => {
   color: #00d1b2;
 }
 
-/* SEARCH BOX */
 .search-box {
   display: flex;
   align-items: center;
@@ -372,7 +350,6 @@ onBeforeUnmount(() => {
   fill: #fff;
 }
 
-/* MOBILE SEARCH (lupa -> expandir) */
 @media (max-width: 950px) {
   .search-box {
     min-width: 40px;
@@ -391,14 +368,12 @@ onBeforeUnmount(() => {
   }
 }
 
-/* DIREITA */
 .header-direito {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-/* USER MENU */
 .user-menu {
   position: relative;
   cursor: pointer;
@@ -430,7 +405,6 @@ onBeforeUnmount(() => {
   font-size: 10px;
 }
 
-/* Dropdown */
 .dropdown {
   position: absolute;
   top: 40px;
@@ -460,7 +434,6 @@ onBeforeUnmount(() => {
   background: #00d1b2;
 }
 
-/* Drawer */
 .custom-drawer {
   background-color: #111 !important;
   color: #fff !important;
@@ -499,7 +472,6 @@ onBeforeUnmount(() => {
   color: #00d1b2;
 }
 
-/* Links especiais */
 .vip-link a {
   color: #ffd700;
   font-weight: 600;

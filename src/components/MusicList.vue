@@ -1,12 +1,10 @@
 <template>
   <div class="music-page">
-    <!-- Header -->
     <header class="header">
       <h1 class="title">🎶 Repertório Completo 🎶</h1>
       <p class="subtitle">Explore músicas, artistas e ritmos • Adicione à fila • Toque agora • Baixe</p>
     </header>
 
-    <!-- Cantores -->
     <section class="chips">
       <h3>Cantores</h3>
       <div class="chip-grid">
@@ -22,7 +20,6 @@
       </div>
     </section>
 
-    <!-- Ritmos -->
     <section class="chips">
       <h3>Ritmos</h3>
       <div class="chip-grid">
@@ -38,7 +35,6 @@
       </div>
     </section>
 
-    <!-- Pesquisa -->
     <section class="search">
       <input
         v-model="filtros.busca"
@@ -47,7 +43,6 @@
       />
     </section>
 
-    <!-- Selects -->
     <section class="filters">
       <div class="filter">
         <label>Cantores</label>
@@ -65,11 +60,9 @@
       </div>
     </section>
 
-    <!-- Status -->
     <div v-if="loading" class="status">Carregando músicas...</div>
     <div v-if="error" class="status error">{{ error }}</div>
 
-    <!-- Lista de músicas -->
     <div v-if="!loading && filtradas.length" class="grid">
       <div v-for="m in filtradas" :key="m.fileId || m.id" class="card">
         <img src="/LogoMusic.jpg" class="cover" />
@@ -91,7 +84,6 @@
       Nenhuma música encontrada.
     </div>
 
-    <!-- Botão de voltar ao topo -->
     <button v-show="showScrollTop" class="scroll-top" @click="scrollToTop">
       ⬆
     </button>
@@ -110,7 +102,6 @@ const error = ref("")
 const player = usePlayerStore()
 const showScrollTop = ref(false)
 
-// Filtros
 const filtros = ref({ cantor: "", ritmo: "", busca: "" })
 
 const cantores = computed(() =>
@@ -313,7 +304,6 @@ onBeforeUnmount(() => {
   padding: 10px 14px;
 }
 
-/* Status */
 .status {
   margin: 20px 0;
   color: #e0e0e0;
@@ -323,7 +313,6 @@ onBeforeUnmount(() => {
   color: #ff7676;
 }
 
-/* Grid de músicas */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

@@ -3,7 +3,6 @@
     <div class="overlay"></div>
 
     <transition name="fade-slide" mode="out-in">
-      <!-- Registrar -->
       <form v-if="!isLogin" key="register" class="form" @submit.prevent="register">
         <p class="title">Registrar</p>
         <p class="message">Registre-se agora e tenha acesso ao site todo.</p>
@@ -47,7 +46,6 @@
         <p v-if="error" class="error">{{ error }}</p>
       </form>
 
-      <!-- Entrar -->
       <form v-else key="login" class="form" @submit.prevent="login">
         <p class="title">Entrar</p>
         <p class="message">Entre agora e tenha acesso ao site todo.</p>
@@ -100,7 +98,6 @@ const confirmPassword = ref("")
 const error = ref("")
 const loading = ref(false)
 
-// Redireciona se já estiver logado
 onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -111,7 +108,6 @@ onMounted(() => {
   })
 })
 
-// ID aleatório 6 caracteres
 function generateRandomID() {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   const numbers = "0123456789"
@@ -145,7 +141,6 @@ async function register() {
       hasSubscription: false
     })
 
-    // Força reload da página
     window.location.href = "/"
   } catch (err) {
     error.value = err.message
@@ -165,19 +160,16 @@ async function login() {
       loading.value = false
       return
     }
-    // Continua o login normalmente
     window.location.href = "/"
   } catch (err) {
     error.value = err.message
     loading.value = false
   }
 }
-// Alterna entre login e registro com animação
 function switchMode(loginMode) {
   isLogin.value = loginMode
 }
 
-// Observa query
 watch(() => route.query.mode, (newMode) => {
   isLogin.value = newMode === "login"
 })
@@ -202,7 +194,6 @@ watch(() => route.query.mode, (newMode) => {
   background: rgba(0,0,0,0.8);
 }
 
-/* From Uiverse.io by ammarsaa */ 
 .form {
   display: flex;
   flex-direction: column;
@@ -318,7 +309,6 @@ watch(() => route.query.mode, (newMode) => {
   to { transform: scale(1.8); opacity: 0; }
 }
 
-/* Animação de transição entre login e registro */
 .fade-slide-enter-active, .fade-slide-leave-active {
   transition: all 0.4s ease;
 }

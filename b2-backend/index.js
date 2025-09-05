@@ -11,10 +11,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS (ajuste origin em produção)
 app.use(cors({ origin: "http://localhost:3000" }));
 
-// Multer para uploads em memória
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Teste
@@ -22,14 +20,6 @@ app.get("/", (req, res) => {
   res.send("Servidor B2 Backend funcionando!");
 });
 
-/**
- * Rota de upload:
- * - Autoriza na B2
- * - Pega uploadUrl
- * - Envia o arquivo
- * - Retorna URL PÚBLICA AMIGÁVEL corretamente:
- *   {downloadUrl}/file/{BUCKET_NAME}/{fileName}
- */
 app.post("/upload-music", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "Arquivo não enviado" });
@@ -43,7 +33,7 @@ app.post("/upload-music", upload.single("file"), async (req, res) => {
 
     const { authorizationToken, apiUrl, downloadUrl } = authResp.data;
 
-    // 2) Pega uploadUrl
+    // 2) Pega upload Url
     const uploadUrlResp = await axios.post(
       `${apiUrl}/b2api/v2/b2_get_upload_url`,
       { bucketId: B2_BUCKET_ID },
@@ -68,10 +58,10 @@ app.post("/upload-music", upload.single("file"), async (req, res) => {
       maxContentLength: Infinity,
     });
 
-    // 5) URL pública correta (usa bucket NAME, não ID)
+    // 5) URL pública 
     const publicUrl = `${downloadUrl}/file/${B2_BUCKET_NAME}/${encodeURIComponent(fileName)}`;
 
-    // Responde ao frontend
+    // Rfrontend
     res.json({
       fileId: fileName,
       downloadUrl: publicUrl,
@@ -82,11 +72,7 @@ app.post("/upload-music", upload.single("file"), async (req, res) => {
   }
 });
 
-/**
- * Rota de streaming/download via backend (opcional):
- * constrói a URL amigável e redireciona.
- * Útil para não hardcodear host no frontend.
- */
+
 app.get("/stream-music", async (req, res) => {
   try {
     const { fileName } = req.query;

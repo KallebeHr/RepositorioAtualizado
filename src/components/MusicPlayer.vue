@@ -35,7 +35,6 @@
       <button class="queue" @click="toggleQueue" title="Fila">📂 {{ player.queue.length }}</button>
     </div>
 
-    <!-- Modal simples de fila com logs; evoluímos depois -->
     <div v-if="showQueue" class="overlay" @click.self="toggleQueue">
       <div class="modal">
         <div class="modal-head">
