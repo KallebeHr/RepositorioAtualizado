@@ -155,9 +155,10 @@ async function uploadMusic(index) {
   try {
     const formData = new FormData()
     formData.append("file", form.file)
-    const { data } = await axios.post("http://localhost:3001/upload-music", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })
+    const { data } = await axios.post("/api/upload-music", formData, {
+  headers: { "Content-Type": "multipart/form-data" },
+})
+
     const { fileId, downloadUrl } = data
 
     await addDoc(collection(db, "musicas"), {
