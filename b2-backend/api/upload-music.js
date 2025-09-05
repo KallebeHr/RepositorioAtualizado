@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       `${apiUrl}/b2api/v2/b2_get_upload_url`,
       { bucketId: B2_BUCKET_ID },
       { headers: { Authorization: authorizationToken } }
-    )
+    ) 
     const { uploadUrl, authorizationToken: uploadAuth } = uploadUrlResp.data
 
     // OBS: em Serverless, o Vercel não aceita `req.file` direto.
