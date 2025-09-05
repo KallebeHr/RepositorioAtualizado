@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     // Para testar, vamos só simular um retorno sem upload:
     // (Se quiser upload real, precisa usar `busboy` ou `formidable` pra ler o arquivo)
 
-    const fileName = `teste-${Date.now()}.mp3`
+    const fileName = `teste-${Date.now()}.mp3` 
 
     const publicUrl = `${downloadUrl}/file/${B2_BUCKET_NAME}/${encodeURIComponent(fileName)}`
 
