@@ -2,7 +2,7 @@
   <div class="music-page">
     <header class="header">
       <h1 class="title">🎶 Repertório Completo 🎶</h1>
-      <p class="subtitle">Explore músicas, artistas e ritmos • Adicione à fila • Toque agora • Baixe</p>
+      <p class="subtitle">Explore músicas, artistas e estilos • Adicione à fila • Toque agora • Baixe</p>
     </header>
 
     <section class="chips">
@@ -21,14 +21,14 @@
     </section>
 
     <section class="chips">
-      <h3>Ritmos</h3>
+      <h3>estilos</h3>
       <div class="chip-grid">
         <button
-          v-for="r in ritmos"
+          v-for="r in estilos"
           :key="r"
           class="chip"
-          :class="{ active: filtros.ritmo === r }"
-          @click="filtros.ritmo = filtros.ritmo === r ? '' : r"
+          :class="{ active: filtros.estilos === r }"
+          @click="filtros.estilos = filtros.estilos === r ? '' : r"
         >
           {{ r }}
         </button>
@@ -39,7 +39,7 @@
       <input
         v-model="filtros.busca"
         type="text"
-        placeholder="🔍 Pesquisar músicas, cantores ou ritmos..."
+        placeholder="🔍 Pesquisar músicas, cantores ou estilos..."
       />
     </section>
 
@@ -52,10 +52,10 @@
         </select>
       </div>
       <div class="filter">
-        <label>Ritmos</label>
-        <select v-model="filtros.ritmo">
+        <label>estilos</label>
+        <select v-model="filtros.estilos">
           <option value="">Todos</option>
-          <option v-for="r in ritmos" :key="r" :value="r">{{ r }}</option>
+          <option v-for="r in estilos" :key="r" :value="r">{{ r }}</option>
         </select>
       </div>
     </section>
@@ -69,7 +69,7 @@
         <div class="info">
           <h2 class="track-title">{{ m.title || m.fileName || "—" }}</h2>
           <p class="track-meta">
-            <span>{{ m.cantor || "—" }}</span> • <span>{{ m.ritmo || "—" }}</span>
+            <span>{{ m.cantor || "—" }}</span> • <span>{{ m.estilos || "—" }}</span>
           </p>
         </div>
         <div class="actions">
@@ -95,20 +95,19 @@ import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { db } from "@/firebase"
 import { collection, query, orderBy, getDocs } from "firebase/firestore"
 import { usePlayerStore } from "@/stores/usePlayerStore"
-
 const musicas = ref([])
 const loading = ref(true)
 const error = ref("")
 const player = usePlayerStore()
 const showScrollTop = ref(false)
 
-const filtros = ref({ cantor: "", ritmo: "", busca: "" })
+const filtros = ref({ cantor: "", estilos: "", busca: "" })
 
 const cantores = computed(() =>
   [...new Set(musicas.value.map(m => m.cantor).filter(Boolean))]
 )
-const ritmos = computed(() =>
-  [...new Set(musicas.value.map(m => m.ritmo).filter(Boolean))]
+const estilos = computed(() =>
+  [...new Set(musicas.value.map(m => m.estilo).filter(Boolean))]
 )
 
 const filtradas = computed(() => {
@@ -116,11 +115,11 @@ const filtradas = computed(() => {
     const busca = filtros.value.busca.toLowerCase()
     return (
       (!filtros.value.cantor || m.cantor === filtros.value.cantor) &&
-      (!filtros.value.ritmo || m.ritmo === filtros.value.ritmo) &&
+      (!filtros.value.estilos || m.estilos === filtros.value.estilos) &&
       (!busca ||
         (m.title && m.title.toLowerCase().includes(busca)) ||
         (m.cantor && m.cantor.toLowerCase().includes(busca)) ||
-        (m.ritmo && m.ritmo.toLowerCase().includes(busca)))
+        (m.estilos && m.estilos.toLowerCase().includes(busca)))
     )
   })
 })
@@ -145,7 +144,7 @@ function normalizeTrack(m) {
   const t = {
     title: m.title || m.fileName || "Sem título",
     cantor: m.cantor || "—",
-    ritmo: m.ritmo || "—",
+    estilos: m.estilos || "—",
     downloadUrl: m.downloadUrl,
     fileName: m.fileName || (m.title ? `${m.title}.mp3` : "musica.mp3"),
     fileId: m.fileId || m.id,

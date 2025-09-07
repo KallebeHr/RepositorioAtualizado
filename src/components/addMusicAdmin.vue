@@ -181,7 +181,6 @@ onMounted(() => {
   width: 100%;
   min-height: 100vh;
   padding: 40px 20px;
-  background: #0d0d0d;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
 }
