@@ -9,7 +9,7 @@
         "preview": "vite preview",
         "lint": "eslint . --fix"
       },
-      "dependencies": { 
+      "dependencies":  {  
         "@fontsource/roboto": "5.2.6",
         "@mdi/font": "7.4.47",
         "axios": "^1.11.0",

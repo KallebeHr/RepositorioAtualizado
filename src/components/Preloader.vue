@@ -1,6 +1,5 @@
 <template>
   <div class='container'>
-    <!-- From Uiverse.io by kennyotsu --> 
 <div class="card">
   <div class="loader">
     <p>Carregando</p>
@@ -42,9 +41,7 @@ export default {
     justify-items: center;
     height: 100vh;
     }
-    /* From Uiverse.io by kennyotsu */ 
 .card {
-  /* color used to softly clip top and bottom of the .words container */
   background-color: var(--bg-color);
   padding: 1rem 2rem;
   border-radius: 1.25rem;
