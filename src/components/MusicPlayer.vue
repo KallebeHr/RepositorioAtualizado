@@ -31,7 +31,15 @@
     </div>
 
     <div class="right">
-      <input class="vol" type="range" min="0" max="1" step="0.01" :value="player.volume" @input="onVol" />
+      <input
+        class="vol"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        :value="player.volume"
+        @input="onVol"
+      />
       <button class="queue" @click="toggleQueue" title="Fila">📂 {{ player.queue.length }}</button>
     </div>
 
@@ -39,8 +47,12 @@
       <div class="modal">
         <div class="modal-head">
           <strong>Fila</strong>
-          <button @click="clearQueue" class="clear">Limpar</button>
+          <div class="queue-buttons">
+            <button @click="clearQueue" class="clear">Limpar</button>
+            <button @click="downloadAllZip" class="clear">Baixar Todas</button>
+          </div>
         </div>
+
         <div v-if="player.queue.length" class="list">
           <div
             v-for="(q, i) in player.queue"
@@ -63,6 +75,14 @@
           </div>
         </div>
         <div v-else class="empty">Fila vazia</div>
+
+        <!-- Barra de progresso ZIP -->
+        <div v-if="zipProgressVisible" class="zip-progress">
+          <p>Preparando ZIP… {{ zipProgress }} / {{ zipTotal }} músicas adicionadas</p>
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -75,14 +95,25 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { usePlayerStore } from "@/stores/usePlayerStore"
+import { useUserStore } from "@/stores/userStore"
+import { useToast } from "vue-toast-notification"
+import JSZip from "jszip"
 
 const player = usePlayerStore()
-const showQueue = ref(false)
+const userStore = useUserStore()
+const toast = useToast()
 
+const showQueue = ref(false)
 const current = computed(() => player.current)
 const duration = ref(0)
 const position = ref(0)
 let raf = null
+
+const zipProgress = ref(0)
+const zipTotal = ref(0)
+const zipProgressVisible = ref(false)
+
+const progressPercent = computed(() => (zipTotal.value ? (zipProgress.value / zipTotal.value) * 100 : 0))
 
 function loop() {
   if (player.sound) {
@@ -107,7 +138,6 @@ function toTime(s) {
 
 function onSeek(e) {
   const val = Number(e.target.value)
-  console.log("[Player] seek ->", val)
   player.seekTo(val)
 }
 
@@ -117,37 +147,49 @@ function onVol(e) {
 }
 
 function toggle() {
-  console.log("[Player] toggle play")
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Ative sua assinatura para usar o player 🎶")
+    return
+  }
   player.togglePlay()
 }
 
 function prev() {
-  console.log("[Player] prev")
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Ative sua assinatura para usar o player 🎶")
+    return
+  }
   player.prev()
 }
 function next() {
-  console.log("[Player] next")
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Ative sua assinatura para usar o player 🎶")
+    return
+  }
   player.next()
 }
 
 function toggleQueue() {
   showQueue.value = !showQueue.value
-  console.log("[Player] toggleQueue ->", showQueue.value)
 }
 
 function playAt(i) {
-  console.log("[Player] playAt index", i)
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Ative sua assinatura para escutar músicas 🎶")
+    return
+  }
   player.play(i)
 }
 function remove(i) {
-  console.log("[Player] removeFromQueue", i)
   player.removeFromQueue(i)
 }
 function clearQueue() {
-  console.log("[Player] clearQueue")
   player.clearQueue()
 }
+
+// Download individual
 function download(music) {
+  if (!music.downloadUrl) return
   const a = document.createElement("a")
   a.href = music.downloadUrl
   a.download = music.fileName || "musica.mp3"
@@ -156,8 +198,64 @@ function download(music) {
   a.remove()
 }
 
+// Download all as ZIP com barra de progresso
+async function downloadAllZip() {
+  if (!player.queue.length) return
+
+  zipProgress.value = 0
+  zipTotal.value = 0
+  zipProgressVisible.value = true
+
+  const zip = new JSZip()
+  const seen = new Set()
+
+  const uniqueTracks = player.queue.filter(t => {
+    if (seen.has(t.fileId)) return false
+    seen.add(t.fileId)
+    return true
+  })
+
+  zipTotal.value = uniqueTracks.length
+
+  for (const track of uniqueTracks) {
+    if (!track.downloadUrl) continue
+    try {
+      const res = await fetch(track.downloadUrl)
+      const blob = await res.blob()
+      zip.file(track.fileName || "musica.mp3", blob)
+      zipProgress.value++
+    } catch (err) {
+      console.error("Erro ao adicionar ao ZIP:", track.title, err)
+      toast.error(`Erro ao adicionar ${track.title} ao ZIP`)
+      zipProgress.value++
+    }
+  }
+
+  try {
+    const content = await zip.generateAsync({ type: "blob" }, metadata => {
+      zipProgress.value = metadata.percent / 100 * zipTotal.value
+    })
+
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(content)
+    a.download = "FilaMusicas.zip"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(a.href)
+
+    toast.success("Download do ZIP iniciado!")
+  } catch (err) {
+    console.error("Erro ao gerar ZIP:", err)
+    toast.error("Erro ao gerar o ZIP")
+  } finally {
+    zipProgressVisible.value = false
+    zipProgress.value = 0
+    zipTotal.value = 0
+  }
+}
+
 onMounted(() => {
-  console.log("[Player] mounted")
   raf = requestAnimationFrame(loop)
 })
 onBeforeUnmount(() => {
@@ -167,8 +265,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .player {
-  position: fixed; left: 0; right: 0; bottom: 0;
-  background: #141414; color: #fff;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #141414;
+  color: #fff;
   border-top: 1px solid #232323;
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
@@ -179,61 +281,223 @@ onBeforeUnmount(() => {
   font-family: Inter, system-ui, sans-serif;
 }
 .player.placeholder {
-  justify-content: center; text-align: center; font-size: 14px;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
 }
-.left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.thumb { width: 44px; height: 44px; border-radius: 8px; background: #1b1b1b; border: 1px solid #262626; }
-.info .t { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.info .a { font-size: 12px; color: #9aa0a6; }
-
-.center { display: flex; flex-direction: column; gap: 6px; align-items: center; }
-.controls { display: flex; align-items: center; gap: 10px; }
+.left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.zip-progress {
+  margin-top: 12px;
+}
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #1db954;
+  width: 0%;
+  transition: width 0.2s;
+}
+.thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #1b1b1b;
+  border: 1px solid #262626;
+}
+.info .t {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.info .a {
+  font-size: 12px;
+  color: #9aa0a6;
+}
+.center {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .controls button {
-  background: #202020; border: 1px solid #2a2a2a; color: #f0f0f0;
-  padding: 6px 10px; border-radius: 8px; cursor: pointer;
+  background: #202020;
+  border: 1px solid #2a2a2a;
+  color: #f0f0f0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
 }
-.controls button:hover { background: #262626; }
-.bar { display: grid; grid-template-columns: 48px 1fr 48px; gap: 8px; align-items: center; width: 100%; }
-.seek { width: 100%; appearance: none; height: 6px; background: #262626; border-radius: 999px; }
-.seek::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #1db954; }
-.time { font-size: 11px; color: #9aa0a6; text-align: center; }
-
-.right { display: flex; justify-content: end; align-items: center; gap: 8px; }
-.vol { width: 110px; }
-.queue { background: #202020; border: 1px solid #2a2a2a; color: #f0f0f0; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
-.queue:hover { background: #262626; }
-
+.controls button:hover {
+  background: #262626;
+}
+.bar {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+.seek {
+  width: 100%;
+  appearance: none;
+  height: 6px;
+  background: #262626;
+  border-radius: 999px;
+}
+.seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #1db954;
+}
+.time {
+  font-size: 11px;
+  color: #9aa0a6;
+  text-align: center;
+}
+.right {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 8px;
+}
+.vol {
+  width: 110px;
+}
+.queue {
+  background: #202020;
+  border: 1px solid #2a2a2a;
+  color: #f0f0f0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.queue:hover {
+  background: #262626;
+}
 @media (max-width: 900px) {
-  .player { grid-template-columns: 1fr 1fr; }
-  .right { display: none; }
+  .player {
+    grid-template-columns: 1fr 1fr;
+  }
+  .right {
+    display: flex; /* mostrar volume e fila mesmo em mobile */
+    flex-direction: column;
+    gap: 4px;
+  }
+  .queue-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
 }
-
 .overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.6);
-  display: flex; align-items: flex-end; justify-content: center; z-index: 50;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
 }
 .modal {
   width: min(720px, 96vw);
   max-height: 60vh;
-  background: #151515; border-top-left-radius: 14px; border-top-right-radius: 14px;
-  border: 1px solid #262626; padding: 14px; overflow: auto;
+  background: #151515;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border: 1px solid #262626;
+  padding: 14px;
+  overflow: auto;
 }
-.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.clear { background: #2a2a2a; border: 1px solid #333; color: #fff; padding: 6px 10px; border-radius: 8px; }
-.list { display: flex; flex-direction: column; gap: 6px; }
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.clear {
+  background: #2a2a2a;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .row {
-  display: grid; grid-template-columns: 1fr auto; align-items: center;
-  padding: 8px 6px; border-radius: 8px; border: 1px solid #232323; background: #121212;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid #232323;
+  background: #121212;
 }
-.row.active { outline: 1px solid #1db95455; background: #141414; }
-.meta { display: flex; align-items: center; gap: 10px; }
-.mini { width: 36px; height: 36px; border-radius: 8px; background: #1b1b1b; border: 1px solid #262626; }
-.rt { font-weight: 700; font-size: 14px; }
-.ra { font-size: 12px; color: #9aa0a6; }
-.row-actions { display: grid; grid-auto-flow: column; gap: 6px; }
+.row.active {
+  outline: 1px solid #1db95455;
+  background: #141414;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mini {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #1b1b1b;
+  border: 1px solid #262626;
+}
+.rt {
+  font-weight: 700;
+  font-size: 14px;
+}
+.ra {
+  font-size: 12px;
+  color: #9aa0a6;
+}
+.row-actions {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+}
 .row-actions button {
-  background: #202020; border: 1px solid #2a2a2a; color: #fff; padding: 4px 8px; border-radius: 8px; cursor: pointer;
+  background: #202020;
+  border: 1px solid #2a2a2a;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
 }
-.row-actions button:hover { background: #262626; }
-.empty { color: #9aa0a6; padding: 20px; text-align: center; }
+.row-actions button:hover {
+  background: #262626;
+}
+.empty {
+  color: #9aa0a6;
+  padding: 20px;
+  text-align: center;
+}
 </style>

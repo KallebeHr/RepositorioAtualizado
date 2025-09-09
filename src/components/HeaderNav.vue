@@ -1,7 +1,6 @@
 <template>
   <header class="header-container" ref="headerRef">
     <div class="header-esquerda">
-
       <div class="logo" @click="drawer = !drawer">
         <div class="checkboxtoggler" :class="{ open: drawer }">
           <div class="line-1"></div>
@@ -10,8 +9,12 @@
         </div>
       </div>
 
-      <v-navigation-drawer v-model="drawer" :location="$vuetify.display.mobile ? 'left' : undefined" temporary
-        class="custom-drawer">
+      <v-navigation-drawer
+        v-model="drawer"
+        :location="$vuetify.display.mobile ? 'left' : undefined"
+        temporary
+        class="custom-drawer"
+      >
         <!-- MENU -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">MENU</v-list-subheader>
@@ -42,10 +45,12 @@
 
         <v-list>
           <v-list-subheader class="drawer-subtitle">EXTRAS</v-list-subheader>
-
           <v-list-item class="drawer-item">
             <v-list-item-title>
-              <a href="https://www.instagram.com/repertorio___atualizado?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank">📸 Instagram</a>
+              <a
+                href="https://www.instagram.com/repertorio___atualizado?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                target="_blank"
+              >📸 Instagram</a>
             </v-list-item-title>
           </v-list-item>
 
@@ -71,21 +76,28 @@
 
       <nav class="main-menu" v-if="!isMobile">
         <ul>
-          <li><a href="/AllMusic">MÚSICAS E CANTORES</a></li>
+          <li><a href="/AllMusic">MÚSICAS EM GERAL</a></li>
           <li><a href="#">REPERTÓRIOS</a></li>
         </ul>
       </nav>
 
       <div class="search-box" :class="{ active: searchActive }" ref="searchRef">
-        <input v-if="!isMobile || searchActive" ref="searchInputRef" class="input" type="text"
-          placeholder="Buscar por Cantor, Música ou Repertório" />
+        <input
+          v-if="!isMobile || searchActive"
+          ref="searchInputRef"
+          class="input"
+          type="text"
+          placeholder="Buscar por Cantor, Música ou Repertório"
+        />
         <svg viewBox="0 0 24 24" class="search__icon" @click="toggleSearch">
-          <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 
+          <path
+            d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 
                4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 
                5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 
                11c0-4.135 3.365-7.5 7.5-7.5s7.5 
                3.365 7.5 7.5-3.365 7.5-7.5 
-               7.5-7.5-3.365-7.5-7.5z" />
+               7.5-7.5-3.365-7.5-7.5z"
+          />
         </svg>
       </div>
     </div>
@@ -93,24 +105,24 @@
     <div class="header-direito">
       <div class="user-menu" ref="userRef" v-show="!(isMobile && searchActive)">
         <template v-if="userStore.user">
-<span class="user-name" @click.stop="toggleDropdown">
-  <template v-if="!userStore.loadingUser">
-    Olá, {{ userStore.user.name }}
-  </template>
-  <template v-else>
-    Olá...
-  </template>
-  <span v-if="hasNotification" class="user-indicator"></span>
-  <span class="arrow">▼</span>
-</span>
+          <span class="user-name" @click.stop="toggleDropdown">
+            <template v-if="!userStore.loadingUser">Olá, {{ userStore.user.name }}</template>
+            <template v-else>Olá...</template>
+            <span v-if="hasNotification" class="user-indicator"></span>
+            <span class="arrow">▼</span>
+          </span>
 
           <div v-if="dropdownOpen" class="dropdown">
             <ul>
               <li><a href="#">🛒 Meu Carrinho</a></li>
               <li v-if="userStore.user?.role === 'admin'">
-                <a href="/admin"> ⚙   Administração</a>
+                <a href="/admin"> ⚙ Administração</a>
               </li>
-              <li><a href="#">🔑 Versão Premium</a></li>
+             <li>
+  <a href="#" v-if="!assinaturaAtiva" @click.prevent="openAssinaturaModal">🔑 Ativar Assinatura</a>
+  <span v-else class="ativado">✅Assinatura ativa</span>
+</li>
+
               <li><a href="#">🔔 Notificações</a></li>
               <li><a href="#" @click.prevent="logout">🚪 Sair</a></li>
             </ul>
@@ -125,6 +137,26 @@
         </template>
       </div>
     </div>
+
+    <!-- Modal Ativar Assinatura -->
+    <v-dialog v-model="assinaturaModal" max-width="400px">
+      <v-card>
+        <v-card-title>Ativar Assinatura</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="chaveAssinatura"
+            label="Digite sua chave"
+            outlined
+            dense
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="assinaturaModal = false">Cancelar</v-btn>
+          <v-btn color="primary" @click="ativarAssinatura">Ativar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </header>
 </template>
 
@@ -132,12 +164,17 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
-import { signOut } from "firebase/auth"
-import { auth } from "@/firebase"
+import { signOut } from "firebase/auth";
+import { auth, db } from "@/firebase";
+import { doc, getDocs, setDoc, collection } from "firebase/firestore";
+import 'vue-toast-notification/dist/theme-sugar.css';
+import { useToast } from 'vue-toast-notification';
 
 const dropdownOpen = ref(false);
 const hasNotification = ref(true);
 const drawer = ref(false);
+
+const $toast = useToast();
 
 const searchActive = ref(false);
 const isMobile = ref(window.innerWidth <= 950);
@@ -150,8 +187,14 @@ const headerRef = ref(null);
 const router = useRouter();
 const userStore = useUserStore();
 
+// controle assinatura
+const assinaturaModal = ref(false);
+const chaveAssinatura = ref("");
+const assinaturaAtiva = ref(false); // 👈 controla se já está ativa
+
+// Itens do menu
 const menuItems = [
-  {title:"INICIO", href:"/"},
+  { title: "INICIO", href: "/" },
   { title: "MÚSICAS E CANTORES", href: "/AllMusic" },
   { title: "REPERTÓRIOS", href: "#" },
   { title: "RITMOS", href: "#" },
@@ -173,6 +216,116 @@ const settingsItems = [
   { title: "CONFIGURAÇÕES", href: "#" },
 ];
 
+// ------------------------------
+// Verifica assinatura ao montar
+// ------------------------------
+async function verificarAssinatura() {
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const userDoc = usersSnapshot.docs.find(
+      (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
+    );
+
+    if (userDoc && userDoc.data().subscription === "ativa") {
+      assinaturaAtiva.value = true;
+    }
+  } catch (err) {
+    console.error("Erro ao verificar assinatura:", err);
+  }
+}
+
+// Função para abrir modal (só abre se não estiver ativa)
+function openAssinaturaModal() {
+  if (assinaturaAtiva.value) {
+    $toast.info("Sua conta já está ativa, aproveite os benefícios!", {
+      position: 'top-center'
+    });
+    return;
+  }
+  assinaturaModal.value = true;
+  chaveAssinatura.value = "";
+}
+
+// Função de ativação de assinatura com contagem regressiva
+async function ativarAssinatura() {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      $toast.error("Usuário não autenticado", { position: 'top' });
+      return;
+    }
+
+    // Busca usuário no Firestore
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const userDoc = usersSnapshot.docs.find(
+      (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
+    );
+
+    if (!userDoc) {
+      $toast.error("Usuário não encontrado no Firestore", { position: 'top' });
+      return;
+    }
+
+    const userId = userDoc.id;
+    const userData = userDoc.data();
+
+    // Se já estiver ativa
+    if (userData.subscription === "ativa") {
+      assinaturaAtiva.value = true;
+      $toast.info("Sua conta já está ativa, aproveite os benefícios!", { position: 'top' });
+      assinaturaModal.value = false;
+      return;
+    }
+
+    // Busca chaves
+    const querySnapshot = await getDocs(collection(db, "Chaves"));
+    if (querySnapshot.empty) {
+      $toast.error("Nenhuma chave encontrada!", { position: 'top' });
+      return;
+    }
+
+    const chaveDoc = querySnapshot.docs[0];
+    const keys = chaveDoc.data().Keys || [];
+
+    if (!keys.includes(chaveAssinatura.value)) {
+      $toast.error("Chave inválida!", { position: 'top' });
+      return;
+    }
+
+    // Atualiza assinatura no Firestore
+    await setDoc(
+      doc(db, "users", userId),
+      { subscription: "ativa" },
+      { merge: true }
+    );
+
+    assinaturaAtiva.value = true;
+    $toast.success("Assinatura ativada com sucesso!", { position: 'top' });
+    assinaturaModal.value = false;
+
+    // 🔹 Contagem regressiva antes do reload
+    $toast.info("O site será recarregado em 3 segundos para ativar a assinatura!", { position: 'top' });
+    for (let i = 3; i > 0; i--) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      $toast.info(`${i}...`, { position: 'top' });
+    }
+
+    // 🔹 Recarrega a página
+    window.location.reload();
+
+  } catch (err) {
+    console.error("Erro ao ativar assinatura:", err);
+    $toast.error("Erro ao ativar assinatura!", { position: 'top' });
+  }
+}
+
+
+// ------------------------------
+// Outras funções do header
+// ------------------------------
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value;
 }
@@ -186,18 +339,20 @@ function toggleSearch() {
     });
   }
 }
+
 async function logout() {
-  handleLogout()
+  handleLogout();
   try {
-    await signOut(auth)
-    userStore.clearUser()  
-    window.location.href = "/"  
+    await signOut(auth);
+    userStore.clearUser();
+    window.location.href = "/";
   } catch (err) {
-    console.error("Erro ao sair:", err)
+    console.error("Erro ao sair:", err);
   }
 }
+
 function goToAuth(mode) {
-  router.push({ path: '/RegisterAndLogin', query: { mode } })
+  router.push({ path: "/RegisterAndLogin", query: { mode } });
 }
 
 async function handleLogout() {
@@ -206,19 +361,11 @@ async function handleLogout() {
 }
 
 function handleClickOutside(event) {
-  if (
-    dropdownOpen.value &&
-    userRef.value &&
-    !userRef.value.contains(event.target)
-  ) {
+  if (dropdownOpen.value && userRef.value && !userRef.value.contains(event.target)) {
     dropdownOpen.value = false;
   }
 
-  if (
-    searchActive.value &&
-    searchRef.value &&
-    !searchRef.value.contains(event.target)
-  ) {
+  if (searchActive.value && searchRef.value && !searchRef.value.contains(event.target)) {
     searchActive.value = false;
   }
 }
@@ -232,6 +379,7 @@ function handleResize() {
 }
 
 onMounted(() => {
+  verificarAssinatura();
   window.addEventListener("resize", handleResize);
   document.addEventListener("click", handleClickOutside);
 });
@@ -241,6 +389,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("click", handleClickOutside);
 });
 </script>
+
 
 
 <style scoped>
@@ -429,7 +578,14 @@ onBeforeUnmount(() => {
   text-decoration: none;
   font-size: 12px;
 }
-
+.ativado{
+  display: block;
+  padding: 10px 15px;
+  color: white;
+  background-color: #00d1b2;
+  text-decoration: none;
+  font-size: 12px;
+}
 .dropdown ul li a:hover {
   background: #00d1b2;
 }

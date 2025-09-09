@@ -95,10 +95,15 @@ import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { db } from "@/firebase"
 import { collection, query, orderBy, getDocs } from "firebase/firestore"
 import { usePlayerStore } from "@/stores/usePlayerStore"
+import { useUserStore } from "@/stores/userStore"
+import { useToast } from "vue-toast-notification"
+
 const musicas = ref([])
 const loading = ref(true)
 const error = ref("")
 const player = usePlayerStore()
+const userStore = useUserStore()
+const toast = useToast()
 const showScrollTop = ref(false)
 
 const filtros = ref({ cantor: "", estilos: "", busca: "" })
@@ -154,30 +159,51 @@ function normalizeTrack(m) {
 }
 
 function enqueue(m) {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶")
+    return
+  }
   const t = normalizeTrack(m)
   console.log("[MusicList] enqueue:", t.title)
   player.addToQueue(t, { playNow: false })
 }
 
 function playNow(m) {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶")
+    return
+  }
   const t = normalizeTrack(m)
   console.log("[MusicList] playNow:", t.title)
   player.addToQueue(t, { playNow: true })
 }
 
-function download(m) {
+async function download(m) {
   const t = normalizeTrack(m)
   if (!t.downloadUrl) return
   console.log("[MusicList] download:", t.title, t.downloadUrl)
 
-  const a = document.createElement("a")
-  a.href = t.downloadUrl
-  a.download = t.fileName
-  a.rel = "noopener"
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
+  try {
+    const response = await fetch(t.downloadUrl)
+    if (!response.ok) throw new Error("Falha ao baixar arquivo")
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+
+    const a = document.createElement("a")
+    a.href = url
+    a.download = t.fileName
+    a.rel = "noopener"
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+
+    window.URL.revokeObjectURL(url) // libera memória
+  } catch (err) {
+    console.error("[MusicList] erro no download:", err)
+  }
 }
+
 
 // scroll-top
 function handleScroll() {
@@ -194,6 +220,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll)
 })
 </script>
+
 
 <style scoped>
 .music-page {
