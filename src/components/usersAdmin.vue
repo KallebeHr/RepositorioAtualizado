@@ -1,8 +1,8 @@
 <template>
   <div class="admin-container">
-      <header class="header">
+    <header class="header">
       <h1 class="title">🔍 Administração de usuários</h1>
-      <p class="subtitle">Verifique contas, Ative ou desative contas ou envie Mensagens!</p>
+      <p class="subtitle">Verifique contas, ative ou desative contas ou envie mensagens!</p>
     </header>
 
     <div class="search-box">
@@ -33,9 +33,21 @@
             <option value="ativa">Ativa</option>
           </select>
 
-          <button class="message-btn" @click="sendMessage(user)">
+          <button class="message-btn" @click="openMessageModal(user)">
             Mensagem
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de envio de mensagem -->
+    <div v-if="showModal" class="modal-overlay" @click.self="closeMessageModal">
+      <div class="modal-content">
+        <h3>Enviar mensagem para {{ selectedUser.firstName }}</h3>
+        <textarea v-model="messageText" placeholder="Digite sua mensagem aqui..."></textarea>
+        <div class="modal-buttons">
+          <button @click="sendMessage">Enviar</button>
+          <button class="cancel" @click="closeMessageModal">Cancelar</button>
         </div>
       </div>
     </div>
@@ -48,12 +60,18 @@ import { db } from "@/firebase";
 import { collection, getDocs, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
+import { useToast } from "vue-toast-notification";
 
 const router = useRouter();
 const userStore = useUserStore();
+const toast = useToast();
 
 const users = ref([]);
 const search = ref("");
+
+const showModal = ref(false);
+const selectedUser = ref(null);
+const messageText = ref("");
 
 watch(
   () => userStore.user,
@@ -78,14 +96,12 @@ async function fetchUsers() {
   }));
 }
 
-// Formata a data para exibição
 function formatDate(timestamp) {
   if (!timestamp) return "-";
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  return date.toLocaleString(); // ex: 12/09/2025 14:30
+  return date.toLocaleString();
 }
 
-// Filtragem de usuários
 const filteredUsers = computed(() => {
   if (!search.value) return users.value;
 
@@ -105,20 +121,39 @@ async function updateSubscription(user) {
   try {
     const userRef = doc(db, "users", user.uid);
     await updateDoc(userRef, { subscription: user.subscription });
+    toast.success(`Assinatura de ${user.firstName} atualizada!`);
   } catch (err) {
     console.error("Erro ao atualizar assinatura:", err);
+    toast.error("Erro ao atualizar assinatura!");
   }
 }
 
-async function sendMessage(user) {
-  const msg = prompt(`Enviar mensagem para ${user.firstName}:`);
-  if (!msg) return;
+// Funções do modal
+function openMessageModal(user) {
+  selectedUser.value = user;
+  messageText.value = "";
+  showModal.value = true;
+}
+
+function closeMessageModal() {
+  showModal.value = false;
+  selectedUser.value = null;
+  messageText.value = "";
+}
+
+async function sendMessage() {
+  if (!messageText.value.trim()) {
+    toast.warning("Digite uma mensagem antes de enviar!");
+    return;
+  }
   try {
-    const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, { messages: arrayUnion(msg) });
-    alert("Mensagem enviada!");
+    const userRef = doc(db, "users", selectedUser.value.uid);
+    await updateDoc(userRef, { messages: arrayUnion(messageText.value.trim()) });
+    toast.success(`Mensagem enviada para ${selectedUser.value.firstName}!`);
+    closeMessageModal();
   } catch (err) {
     console.error("Erro ao enviar mensagem:", err);
+    toast.error("Erro ao enviar a mensagem!");
   }
 }
 </script>
@@ -169,7 +204,7 @@ async function sendMessage(user) {
   border-radius: 14px;
   border: 1px solid #00ffd5;
   background: #121212;
-  color: #ffffff; /* placeholder e texto */
+  color: #ffffff;
   font-size: 16px;
   transition: box-shadow 0.3s, border 0.3s;
 }
@@ -185,7 +220,6 @@ async function sendMessage(user) {
   box-shadow: 0 0 10px #00ffd5;
 }
 
-/* Lista de usuários */
 .user-list {
   display: flex;
   flex-direction: column;
@@ -229,7 +263,6 @@ async function sendMessage(user) {
   color: #777;
 }
 
-/* Ações */
 .user-actions {
   display: flex;
   gap: 12px;
@@ -241,7 +274,7 @@ async function sendMessage(user) {
   border-radius: 12px;
   border: 1px solid #00ffd5;
   background: #121212;
-  color: #ffffff; /* placeholder e texto */
+  color: #ffffff;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -258,8 +291,7 @@ async function sendMessage(user) {
   padding: 8px 14px;
   border-radius: 12px;
   border: none;
-    background: #1db954;
-
+  background: #1db954;
   color: #121212;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -272,7 +304,6 @@ async function sendMessage(user) {
   box-shadow: 0 0 10px #ff00ff2a, 0 0 10px #00fff0;
 }
 
-/* Mobile */
 @media (max-width: 768px) {
   .user-card {
     flex-direction: column;
@@ -288,5 +319,63 @@ async function sendMessage(user) {
     flex: 1 1 45%;
     margin-bottom: 6px;
   }
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 14px;
+  max-width: 400px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-content textarea {
+  width: 100%;
+  min-height: 100px;
+  background: #121212;
+  border: 1px solid #00ffd5;
+  border-radius: 12px;
+  padding: 10px;
+  color: #fff;
+  resize: none;
+  font-size: 14px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-buttons button {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-buttons button.cancel {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+.modal-buttons button:not(.cancel) {
+  background: #1db954;
+  color: #121212;
 }
 </style>

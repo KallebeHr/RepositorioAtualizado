@@ -257,6 +257,7 @@ async function ativarAssinatura() {
     assinaturaModal.value = false;
 
     // reload com contagem
+    $toast.success('Ativao com sucesso, a pagina será recarregada', { position: 'top' });
     for (let i = 3; i > 0; i--) {
       $toast.info(`Recarregando em ${i}...`, { position: 'top' });
       await new Promise(res => setTimeout(res, 1000));
