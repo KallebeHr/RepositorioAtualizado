@@ -170,8 +170,9 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Mantive o mesmo estilo do exemplo anterior */
-.cantores-page { width: 100%; padding: 24px 32px; background: #111; color: #fff; font-family: Inter, system-ui, sans-serif; }
+
+.cantores-page { width: 100%; padding: 24px 32px;     background-color: #121212;
+; color: #fff; font-family: Inter, system-ui, sans-serif; }
 .header { text-align: center; margin-bottom: 32px; }
 .title { font-size: 40px; font-weight: 900; background: linear-gradient(90deg, #1db954, #00c3ff, #1db954); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 4s infinite linear; }
 @keyframes shine { from { background-position: -200px; } to { background-position: 200px; } }

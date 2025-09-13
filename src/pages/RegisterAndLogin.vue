@@ -185,6 +185,8 @@ watch(() => route.query.mode, (newMode) => {
   height: 98vh;
   position: relative;
   width: 100%;
+    background-color: #121212;
+
   background: url('/BG/BG-home.jpg') no-repeat center center/cover;
   text-align: center;
   overflow: hidden;
