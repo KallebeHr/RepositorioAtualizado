@@ -133,13 +133,15 @@ async function register() {
 
     const customID = generateRandomID()
 
-    await setDoc(doc(db, "users", res.user.uid), {
-      firstName: firstName.value,
-      email: email.value,
-      createdAt: new Date(),
-      customID,
-      hasSubscription: false
-    })
+await setDoc(doc(db, "users", res.user.uid), {
+  firstName: firstName.value,
+  lastName: lastName.value,      
+  email: email.value,
+  createdAt: new Date(),
+  customID,
+  hasSubscription: false,
+  subscription: "normal"          
+})
 
     window.location.href = "/"
   } catch (err) {

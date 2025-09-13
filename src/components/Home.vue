@@ -9,8 +9,9 @@
       </p>
 
       <div class="buttons">
-        <button class="btn green">Ouvir Agora</button>
-        <button class="btn green">Garantir Meu Repertório</button>
+        <a href="/" class="btn green">Comprar assinatura</a>
+        <a href="/AllMusic" class="btn green">Ouvir Agora</a>
+        <a href="/Repertorios" class="btn green">Garantir Meu Repertório</a>
       </div>
 
       <div class="platforms">
@@ -83,7 +84,9 @@
   margin-bottom: 50px;
   flex-wrap: wrap;
 }
-
+a{
+  text-decoration: none;
+}
 .btn {
   padding: 14px 28px;
   border: none;

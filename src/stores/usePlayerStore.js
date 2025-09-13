@@ -19,21 +19,17 @@ export const usePlayerStore = defineStore("player", {
   actions: {
     addToQueue(track, { playNow = false } = {}) {
       if (!track?.downloadUrl) {
-        console.warn("[player] addToQueue: track sem downloadUrl", track)
         return
       }
-      console.log("[player] addToQueue:", track.title, { playNow })
       this.queue.push(track)
 
       if (this.currentIndex === -1) {
-        console.log("[player] fila estava vazia -> tocar índice 0")
         this.play(0)
         return
       }
 
       if (playNow) {
         const idx = this.queue.length - 1
-        console.log("[player] playNow -> índice", idx)
         this.play(idx)
       }
     },
@@ -41,17 +37,16 @@ export const usePlayerStore = defineStore("player", {
     _createHowlForCurrent() {
       if (!this.current) return null
 
-      console.log("[player] criando Howl para:", this.current.title, this.current.downloadUrl)
       const sound = new Howl({
         src: [this.current.downloadUrl],
         html5: true,
         volume: this.volume,
         preload: true,
-        onload: () => console.log("[player] onload:", this.current?.title),
-        onplay: () => { this.isPlaying = true; console.log("[player] onplay") },
-        onpause: () => { this.isPlaying = false; console.log("[player] onpause") },
-        onstop: () => { this.isPlaying = false; console.log("[player] onstop") },
-        onend: () => { console.log("[player] onend -> next"); this.next() },
+
+        onplay: () => { this.isPlaying = true; },
+        onpause: () => { this.isPlaying = false; },
+        onstop: () => { this.isPlaying = false; },
+        onend: () => { this.next() },
         onloaderror: (id, err) => console.error("[player] onloaderror", err),
         onplayerror: (id, err) => {
           console.error("[player] onplayerror", err)
@@ -63,10 +58,8 @@ export const usePlayerStore = defineStore("player", {
 
     play(index = this.currentIndex) {
       if (index < 0 || index >= this.queue.length) {
-        console.warn("[player] play: index fora do range", index)
         return
       }
-      console.log("[player] play -> index", index, "track:", this.queue[index]?.title)
 
       if (this.sound) {
         try { this.sound.stop(); this.sound.unload() } catch {}
@@ -87,18 +80,15 @@ export const usePlayerStore = defineStore("player", {
 
     togglePlay() {
       if (!this.sound) {
-        console.warn("[player] togglePlay sem sound. Tentando criar.")
         if (this.currentIndex === -1 && this.queue.length > 0) {
           this.play(0)
         }
         return
       }
       if (this.isPlaying) {
-        console.log("[player] pause()")
         this.sound.pause()
         this.isPlaying = false
       } else {
-        console.log("[player] resume/play()")
         this.sound.play()
         this.isPlaying = true
       }
@@ -106,7 +96,6 @@ export const usePlayerStore = defineStore("player", {
 
     next() {
       if (this.currentIndex < this.queue.length - 1) {
-        console.log("[player] next")
         this.play(this.currentIndex + 1)
       } else {
         console.log("[player] next: fim da fila")
@@ -116,7 +105,6 @@ export const usePlayerStore = defineStore("player", {
 
     prev() {
       if (this.currentIndex > 0) {
-        console.log("[player] prev")
         this.play(this.currentIndex - 1)
       } else {
         console.log("[player] prev: já é a primeira")
@@ -126,18 +114,15 @@ export const usePlayerStore = defineStore("player", {
 
     seekTo(seconds) {
       if (!this.sound) return
-      console.log("[player] seekTo:", seconds)
       this.sound.seek(seconds)
     },
 
     setVolume(v) {
       this.volume = v
       if (this.sound) this.sound.volume(v)
-      console.log("[player] volume:", v)
     },
 
     stop() {
-      console.log("[player] stop()")
       if (this.sound) {
         try { this.sound.stop(); this.sound.unload() } catch {}
       }
@@ -147,7 +132,6 @@ export const usePlayerStore = defineStore("player", {
     },
 
     removeFromQueue(index) {
-      console.log("[player] removeFromQueue:", index)
       const removingCurrent = index === this.currentIndex
       this.queue.splice(index, 1)
 
@@ -165,7 +149,6 @@ export const usePlayerStore = defineStore("player", {
     },
 
     clearQueue() {
-      console.log("[player] clearQueue()")
       this.stop()
       this.queue = []
     },

@@ -1,6 +1,7 @@
 <template>
   <div class='container'>
     <AddMusicAdmin />
+    <Chaves/>
     <usersAdmin />
   </div>
 </template>

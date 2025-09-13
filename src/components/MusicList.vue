@@ -108,35 +108,46 @@ const showScrollTop = ref(false)
 
 const filtros = ref({ cantor: "", estilos: "", busca: "" })
 
+// Computed para cantores e estilos
 const cantores = computed(() =>
   [...new Set(musicas.value.map(m => m.cantor).filter(Boolean))]
 )
 const estilos = computed(() =>
-  [...new Set(musicas.value.map(m => m.estilo).filter(Boolean))]
+  [...new Set(musicas.value.flatMap(m => m.estilos || []).filter(Boolean))]
 )
 
+// Computed para filtrar músicas
 const filtradas = computed(() => {
+  const busca = filtros.value.busca.toLowerCase()
   return musicas.value.filter(m => {
-    const busca = filtros.value.busca.toLowerCase()
-    return (
-      (!filtros.value.cantor || m.cantor === filtros.value.cantor) &&
-      (!filtros.value.estilos || m.estilos === filtros.value.estilos) &&
-      (!busca ||
-        (m.title && m.title.toLowerCase().includes(busca)) ||
-        (m.cantor && m.cantor.toLowerCase().includes(busca)) ||
-        (m.estilos && m.estilos.toLowerCase().includes(busca)))
-    )
+    const cantorMatch = !filtros.value.cantor || m.cantor === filtros.value.cantor
+    const estiloMatch = !filtros.value.estilos || (m.estilos || []).includes(filtros.value.estilos)
+    const buscaMatch =
+      !busca ||
+      (m.title && m.title.toLowerCase().includes(busca)) ||
+      (m.cantor && m.cantor.toLowerCase().includes(busca)) ||
+      (m.estilos && m.estilos.some(e => e.toLowerCase().includes(busca)))
+    return cantorMatch && estiloMatch && buscaMatch
   })
 })
 
+// Buscar músicas
 async function fetchMusicas() {
+  loading.value = true
   try {
-    loading.value = true
-    console.log("[MusicList] buscando músicas do Firestore…")
     const q = query(collection(db, "musicas"), orderBy("createdAt", "desc"))
     const qs = await getDocs(q)
-    musicas.value = qs.docs.map(d => ({ id: d.id, ...d.data() }))
-    console.log("[MusicList] total:", musicas.value.length, musicas.value)
+    musicas.value = qs.docs.map(d => {
+      const data = d.data()
+      return {
+        id: d.id,
+        title: data.title || data.fileName || "Sem título",
+        cantor: data.cantor || "—",
+        estilos: Array.isArray(data.tipo) ? data.tipo : [],
+        downloadUrl: data.downloadUrl || "",
+        fileName: data.fileName || `${data.title || "musica"}.mp3`,
+      }
+    })
   } catch (err) {
     console.error("[MusicList] erro ao buscar:", err)
     error.value = "Erro ao buscar músicas."
@@ -145,27 +156,25 @@ async function fetchMusicas() {
   }
 }
 
+// Normaliza track
 function normalizeTrack(m) {
-  const t = {
-    title: m.title || m.fileName || "Sem título",
-    cantor: m.cantor || "—",
-    estilos: m.estilos || "—",
+  return {
+    title: m.title,
+    cantor: m.cantor,
+    estilos: m.estilos,
     downloadUrl: m.downloadUrl,
-    fileName: m.fileName || (m.title ? `${m.title}.mp3` : "musica.mp3"),
-    fileId: m.fileId || m.id,
+    fileName: m.fileName,
+    id: m.id,
   }
-  if (!t.downloadUrl) console.warn("[MusicList] registro sem downloadUrl:", m)
-  return t
 }
 
+// Ações
 function enqueue(m) {
   if (!userStore.hasActiveSubscription) {
     toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶")
     return
   }
-  const t = normalizeTrack(m)
-  console.log("[MusicList] enqueue:", t.title)
-  player.addToQueue(t, { playNow: false })
+  player.addToQueue(normalizeTrack(m), { playNow: false })
 }
 
 function playNow(m) {
@@ -173,53 +182,39 @@ function playNow(m) {
     toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶")
     return
   }
-  const t = normalizeTrack(m)
-  console.log("[MusicList] playNow:", t.title)
-  player.addToQueue(t, { playNow: true })
+  player.addToQueue(normalizeTrack(m), { playNow: true })
 }
 
 async function download(m) {
-  const t = normalizeTrack(m)
-  if (!t.downloadUrl) return
-  console.log("[MusicList] download:", t.title, t.downloadUrl)
-
+  if (!m.downloadUrl) return
   try {
-    const response = await fetch(t.downloadUrl)
-    if (!response.ok) throw new Error("Falha ao baixar arquivo")
-
-    const blob = await response.blob()
+    const res = await fetch(m.downloadUrl)
+    if (!res.ok) throw new Error("Falha ao baixar arquivo")
+    const blob = await res.blob()
     const url = window.URL.createObjectURL(blob)
-
     const a = document.createElement("a")
     a.href = url
-    a.download = t.fileName
-    a.rel = "noopener"
+    a.download = m.fileName
     document.body.appendChild(a)
     a.click()
     a.remove()
-
-    window.URL.revokeObjectURL(url) // libera memória
+    window.URL.revokeObjectURL(url)
   } catch (err) {
     console.error("[MusicList] erro no download:", err)
   }
 }
 
+// Scroll-top
+function handleScroll() { showScrollTop.value = window.scrollY > 200 }
+function scrollToTop() { window.scrollTo({ top: 0, behavior: "smooth" }) }
 
-// scroll-top
-function handleScroll() {
-  showScrollTop.value = window.scrollY > 200
-}
-function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: "smooth" })
-}
 onMounted(() => {
   fetchMusicas()
   window.addEventListener("scroll", handleScroll)
 })
-onBeforeUnmount(() => {
-  window.removeEventListener("scroll", handleScroll)
-})
+onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
 </script>
+
 
 
 <style scoped>

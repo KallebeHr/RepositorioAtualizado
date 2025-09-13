@@ -1,6 +1,7 @@
 <template>
   <header class="header-container" ref="headerRef">
     <div class="header-esquerda">
+      <!-- Logo e Drawer -->
       <div class="logo" @click="drawer = !drawer">
         <div class="checkboxtoggler" :class="{ open: drawer }">
           <div class="line-1"></div>
@@ -9,6 +10,7 @@
         </div>
       </div>
 
+      <!-- Navigation Drawer -->
       <v-navigation-drawer
         v-model="drawer"
         :location="$vuetify.display.mobile ? 'left' : undefined"
@@ -25,24 +27,17 @@
           </v-list-item>
         </v-list>
 
+        <!-- LIVRARIA -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">LIVRARIA</v-list-subheader>
           <v-list-item v-for="item in libraryItems" :key="item.title" class="drawer-item">
             <v-list-item-title>
-              <a :href="item.href">{{ item.title }}</a>
+              <a :href="item.href" @click="test">{{ item.title }}</a>
             </v-list-item-title>
           </v-list-item>
         </v-list>
 
-        <v-list>
-          <v-list-subheader class="drawer-subtitle">CONFIGURAÇÕES</v-list-subheader>
-          <v-list-item v-for="item in settingsItems" :key="item.title" class="drawer-item">
-            <v-list-item-title>
-              <a :href="item.href">{{ item.title }}</a>
-            </v-list-item-title>
-          </v-list-item>
-        </v-list>
-
+        <!-- EXTRAS -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">EXTRAS</v-list-subheader>
           <v-list-item class="drawer-item">
@@ -53,19 +48,16 @@
               >📸 Instagram</a>
             </v-list-item-title>
           </v-list-item>
-
           <v-list-item class="drawer-item">
             <v-list-item-title>
               <a href="https://youtube.com/seuapp" target="_blank">▶️ YouTube</a>
             </v-list-item-title>
           </v-list-item>
-
           <v-list-item class="drawer-item vip-link">
             <v-list-item-title>
               <a href="#" target="_blank">🌟 Grupo VIP</a>
             </v-list-item-title>
           </v-list-item>
-
           <v-list-item class="drawer-item support-link">
             <v-list-item-title>
               <a href="https://wa.me/5599999999999" target="_blank">💬 Suporte WhatsApp</a>
@@ -74,34 +66,18 @@
         </v-list>
       </v-navigation-drawer>
 
+      <!-- Main Menu -->
       <nav class="main-menu" v-if="!isMobile">
         <ul>
-          <li><a href="/AllMusic">MÚSICAS EM GERAL</a></li>
-          <li><a href="#">REPERTÓRIOS</a></li>
+          <li><a href="/AllMusic">MÚSICAS</a></li>
+          <li><a href="/Repertorios">REPERTÓRIOS</a></li>
         </ul>
       </nav>
 
-      <div class="search-box" :class="{ active: searchActive }" ref="searchRef">
-        <input
-          v-if="!isMobile || searchActive"
-          ref="searchInputRef"
-          class="input"
-          type="text"
-          placeholder="Buscar por Cantor, Música ou Repertório"
-        />
-        <svg viewBox="0 0 24 24" class="search__icon" @click="toggleSearch">
-          <path
-            d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 
-               4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 
-               5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 
-               11c0-4.135 3.365-7.5 7.5-7.5s7.5 
-               3.365 7.5 7.5-3.365 7.5-7.5 
-               7.5-7.5-3.365-7.5-7.5z"
-          />
-        </svg>
-      </div>
+ 
     </div>
 
+    <!-- Header Direito: Usuário -->
     <div class="header-direito">
       <div class="user-menu" ref="userRef" v-show="!(isMobile && searchActive)">
         <template v-if="userStore.user">
@@ -114,16 +90,14 @@
 
           <div v-if="dropdownOpen" class="dropdown">
             <ul>
-              <li><a href="#">🛒 Meu Carrinho</a></li>
               <li v-if="userStore.user?.role === 'admin'">
                 <a href="/admin"> ⚙ Administração</a>
               </li>
-             <li>
-  <a href="#" v-if="!assinaturaAtiva" @click.prevent="openAssinaturaModal">🔑 Ativar Assinatura</a>
-  <span v-else class="ativado">✅Assinatura ativa</span>
-</li>
-
-              <li><a href="#">🔔 Notificações</a></li>
+              <li>
+                <a href="#" v-if="!assinaturaAtiva" @click.prevent="openAssinaturaModal">🔑 Ativar Assinatura</a>
+                <span v-else class="ativado">✅Assinatura ativa</span>
+              </li>
+              <li><a href="#" @click.prevent="openNotificationsModal">🔔 Notificações</a></li>
               <li><a href="#" @click.prevent="logout">🚪 Sair</a></li>
             </ul>
           </div>
@@ -157,6 +131,26 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Modal Notificações -->
+    <v-dialog v-model="notificacoesModal" max-width="500px">
+      <v-card>
+        <v-card-title>📩 Minhas Notificações</v-card-title>
+        <v-card-text>
+          <div v-if="loadingMessages">Carregando mensagens...</div>
+          <div v-else-if="messages.length === 0">Nenhuma notificação encontrada.</div>
+          <ul v-else class="messages-list">
+            <li v-for="(msg, index) in messages" :key="index" class="message-item">
+              {{ msg }}
+            </li>
+          </ul>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text @click="notificacoesModal = false">Fechar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </header>
 </template>
 
@@ -173,52 +167,37 @@ import { useToast } from 'vue-toast-notification';
 const dropdownOpen = ref(false);
 const hasNotification = ref(true);
 const drawer = ref(false);
-
 const $toast = useToast();
-
 const searchActive = ref(false);
 const isMobile = ref(window.innerWidth <= 950);
-
 const searchRef = ref(null);
 const searchInputRef = ref(null);
 const userRef = ref(null);
 const headerRef = ref(null);
-
 const router = useRouter();
 const userStore = useUserStore();
 
-// controle assinatura
+// assinatura
 const assinaturaModal = ref(false);
 const chaveAssinatura = ref("");
-const assinaturaAtiva = ref(false); // 👈 controla se já está ativa
+const assinaturaAtiva = ref(false);
 
-// Itens do menu
+// notificações
+const notificacoesModal  = ref(false);
+const messages = ref([]);
+const loadingMessages = ref(false);
+
+// menus
 const menuItems = [
   { title: "INICIO", href: "/" },
-  { title: "MÚSICAS E CANTORES", href: "/AllMusic" },
-  { title: "REPERTÓRIOS", href: "#" },
-  { title: "RITMOS", href: "#" },
-  { title: "PLAYLISTS", href: "#" },
-  { title: "EM ALTA", href: "#" },
+  { title: "COMO ATIVAR OU BAIXAR", href: "/Tutoriais" },
+  { title: "MÚSICAS", href: "/AllMusic" },
+  { title: "REPERTÓRIOS", href: "/Repertorios" },
+  { title: "CANTORES", href: "/Cantores" },
 ];
+const libraryItems = [{ title: "FAVORITOS ", href: "#" }];
 
-const libraryItems = [
-  { title: "FAVORITOS", href: "#" },
-  { title: "RECENTES", href: "#" },
-  { title: "LOCAL (BAIXADAS)", href: "#" },
-  { title: "MINHAS PLAYLISTS", href: "#" },
-];
-
-const settingsItems = [
-  { title: "PERFIL", href: "#" },
-  { title: "NOTIFICAÇÕES", href: "#" },
-  { title: "ASSINATURAS", href: "#" },
-  { title: "CONFIGURAÇÕES", href: "#" },
-];
-
-// ------------------------------
-// Verifica assinatura ao montar
-// ------------------------------
+// funções de assinatura
 async function verificarAssinatura() {
   try {
     const user = auth.currentUser;
@@ -237,145 +216,117 @@ async function verificarAssinatura() {
   }
 }
 
-// Função para abrir modal (só abre se não estiver ativa)
 function openAssinaturaModal() {
   if (assinaturaAtiva.value) {
-    $toast.info("Sua conta já está ativa, aproveite os benefícios!", {
-      position: 'top-center'
-    });
+    $toast.info("Sua conta já está ativa!", { position: 'top-center' });
     return;
   }
   assinaturaModal.value = true;
   chaveAssinatura.value = "";
 }
 
-// Função de ativação de assinatura com contagem regressiva
 async function ativarAssinatura() {
   try {
     const user = auth.currentUser;
+    if (!user) return $toast.error("Usuário não autenticado");
+
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const userDoc = usersSnapshot.docs.find(
+      (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
+    );
+    if (!userDoc) return $toast.error("Usuário não encontrado");
+
+    const userId = userDoc.id;
+    const userData = userDoc.data();
+
+    if (userData.subscription === "ativa") {
+      assinaturaAtiva.value = true;
+      assinaturaModal.value = false;
+      return $toast.info("Já possui assinatura");
+    }
+
+    const querySnapshot = await getDocs(collection(db, "Chaves"));
+    if (querySnapshot.empty) return $toast.error("Nenhuma chave encontrada!");
+
+    const chaveDoc = querySnapshot.docs[0];
+    const keys = chaveDoc.data().Keys || [];
+    if (!keys.includes(chaveAssinatura.value)) return $toast.error("Chave inválida!");
+
+    await setDoc(doc(db, "users", userId), { subscription: "ativa" }, { merge: true });
+    assinaturaAtiva.value = true;
+    assinaturaModal.value = false;
+
+    // reload com contagem
+    for (let i = 3; i > 0; i--) {
+      $toast.info(`Recarregando em ${i}...`, { position: 'top' });
+      await new Promise(res => setTimeout(res, 1000));
+    }
+    window.location.reload();
+  } catch (err) {
+    console.error(err);
+    $toast.error("Erro ao ativar assinatura!");
+  }
+}
+
+// notificações
+async function openNotificationsModal() {
+  loadingMessages.value = true;
+
+  try {
+    const user = auth.currentUser;
     if (!user) {
-      $toast.error("Usuário não autenticado", { position: 'top' });
+      $toast.error("Usuário não autenticado", { position: "top" });
       return;
     }
 
-    // Busca usuário no Firestore
     const usersSnapshot = await getDocs(collection(db, "users"));
     const userDoc = usersSnapshot.docs.find(
       (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
     );
 
     if (!userDoc) {
-      $toast.error("Usuário não encontrado no Firestore", { position: 'top' });
+      $toast.error("Usuário não encontrado no Firestore", { position: "top" });
+      loadingMessages.value = false;
       return;
     }
 
-    const userId = userDoc.id;
     const userData = userDoc.data();
-
-    // Se já estiver ativa
-    if (userData.subscription === "ativa") {
-      assinaturaAtiva.value = true;
-      $toast.info("Sua conta já está ativa, aproveite os benefícios!", { position: 'top' });
-      assinaturaModal.value = false;
-      return;
-    }
-
-    // Busca chaves
-    const querySnapshot = await getDocs(collection(db, "Chaves"));
-    if (querySnapshot.empty) {
-      $toast.error("Nenhuma chave encontrada!", { position: 'top' });
-      return;
-    }
-
-    const chaveDoc = querySnapshot.docs[0];
-    const keys = chaveDoc.data().Keys || [];
-
-    if (!keys.includes(chaveAssinatura.value)) {
-      $toast.error("Chave inválida!", { position: 'top' });
-      return;
-    }
-
-    // Atualiza assinatura no Firestore
-    await setDoc(
-      doc(db, "users", userId),
-      { subscription: "ativa" },
-      { merge: true }
-    );
-
-    assinaturaAtiva.value = true;
-    $toast.success("Assinatura ativada com sucesso!", { position: 'top' });
-    assinaturaModal.value = false;
-
-    // 🔹 Contagem regressiva antes do reload
-    $toast.info("O site será recarregado em 3 segundos para ativar a assinatura!", { position: 'top' });
-    for (let i = 3; i > 0; i--) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      $toast.info(`${i}...`, { position: 'top' });
-    }
-
-    // 🔹 Recarrega a página
-    window.location.reload();
-
+    messages.value = userData.messages || [];
+    notificacoesModal.value = true;
   } catch (err) {
-    console.error("Erro ao ativar assinatura:", err);
-    $toast.error("Erro ao ativar assinatura!", { position: 'top' });
+    console.error("Erro ao abrir notificações:", err);
+    $toast.error("Erro ao abrir notificações!", { position: "top" });
+  } finally {
+    loadingMessages.value = false;
   }
 }
 
-
-// ------------------------------
-// Outras funções do header
-// ------------------------------
-function toggleDropdown() {
-  dropdownOpen.value = !dropdownOpen.value;
-}
-
+// -----------------
+// Outras funções
+// -----------------
+function toggleDropdown() { dropdownOpen.value = !dropdownOpen.value; }
 function toggleSearch() {
   if (!isMobile.value) return;
   searchActive.value = !searchActive.value;
-  if (searchActive.value) {
-    nextTick(() => {
-      searchInputRef.value?.focus();
-    });
-  }
+  if (searchActive.value) nextTick(() => searchInputRef.value?.focus());
 }
 
 async function logout() {
-  handleLogout();
-  try {
-    await signOut(auth);
-    userStore.clearUser();
-    window.location.href = "/";
-  } catch (err) {
-    console.error("Erro ao sair:", err);
-  }
+  try { await signOut(auth); userStore.clearUser(); window.location.href = "/"; } 
+  catch (err) { console.error(err); }
 }
 
-function goToAuth(mode) {
-  router.push({ path: "/RegisterAndLogin", query: { mode } });
-}
-
-async function handleLogout() {
-  await userStore.logout();
-  dropdownOpen.value = false;
-}
+function goToAuth(mode) { router.push({ path: "/RegisterAndLogin", query: { mode } }); }
 
 function handleClickOutside(event) {
-  if (dropdownOpen.value && userRef.value && !userRef.value.contains(event.target)) {
-    dropdownOpen.value = false;
-  }
-
-  if (searchActive.value && searchRef.value && !searchRef.value.contains(event.target)) {
-    searchActive.value = false;
-  }
+  if (dropdownOpen.value && userRef.value && !userRef.value.contains(event.target)) dropdownOpen.value = false;
+  if (searchActive.value && searchRef.value && !searchRef.value.contains(event.target)) searchActive.value = false;
 }
 
 function handleResize() {
   const wasMobile = isMobile.value;
   isMobile.value = window.innerWidth <= 950;
-  if (!isMobile.value && wasMobile) {
-    searchActive.value = false;
-  }
+  if (!isMobile.value && wasMobile) searchActive.value = false;
 }
 
 onMounted(() => {
@@ -389,7 +340,6 @@ onBeforeUnmount(() => {
   document.removeEventListener("click", handleClickOutside);
 });
 </script>
-
 
 
 <style scoped>
@@ -530,6 +480,41 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 5px;
   font-weight: 500;
+}
+.messages-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px; /* Limite de altura do modal */
+  overflow-y: auto;  /* Scroll quando muitas mensagens */
+}
+
+.message-item {
+  background-color: #1c1c1c;
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background 0.3s;
+}
+
+.message-item:hover {
+  background-color: #00d1b2; /* Cor de destaque ao passar o mouse */
+  color: #000;
+}
+
+.message-text {
+  font-size: 14px;
+  color: #fff;
+  word-wrap: break-word;
+}
+
+.message-date {
+  font-size: 11px;
+  color: #888;
+  text-align: right;
 }
 
 .user-name {

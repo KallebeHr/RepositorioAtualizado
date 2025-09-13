@@ -1,5 +1,6 @@
 <template>
   <div class="upload-page">
+    
     <header class="header">
       <h1 class="title">🚀 Upload de Música</h1>
       <p class="subtitle">Adicione suas músicas, cadastre estilos e cantores facilmente!</p>
@@ -138,7 +139,6 @@ async function uploadMusic(form, index) {
   uploading.value = true
   error.value = ""
   form.success = false
-
   try {
     const formData = new FormData()
     formData.append("file", form.file)
@@ -156,7 +156,6 @@ async function uploadMusic(form, index) {
       cantor: form.cantor,
       createdAt: serverTimestamp(),
     })
-
     form.success = true
   } catch (err) {
     console.error(err)
@@ -180,9 +179,14 @@ onMounted(() => {
 .upload-page {
   width: 100%;
   min-height: 100vh;
-  padding: 40px 20px;
+  padding: 40px 0px;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
+  .overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.8); /* escurece o fundo */
+}
 }
 
 .header {
