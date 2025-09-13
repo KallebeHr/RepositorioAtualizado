@@ -17,5 +17,6 @@
     justify-self: center;
     height: auto;
     flex-direction: column;
+    background-color: #121212;
 }
 </style>

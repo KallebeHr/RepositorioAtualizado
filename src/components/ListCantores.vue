@@ -162,6 +162,8 @@ onMounted(fetchMusicas)
   width: 100%;
   padding: 24px 32px;
   background: #111;
+    height: 98vh;
+
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
 }

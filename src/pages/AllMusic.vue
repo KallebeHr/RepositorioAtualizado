@@ -12,5 +12,8 @@ import MusicList from '@/components/MusicList.vue';
 <style scoped>
 .container{
     display:flex;
+    background-color: #121212;
+    height: 98vh;
+
     }
 </style>

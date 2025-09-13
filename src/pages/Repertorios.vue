@@ -146,7 +146,8 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
 .repertorio-page {
   width: 100%;
   padding: 24px 32px;
-  background: #111;
+    background-color: #121212;
+    height: 98vh;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
   display: flex;
