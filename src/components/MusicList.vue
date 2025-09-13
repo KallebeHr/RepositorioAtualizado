@@ -186,23 +186,32 @@ function playNow(m) {
 }
 
 async function download(m) {
-  if (!m.downloadUrl) return
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  if (!m.downloadUrl) return;
+
   try {
-    const res = await fetch(m.downloadUrl)
-    if (!res.ok) throw new Error("Falha ao baixar arquivo")
-    const blob = await res.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = m.fileName
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    window.URL.revokeObjectURL(url)
+    const res = await fetch(m.downloadUrl);
+    if (!res.ok) throw new Error("Falha ao baixar arquivo");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = m.fileName || "musica.mp3";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
   } catch (err) {
-    console.error("[MusicList] erro no download:", err)
+    console.error("[MusicList] erro no download:", err);
+    toast.error("Erro ao baixar a música!");
   }
 }
+
 
 // Scroll-top
 function handleScroll() { showScrollTop.value = window.scrollY > 200 }
