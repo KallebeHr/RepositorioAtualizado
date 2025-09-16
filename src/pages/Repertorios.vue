@@ -39,9 +39,6 @@
       Nenhuma música disponível.
     </div>
 
-    <button v-show="showScrollTop" class="scroll-top" @click="scrollToTop">
-      ⬆
-    </button>
   </div>
 </template>
 
@@ -223,23 +220,6 @@ button.primary:hover::after {
 .status { margin: 20px 0; color: #e0e0e0; text-align: center; }
 .status.error { color: #ff7676; }
 
-.scroll-top {
-  position: fixed;
-  bottom: 100px;
-  left: 20px;
-  background: #1db954;
-  color: #0b0b0b;
-  border: none;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  font-size: 20px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  transition: all 0.2s;
-  z-index: 1000;
-}
-.scroll-top:hover { filter: brightness(1.1); }
 
 @media (max-width: 768px) {
   .card-repertorio { padding: 24px; }

@@ -47,7 +47,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+      background-color: #121212;
+
+
   color: #fff;
   text-align: center;
 }

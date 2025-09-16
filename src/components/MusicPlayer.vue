@@ -274,8 +274,9 @@ onBeforeUnmount(() => {
   border-top: 1px solid #232323;
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
-  gap: 16px;
+  gap: 6px;
   align-items: center;
+  margin-top: 3rem;
   padding: 10px 16px;
   z-index: 40;
   font-family: Inter, system-ui, sans-serif;

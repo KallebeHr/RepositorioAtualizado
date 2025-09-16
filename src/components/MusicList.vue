@@ -87,6 +87,8 @@
     <button v-show="showScrollTop" class="scroll-top" @click="scrollToTop">
       ⬆
     </button>
+        <footerComplete  />
+
   </div>
 </template>
 
@@ -233,6 +235,8 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
   background: #111;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
+  margin-bottom: 24px;
+
 }
 
 /* Header */
@@ -264,6 +268,8 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
 /* Chips */
 .chips {
   margin-bottom: 24px;
+  
+
 }
 .chips h3 {
   margin-bottom: 10px;
@@ -346,8 +352,8 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 22px;
-  margin-bottom: 5rem;
+  gap: 10px;
+  
 }
 
 .card {
@@ -358,6 +364,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
   flex-direction: column;
   border: 1px solid #242424;
   transition: all 0.25s ease;
+
 }
 .card:hover {
   background: #1d1d1d;
@@ -452,8 +459,8 @@ button.ghost:hover {
 /* Botão de voltar ao topo */
 .scroll-top {
   position: fixed;
-  bottom: 100px;
-  left: 20px;
+  bottom: 250px;
+  right: 20px;
   background: #1db954;
   color: #0b0b0b;
   border: none;

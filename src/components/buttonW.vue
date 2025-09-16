@@ -27,7 +27,7 @@ const openWhatsApp = () => {
 <style scoped>
 .support-buttons {
   position: fixed;
-  bottom: 80px;
+  bottom: 300px;
   right: 20px;
   display: flex;
   flex-direction: column;
@@ -39,7 +39,7 @@ const openWhatsApp = () => {
   display: flex;
   align-items: center;
   justify-content: flex-end; /* ícones à direita */
-  width: 45px;
+  width: 50px;
   height: 45px;
   border: none;
   border-radius: 50%;
