@@ -3,14 +3,14 @@
     <div class="footer-container">
       <!-- Logo / Nome -->
       <div class="footer-brand">
-        <h2>🎶 MusicApp</h2>
+        <h2>🎶 Repertorio Atualizado</h2>
         <p>Seu repertório digital de músicas</p>
       </div>
 
       <!-- Links rápidos -->
       <nav class="footer-links">
         <a href="#">Repertório</a>
-        <a href="#">Planos</a>
+        <a href="#">Planos</a> 
         <a href="#">Contato</a>
         <a href="#">Sobre</a>
       </nav>
@@ -18,21 +18,20 @@
       <!-- Redes sociais -->
       <div class="footer-social">
         <a href="#" aria-label="Instagram">📸</a>
-        <a href="#" aria-label="WhatsApp">💬</a>
+        <a href="https://wa.me/5586994227005?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20" aria-label="WhatsApp">💬</a>
         <a href="#" aria-label="YouTube">▶</a>
       </div>
     </div>
 
     <!-- Créditos -->
     <div class="footer-bottom">
+      <p class="credit">feito por <a href="https://instagram.com/kallebemax" target="_blank">@KallebeMax</a>, entrar em contato</p>
       <p>© {{ new Date().getFullYear() }} MusicApp. Todos os direitos reservados.</p>
-      <p class="credit">feito por <a href="https://instagram.com/kallebe" target="_blank">@kallebe</a>, entrar em contato</p>
     </div>
   </footer>
 </template>
 
 <script setup>
-// Nenhuma lógica JS aqui, apenas markup do footer
 </script>
 
 <style scoped>

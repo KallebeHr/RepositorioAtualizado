@@ -58,6 +58,8 @@ import { db } from "@/firebase"
 import { collection, query, orderBy, getDocs } from "firebase/firestore"
 import JSZip from "jszip"
 import { saveAs } from "file-saver"
+import { useToast } from "vue-toast-notification";
+const toast = useToast();
 
 const musicas = ref([])
 const loading = ref(true)
@@ -99,59 +101,62 @@ function selecionarCantor(artista) {
 }
 
 async function download(m) {
-  if (!m.downloadUrl) return
-  try {
-    const response = await fetch(m.downloadUrl)
-    if (!response.ok) throw new Error("Falha ao baixar arquivo")
+   toast.warning("Desativa por enquanto 🎶");
 
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
+  // if (!m.downloadUrl) return
+  // try {
+  //   const response = await fetch(m.downloadUrl)
+  //   if (!response.ok) throw new Error("Falha ao baixar arquivo")
 
-    const a = document.createElement("a")
-    a.href = url
-    a.download = m.fileName || `${m.title || "musica"}.mp3`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
+  //   const blob = await response.blob()
+  //   const url = window.URL.createObjectURL(blob)
 
-    window.URL.revokeObjectURL(url)
-  } catch (err) {
-    console.error("[Cantores] erro no download:", err)
-  }
+  //   const a = document.createElement("a")
+  //   a.href = url
+  //   a.download = m.fileName || `${m.title || "musica"}.mp3`
+  //   document.body.appendChild(a)
+  //   a.click()
+  //   a.remove()
+
+  //   window.URL.revokeObjectURL(url)
+  // } catch (err) {
+  //   console.error("[Cantores] erro no download:", err)
+  // }
 }
 
 async function baixarTodas(artista) {
-  if (!artista.musicas.length) return
+   toast.warning("Desativa por enquanto 🎶");
+  // if (!artista.musicas.length) return
 
-  const zip = new JSZip()
-  progress.value = { show: true, percent: 0 }
+  // const zip = new JSZip()
+  // progress.value = { show: true, percent: 0 }
 
-  let count = 0
-  for (const m of artista.musicas) {
-    try {
-      const response = await fetch(m.downloadUrl)
-      const blob = await response.blob()
-      const nomeArquivo = m.fileName || `${m.title || "musica"}.mp3`
-      zip.file(nomeArquivo, blob)
+  // let count = 0
+  // for (const m of artista.musicas) {
+  //   try {
+  //     const response = await fetch(m.downloadUrl)
+  //     const blob = await response.blob()
+  //     const nomeArquivo = m.fileName || `${m.title || "musica"}.mp3`
+  //     zip.file(nomeArquivo, blob)
 
-      count++
-      progress.value.percent = Math.round((count / artista.musicas.length) * 100)
-    } catch (err) {
-      console.error(`[Cantores] erro baixando ${m.title}:`, err)
-    }
-  }
+  //     count++
+  //     progress.value.percent = Math.round((count / artista.musicas.length) * 100)
+  //   } catch (err) {
+  //     console.error(`[Cantores] erro baixando ${m.title}:`, err)
+  //   }
+  // }
 
-  // Gera o ZIP
-  const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
-    progress.value.percent = Math.round(metadata.percent)
-  })
+  // // Gera o ZIP
+  // const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
+  //   progress.value.percent = Math.round(metadata.percent)
+  // })
 
-  saveAs(content, `${artista.nome}-musicas.zip`)
+  // saveAs(content, `${artista.nome}-musicas.zip`)
 
-  // Reset progress
-  setTimeout(() => {
-    progress.value = { show: false, percent: 0 }
-  }, 1500)
+  // // Reset progress
+  // setTimeout(() => {
+  //   progress.value = { show: false, percent: 0 }
+  // }, 1500)
 }
 
 onMounted(fetchMusicas)

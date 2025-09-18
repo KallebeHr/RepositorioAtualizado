@@ -9,6 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AddMusicAdmin: typeof import('./src/components/addMusicAdmin.vue')['default']
+    AddMusicListAdmin: typeof import('./src/components/AddMusicListAdmin.vue')['default']
     AppFooter: typeof import('./src/components/AppFooter.vue')['default']
     Button: typeof import('./src/components/button.vue')['default']
     ButtonW: typeof import('./src/components/buttonW.vue')['default']

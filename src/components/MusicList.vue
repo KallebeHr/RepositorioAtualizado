@@ -2,9 +2,12 @@
   <div class="music-page">
     <header class="header">
       <h1 class="title">🎶 Repertório Completo 🎶</h1>
-      <p class="subtitle">Explore músicas, artistas e estilos • Adicione à fila • Toque agora • Baixe</p>
+      <p class="subtitle">
+        Explore músicas, artistas e estilos • Adicione à fila • Toque agora • Baixe
+      </p>
     </header>
 
+    <!-- Cantores -->
     <section class="chips">
       <h3>Cantores</h3>
       <div class="chip-grid">
@@ -20,8 +23,9 @@
       </div>
     </section>
 
+    <!-- Estilos -->
     <section class="chips">
-      <h3>estilos</h3>
+      <h3>Estilos</h3>
       <div class="chip-grid">
         <button
           v-for="r in estilos"
@@ -35,6 +39,7 @@
       </div>
     </section>
 
+    <!-- Busca -->
     <section class="search">
       <input
         v-model="filtros.busca"
@@ -43,6 +48,7 @@
       />
     </section>
 
+    <!-- Selects extras -->
     <section class="filters">
       <div class="filter">
         <label>Cantores</label>
@@ -52,7 +58,7 @@
         </select>
       </div>
       <div class="filter">
-        <label>estilos</label>
+        <label>Estilos</label>
         <select v-model="filtros.estilos">
           <option value="">Todos</option>
           <option v-for="r in estilos" :key="r" :value="r">{{ r }}</option>
@@ -60,87 +66,108 @@
       </div>
     </section>
 
+    <!-- Status -->
     <div v-if="loading" class="status">Carregando músicas...</div>
     <div v-if="error" class="status error">{{ error }}</div>
 
-    <div v-if="!loading && filtradas.length" class="grid">
-      <div v-for="m in filtradas" :key="m.fileId || m.id" class="card">
-        <img src="/LogoMusic.jpg" class="cover" />
-        <div class="info">
-          <h2 class="track-title">{{ m.title || m.fileName || "—" }}</h2>
-          <p class="track-meta">
-            <span>{{ m.cantor || "—" }}</span> • <span>{{ m.estilos || "—" }}</span>
-          </p>
+    <!-- Expansion por cantor -->
+    <v-expansion-panels v-if="!loading && cantores.length">
+  <template v-for="(c, i) in cantores" :key="c + '-' + i">
+    <v-expansion-panel>
+      <v-expansion-panel-title>
+        {{ c }}
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        <div class="grid">
+          <div v-for="m in musicasPorCantor(c)" :key="m.id" class="card">
+            <img src="/LogoMusic.jpg" class="cover" />
+            <div class="info">
+              <h2 class="track-title">{{ m.title }}</h2>
+              <p class="track-meta">
+                <span>{{ m.cantor }}</span> •
+                <span>{{ m.estilos?.join(', ') || '—' }}</span>
+              </p>
+            </div>
+            <div class="actions">
+              <button class="ghost" @click="enqueue(m)" title="Adicionar à fila">➕</button>
+              <button class="primary" @click="playNow(m)" title="Tocar agora">▶</button>
+              <button class="ghost" @click="download(m)" title="Baixar">⬇</button>
+            </div>
+          </div>
         </div>
-        <div class="actions">
-          <button class="ghost" @click="enqueue(m)" title="Adicionar à fila">➕</button>
-          <button class="primary" @click="playNow(m)" title="Tocar agora">▶</button>
-          <button class="ghost" @click="download(m)" title="Baixar">⬇</button>
-        </div>
-      </div>
-    </div>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  </template>
+</v-expansion-panels>
 
+
+    <!-- Se não tiver músicas -->
     <div v-if="!loading && !filtradas.length" class="status">
       Nenhuma música encontrada.
     </div>
 
-    <button v-show="showScrollTop" class="scroll-top" @click="scrollToTop">
-      ⬆
-    </button>
-        <footerComplete  />
-
+    <footerComplete />
   </div>
 </template>
 
+
+
+
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue"
-import { db } from "@/firebase"
-import { collection, query, orderBy, getDocs } from "firebase/firestore"
-import { usePlayerStore } from "@/stores/usePlayerStore"
-import { useUserStore } from "@/stores/userStore"
-import { useToast } from "vue-toast-notification"
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { db } from "@/firebase";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
+import { usePlayerStore } from "@/stores/usePlayerStore";
+import { useUserStore } from "@/stores/userStore";
+import { useToast } from "vue-toast-notification";
 
-const musicas = ref([])
-const loading = ref(true)
-const error = ref("")
-const player = usePlayerStore()
-const userStore = useUserStore()
-const toast = useToast()
-const showScrollTop = ref(false)
+const musicas = ref([]);
+const loading = ref(true);
+const error = ref("");
+const player = usePlayerStore();
+const userStore = useUserStore();
+const toast = useToast();
+const showScrollTop = ref(false);
 
-const filtros = ref({ cantor: "", estilos: "", busca: "" })
+const filtros = ref({ cantor: "", estilos: "", busca: "" });
 
-// Computed para cantores e estilos
+// Cantores e estilos
 const cantores = computed(() =>
-  [...new Set(musicas.value.map(m => m.cantor).filter(Boolean))]
-)
+  [...new Set(musicas.value.map((m) => m.cantor).filter(Boolean))]
+);
 const estilos = computed(() =>
-  [...new Set(musicas.value.flatMap(m => m.estilos || []).filter(Boolean))]
-)
+  [...new Set(musicas.value.flatMap((m) => m.estilos || []).filter(Boolean))]
+);
 
-// Computed para filtrar músicas
+// Filtradas
 const filtradas = computed(() => {
-  const busca = filtros.value.busca.toLowerCase()
-  return musicas.value.filter(m => {
-    const cantorMatch = !filtros.value.cantor || m.cantor === filtros.value.cantor
-    const estiloMatch = !filtros.value.estilos || (m.estilos || []).includes(filtros.value.estilos)
+  const busca = filtros.value.busca.toLowerCase();
+  return musicas.value.filter((m) => {
+    const cantorMatch = !filtros.value.cantor || m.cantor === filtros.value.cantor;
+    const estiloMatch =
+      !filtros.value.estilos || (m.estilos || []).includes(filtros.value.estilos);
     const buscaMatch =
       !busca ||
-      (m.title && m.title.toLowerCase().includes(busca)) ||
-      (m.cantor && m.cantor.toLowerCase().includes(busca)) ||
-      (m.estilos && m.estilos.some(e => e.toLowerCase().includes(busca)))
-    return cantorMatch && estiloMatch && buscaMatch
-  })
-})
+      m.title?.toLowerCase().includes(busca) ||
+      m.cantor?.toLowerCase().includes(busca) ||
+      m.estilos?.some((e) => e.toLowerCase().includes(busca));
+    return cantorMatch && estiloMatch && buscaMatch;
+  });
+});
 
-// Buscar músicas
+// Agrupa músicas por cantor
+function musicasPorCantor(c) {
+  return filtradas.value.filter((m) => m.cantor === c);
+}
+
+// Fetch
 async function fetchMusicas() {
-  loading.value = true
+  loading.value = true;
   try {
-    const q = query(collection(db, "musicas"), orderBy("createdAt", "desc"))
-    const qs = await getDocs(q)
-    musicas.value = qs.docs.map(d => {
-      const data = d.data()
+    const q = query(collection(db, "musicas"), orderBy("createdAt", "desc"));
+    const qs = await getDocs(q);
+    musicas.value = qs.docs.map((d) => {
+      const data = d.data();
       return {
         id: d.id,
         title: data.title || data.fileName || "Sem título",
@@ -148,17 +175,17 @@ async function fetchMusicas() {
         estilos: Array.isArray(data.tipo) ? data.tipo : [],
         downloadUrl: data.downloadUrl || "",
         fileName: data.fileName || `${data.title || "musica"}.mp3`,
-      }
-    })
+      };
+    });
   } catch (err) {
-    console.error("[MusicList] erro ao buscar:", err)
-    error.value = "Erro ao buscar músicas."
+    console.error("[MusicList] erro ao buscar:", err);
+    error.value = "Erro ao buscar músicas.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
-// Normaliza track
+// Player
 function normalizeTrack(m) {
   return {
     title: m.title,
@@ -167,38 +194,31 @@ function normalizeTrack(m) {
     downloadUrl: m.downloadUrl,
     fileName: m.fileName,
     id: m.id,
-  }
+  };
 }
-
-// Ações
 function enqueue(m) {
   if (!userStore.hasActiveSubscription) {
-    toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶")
-    return
+    toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶");
+    return;
   }
-  player.addToQueue(normalizeTrack(m), { playNow: false })
+  player.addToQueue(normalizeTrack(m), { playNow: false });
 }
-
 function playNow(m) {
   if (!userStore.hasActiveSubscription) {
-    toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶")
-    return
+    toast.warning("Você precisa ativar a assinatura para escutar músicas 🎶");
+    return;
   }
-  player.addToQueue(normalizeTrack(m), { playNow: true })
+  player.addToQueue(normalizeTrack(m), { playNow: true });
 }
-
 async function download(m) {
   if (!userStore.hasActiveSubscription) {
     toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
     return;
   }
-
   if (!m.downloadUrl) return;
-
   try {
     const res = await fetch(m.downloadUrl);
     if (!res.ok) throw new Error("Falha ao baixar arquivo");
-
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -214,19 +234,19 @@ async function download(m) {
   }
 }
 
-
-// Scroll-top
-function handleScroll() { showScrollTop.value = window.scrollY > 200 }
-function scrollToTop() { window.scrollTo({ top: 0, behavior: "smooth" }) }
-
+// Scroll
+function handleScroll() {
+  showScrollTop.value = window.scrollY > 200;
+}
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 onMounted(() => {
-  fetchMusicas()
-  window.addEventListener("scroll", handleScroll)
-})
-onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
+  fetchMusicas();
+  window.addEventListener("scroll", handleScroll);
+});
+onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
 </script>
-
-
 
 <style scoped>
 .music-page {
@@ -235,8 +255,6 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
   background: #111;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
-  margin-bottom: 24px;
-
 }
 
 /* Header */
@@ -250,15 +268,6 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
   background: linear-gradient(90deg, #1db954, #00c3ff, #1db954);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine 4s infinite linear;
-}
-@keyframes shine {
-  from {
-    background-position: -200px;
-  }
-  to {
-    background-position: 200px;
-  }
 }
 .subtitle {
   color: #9aa0a6;
@@ -268,14 +277,6 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
 /* Chips */
 .chips {
   margin-bottom: 24px;
-  
-
-}
-.chips h3 {
-  margin-bottom: 10px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #ccc;
 }
 .chip-grid {
   display: flex;
@@ -290,10 +291,6 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
   border: 1px solid #2a2a2a;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s;
-}
-.chip:hover {
-  background: #2a2a2a;
 }
 .chip.active {
   background: #1db954;
@@ -349,85 +346,63 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
   color: #ff7676;
 }
 
+/* Grid de cards */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
-  
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
 }
-
 .card {
   background: #181818;
   border-radius: 16px;
   padding: 16px;
+  border: 1px solid #242424;
   display: flex;
   flex-direction: column;
-  border: 1px solid #242424;
-  transition: all 0.25s ease;
-
+  justify-content: space-between;
+  min-height: 300px;
 }
-.card:hover {
-  background: #1d1d1d;
-  border-color: #2a2a2a;
-  transform: translateY(-4px);
-}
-
 .cover {
   width: 100%;
-  height: 200px;
+  height: 180px;
   border-radius: 12px;
   object-fit: cover;
   margin-bottom: 12px;
 }
-
-.info {
-  flex: 1;
-}
 .track-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  margin: 0 0 6px;
-  color: #fff;
+  margin: 0 0 4px;
 }
 .track-meta {
-  font-size: 14px;
+  font-size: 13px;
   color: #9aa0a6;
 }
-
 .actions {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  margin-top: 12px;
+  margin-top: auto;
+  gap: 8px;
 }
 button.primary,
 button.ghost {
   flex: 1;
-  height: 40px;
+  height: 38px;
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: none;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s;
 }
 button.primary {
   background: #1db954;
   color: #0b0b0b;
 }
-button.primary:hover {
-  filter: brightness(1.08);
-}
 button.ghost {
   background: #202020;
   color: #eaeaea;
-  border-color: #2a2a2a;
-}
-button.ghost:hover {
-  background: #2a2a2a;
-  border-color: #333;
 }
 
-/* Mobile: cards horizontais */
+/* Mobile - cards em lista */
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: 1fr;
@@ -435,15 +410,20 @@ button.ghost:hover {
   .card {
     flex-direction: row;
     align-items: center;
+    min-height: auto;
     gap: 12px;
   }
   .cover {
-    width: 80px;
-    height: 80px;
-    margin-bottom: 0;
+    width: 70px;
+    height: 70px;
+    margin: 0;
+  }
+  .info {
+    flex: 1;
   }
   .actions {
     flex-direction: column;
+    justify-content: center;
     gap: 6px;
     margin-top: 0;
   }
@@ -456,10 +436,10 @@ button.ghost:hover {
   }
 }
 
-/* Botão de voltar ao topo */
+/* Botão voltar ao topo */
 .scroll-top {
   position: fixed;
-  bottom: 250px;
+  bottom: 120px;
   right: 20px;
   background: #1db954;
   color: #0b0b0b;
@@ -469,11 +449,5 @@ button.ghost:hover {
   height: 48px;
   font-size: 20px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  transition: all 0.2s;
-  z-index: 1000;
-}
-.scroll-top:hover {
-  filter: brightness(1.1);
 }
 </style>

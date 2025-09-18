@@ -87,45 +87,47 @@ function normalizeTrack(m) {
 
 // Download ZIP
 async function handleDownloadAll() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
-    return
-  }
+   toast.warning("Desativa por enquanto 🎶");
 
-  try {
-    const tracks = musicas.value.filter(m => m.downloadUrl)
-    if (!tracks.length) {
-      toast.warning("Nenhuma música disponível para download")
-      return
-    }
+  // if (!userStore.hasActiveSubscription) {
+  //   toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
+  //   return
+  // }
 
-    const JSZip = (await import("jszip")).default
-    const zip = new JSZip()
-    progress.value = 0
+  // try {
+  //   const tracks = musicas.value.filter(m => m.downloadUrl)
+  //   if (!tracks.length) {
+  //     toast.warning("Nenhuma música disponível para download")
+  //     return
+  //   }
 
-    for (let i = 0; i < tracks.length; i++) {
-      const t = normalizeTrack(tracks[i])
-      const res = await fetch(t.downloadUrl)
-      const blob = await res.blob()
-      zip.file(t.fileName, blob)
-      progress.value = Math.round(((i + 1) / tracks.length) * 100)
-    }
+  //   const JSZip = (await import("jszip")).default
+  //   const zip = new JSZip()
+  //   progress.value = 0
 
-    const content = await zip.generateAsync({ type: "blob" })
-    const a = document.createElement("a")
-    a.href = URL.createObjectURL(content)
-    a.download = `repertorio-setembro.zip`
-    a.click()
-    URL.revokeObjectURL(a.href)
+  //   for (let i = 0; i < tracks.length; i++) {
+  //     const t = normalizeTrack(tracks[i])
+  //     const res = await fetch(t.downloadUrl)
+  //     const blob = await res.blob()
+  //     zip.file(t.fileName, blob)
+  //     progress.value = Math.round(((i + 1) / tracks.length) * 100)
+  //   }
 
-    toast.success("Repertório completo baixado!")
-    progress.value = 100
-    setTimeout(() => progress.value = null, 2000)
-  } catch (err) {
-    console.error("[Repertorio] erro no ZIP:", err)
-    toast.error("Falha ao baixar ZIP")
-    progress.value = null
-  }
+  //   const content = await zip.generateAsync({ type: "blob" })
+  //   const a = document.createElement("a")
+  //   a.href = URL.createObjectURL(content)
+  //   a.download = `repertorio-setembro.zip`
+  //   a.click()
+  //   URL.revokeObjectURL(a.href)
+
+  //   toast.success("Repertório completo baixado!")
+  //   progress.value = 100
+  //   setTimeout(() => progress.value = null, 2000)
+  // } catch (err) {
+  //   console.error("[Repertorio] erro no ZIP:", err)
+  //   toast.error("Falha ao baixar ZIP")
+  //   progress.value = null
+  // }
 }
 
 // Scroll-top
