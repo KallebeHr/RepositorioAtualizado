@@ -7,38 +7,6 @@
       </p>
     </header>
 
-    <!-- Cantores -->
-    <section class="chips">
-      <h3>Cantores</h3>
-      <div class="chip-grid">
-        <button
-          v-for="c in cantores"
-          :key="c"
-          class="chip"
-          :class="{ active: filtros.cantor === c }"
-          @click="filtros.cantor = filtros.cantor === c ? '' : c"
-        >
-          {{ c }}
-        </button>
-      </div>
-    </section>
-
-    <!-- Estilos -->
-    <section class="chips">
-      <h3>Estilos</h3>
-      <div class="chip-grid">
-        <button
-          v-for="r in estilos"
-          :key="r"
-          class="chip"
-          :class="{ active: filtros.estilos === r }"
-          @click="filtros.estilos = filtros.estilos === r ? '' : r"
-        >
-          {{ r }}
-        </button>
-      </div>
-    </section>
-
     <!-- Busca -->
     <section class="search">
       <input
@@ -48,21 +16,36 @@
       />
     </section>
 
-    <!-- Selects extras -->
+    <!-- Filtros com selects -->
     <section class="filters">
+      <!-- Cantores -->
       <div class="filter">
-        <label>Cantores</label>
-        <select v-model="filtros.cantor">
-          <option value="">Todos</option>
+        <label>Adicionar Cantor</label>
+        <select v-model="cantorSelecionado" @change="addCantor">
+          <option value="">Selecionar</option>
           <option v-for="c in cantores" :key="c" :value="c">{{ c }}</option>
         </select>
+        <div class="chip-grid">
+          <div v-for="c in filtros.cantores" :key="c" class="chip active">
+            {{ c }}
+            <span class="chip-remove" @click="removeCantor(c)">✕</span>
+          </div>
+        </div>
       </div>
+
+      <!-- Estilos -->
       <div class="filter">
-        <label>Estilos</label>
-        <select v-model="filtros.estilos">
-          <option value="">Todos</option>
+        <label>Adicionar Estilo</label>
+        <select v-model="estiloSelecionado" @change="addEstilo">
+          <option value="">Selecionar</option>
           <option v-for="r in estilos" :key="r" :value="r">{{ r }}</option>
         </select>
+        <div class="chip-grid">
+          <div v-for="r in filtros.estilos" :key="r" class="chip active">
+            {{ r }}
+            <span class="chip-remove" @click="removeEstilo(r)">✕</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -70,36 +53,24 @@
     <div v-if="loading" class="status">Carregando músicas...</div>
     <div v-if="error" class="status error">{{ error }}</div>
 
-    <!-- Expansion por cantor -->
-    <v-expansion-panels v-if="!loading && cantores.length">
-  <template v-for="(c, i) in cantores" :key="c + '-' + i">
-    <v-expansion-panel>
-      <v-expansion-panel-title>
-        {{ c }}
-      </v-expansion-panel-title>
-      <v-expansion-panel-text>
-        <div class="grid">
-          <div v-for="m in musicasPorCantor(c)" :key="m.id" class="card">
-            <img src="/LogoMusic.jpg" class="cover" />
-            <div class="info">
-              <h2 class="track-title">{{ m.title }}</h2>
-              <p class="track-meta">
-                <span>{{ m.cantor }}</span> •
-                <span>{{ m.estilos?.join(', ') || '—' }}</span>
-              </p>
-            </div>
-            <div class="actions">
-              <button class="ghost" @click="enqueue(m)" title="Adicionar à fila">➕</button>
-              <button class="primary" @click="playNow(m)" title="Tocar agora">▶</button>
-              <button class="ghost" @click="download(m)" title="Baixar">⬇</button>
-            </div>
-          </div>
+    <!-- Lista de músicas -->
+    <section v-if="!loading && filtradas.length" class="grid">
+      <div v-for="m in filtradas" :key="m.id" class="card">
+        <img src="/LogoMusic.jpg" class="cover" />
+        <div class="info">
+          <h2 class="track-title">{{ m.title }}</h2>
+          <p class="track-meta">
+            <span>{{ m.cantor }}</span> •
+            <span>{{ m.estilos?.join(', ') || '—' }}</span>
+          </p>
         </div>
-      </v-expansion-panel-text>
-    </v-expansion-panel>
-  </template>
-</v-expansion-panels>
-
+        <div class="actions">
+          <button class="ghost" @click="enqueue(m)" title="Adicionar à fila">➕</button>
+          <button class="primary" @click="playNow(m)" title="Tocar agora">▶</button>
+          <button class="ghost" @click="download(m)" title="Baixar">⬇</button>
+        </div>
+      </div>
+    </section>
 
     <!-- Se não tiver músicas -->
     <div v-if="!loading && !filtradas.length" class="status">
@@ -109,9 +80,6 @@
     <footerComplete />
   </div>
 </template>
-
-
-
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
@@ -129,9 +97,12 @@ const userStore = useUserStore();
 const toast = useToast();
 const showScrollTop = ref(false);
 
-const filtros = ref({ cantor: "", estilos: "", busca: "" });
+// filtros agora tem arrays
+const filtros = ref({ cantores: [], estilos: [], busca: "" });
+const cantorSelecionado = ref("");
+const estiloSelecionado = ref("");
 
-// Cantores e estilos
+// Cantores e estilos únicos
 const cantores = computed(() =>
   [...new Set(musicas.value.map((m) => m.cantor).filter(Boolean))]
 );
@@ -142,25 +113,47 @@ const estilos = computed(() =>
 // Filtradas
 const filtradas = computed(() => {
   const busca = filtros.value.busca.toLowerCase();
+
   return musicas.value.filter((m) => {
-    const cantorMatch = !filtros.value.cantor || m.cantor === filtros.value.cantor;
+    const cantorMatch =
+      !filtros.value.cantores.length ||
+      filtros.value.cantores.includes(m.cantor);
+
     const estiloMatch =
-      !filtros.value.estilos || (m.estilos || []).includes(filtros.value.estilos);
+      !filtros.value.estilos.length ||
+      (m.estilos || []).some((e) => filtros.value.estilos.includes(e));
+
     const buscaMatch =
       !busca ||
       m.title?.toLowerCase().includes(busca) ||
       m.cantor?.toLowerCase().includes(busca) ||
       m.estilos?.some((e) => e.toLowerCase().includes(busca));
+
     return cantorMatch && estiloMatch && buscaMatch;
   });
 });
 
-// Agrupa músicas por cantor
-function musicasPorCantor(c) {
-  return filtradas.value.filter((m) => m.cantor === c);
+// Seleção dinâmica
+function addCantor() {
+  if (cantorSelecionado.value && !filtros.value.cantores.includes(cantorSelecionado.value)) {
+    filtros.value.cantores.push(cantorSelecionado.value);
+  }
+  cantorSelecionado.value = "";
+}
+function removeCantor(c) {
+  filtros.value.cantores = filtros.value.cantores.filter((x) => x !== c);
+}
+function addEstilo() {
+  if (estiloSelecionado.value && !filtros.value.estilos.includes(estiloSelecionado.value)) {
+    filtros.value.estilos.push(estiloSelecionado.value);
+  }
+  estiloSelecionado.value = "";
+}
+function removeEstilo(r) {
+  filtros.value.estilos = filtros.value.estilos.filter((x) => x !== r);
 }
 
-// Fetch
+// Fetch músicas
 async function fetchMusicas() {
   loading.value = true;
   try {
@@ -274,29 +267,6 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   font-size: 16px;
 }
 
-/* Chips */
-.chips {
-  margin-bottom: 24px;
-}
-.chip-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.chip {
-  padding: 10px 18px;
-  border-radius: 20px;
-  background: #202020;
-  color: #eaeaea;
-  border: 1px solid #2a2a2a;
-  cursor: pointer;
-  font-size: 14px;
-}
-.chip.active {
-  background: #1db954;
-  color: #0b0b0b;
-}
-
 /* Pesquisa */
 .search {
   margin: 20px 0;
@@ -311,7 +281,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   font-size: 15px;
 }
 
-/* Selects */
+/* Selects + chips */
 .filters {
   display: flex;
   gap: 20px;
@@ -320,7 +290,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
 }
 .filter {
   flex: 1;
-  min-width: 180px;
+  min-width: 220px;
 }
 .filter label {
   display: block;
@@ -335,8 +305,36 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   border: 1px solid #2a2a2a;
   border-radius: 10px;
   padding: 10px 14px;
+  margin-bottom: 10px;
 }
 
+/* Chips */
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #202020;
+  color: #eaeaea;
+  border: 1px solid #2a2a2a;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip.active {
+  background: #1db954;
+  color: #0b0b0b;
+}
+.chip-remove {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Status */
 .status {
   margin: 20px 0;
   color: #e0e0e0;
