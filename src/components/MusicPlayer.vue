@@ -1,94 +1,106 @@
 <template>
-  <div class="player" v-if="current">
+  <!-- Player -->
+  <div
+    v-if="current"
+    class="player"
+    :class="{ expanded: isExpanded }"
+    @click="handleExpandClick"
+  >
+    <!-- Thumbnail e Info -->
     <div class="left">
-      <div class="thumb"></div>
+      <div class="thumb">
+  <img src="/LogoMusic.jpg" class="cover" />
+</div>
       <div class="info">
         <div class="t">{{ current.title }}</div>
         <div class="a">{{ current.cantor }}</div>
       </div>
     </div>
-
+    <!-- Controles -->
     <div class="center">
       <div class="controls">
-        <button @click="prev" title="Anterior">⏮</button>
-        <button @click="toggle" title="Play/Pause">{{ player.isPlaying ? "⏸" : "▶" }}</button>
-        <button @click="next" title="Próxima">⏭</button>
+        <button @click.stop="prev"><BackwardIcon class="icon" /></button>
+        <button @click.stop="toggle">
+          <PauseIcon v-if="player.isPlaying" class="icon" />
+          <PlayIcon v-else class="icon" />
+        </button>
+        <button @click.stop="next"><ForwardIcon class="icon" /></button>
       </div>
 
       <div class="bar">
         <span class="time">{{ currentTimeText }}</span>
         <input
-          class="seek"
           type="range"
           min="0"
           :max="duration"
           step="1"
           :value="position"
           @input="onSeek"
+          class="seek"
         />
         <span class="time">{{ durationText }}</span>
       </div>
     </div>
 
+    <!-- Volume e Fila -->
     <div class="right">
       <input
-        class="vol"
         type="range"
         min="0"
         max="1"
         step="0.01"
         :value="player.volume"
         @input="onVol"
+        class="vol"
       />
-      <button class="queue" @click="toggleQueue" title="Fila">📂 {{ player.queue.length }}</button>
-    </div>
-
-    <div v-if="showQueue" class="overlay" @click.self="toggleQueue">
-      <div class="modal">
-        <div class="modal-head">
-          <strong>Fila</strong>
-          <div class="queue-buttons">
-            <button @click="clearQueue" class="clear">Limpar</button>
-            <button @click="downloadAllZip" class="clear">Baixar Todas</button>
-          </div>
-        </div>
-
-        <div v-if="player.queue.length" class="list">
-          <div
-            v-for="(q, i) in player.queue"
-            :key="q.fileId || i"
-            class="row"
-            :class="{ active: i === player.currentIndex }"
-          >
-            <div class="meta">
-              <div class="mini"></div>
-              <div>
-                <div class="rt">{{ q.title }}</div>
-                <div class="ra">{{ q.cantor }}</div>
-              </div>
-            </div>
-            <div class="row-actions">
-              <button @click="playAt(i)" title="Tocar">▶</button>
-              <button @click="remove(i)" title="Remover">🗑</button>
-              <button @click="download(q)" title="Baixar">⬇</button>
-            </div>
-          </div>
-        </div>
-        <div v-else class="empty">Fila vazia</div>
-
-        <!-- Barra de progresso ZIP -->
-        <div v-if="zipProgressVisible" class="zip-progress">
-          <p>Preparando ZIP… {{ zipProgress }} / {{ zipTotal }} músicas adicionadas</p>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
-          </div>
-        </div>
-      </div>
+      <button @click.stop="toggleQueue">
+        <QueueListIcon class="icon" />
+        <span v-if="player.queue.length" class="badge">{{ player.queue.length }}</span>
+      </button>
     </div>
   </div>
 
+  <!-- Placeholder -->
   <div v-else class="player placeholder">
     <span>Selecione uma música para começar…</span>
+  </div>
+
+  <!-- Modal da Fila -->
+  <div v-if="showQueue" class="modal-overlay" @click.self="toggleQueue">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Fila de Reprodução</h3>
+        <div class="actions">
+          <button @click="clearQueue" class="clear">Limpar</button>
+          <button @click="downloadAllZip" class="clear">Baixar Todas</button>
+        </div>
+      </div>
+
+      <div v-if="player.queue.length" class="list">
+        <div
+          v-for="(q, i) in player.queue"
+          :key="q.fileId || i"
+          class="row"
+          :class="{ active: i === player.currentIndex }"
+        >
+          <div class="meta">
+            <div class="mini">
+   <img src="/LogoMusic.jpg" class="cover" />
+</div>
+            <div>
+              <div class="rt">{{ q.title }}</div>
+              <div class="ra">{{ q.cantor }}</div>
+            </div>
+          </div>
+          <div class="row-actions">
+            <button @click="playAt(i)"><PlayIcon class="icon" /></button>
+            <button @click="remove(i)"><TrashIcon class="icon" /></button>
+            <button @click="download(q)"><ArrowDownTrayIcon class="icon" /></button>
+          </div>
+        </div>
+      </div>
+      <div v-else class="empty">Fila vazia</div>
+    </div>
   </div>
 </template>
 
@@ -99,36 +111,40 @@ import { useUserStore } from "@/stores/userStore"
 import { useToast } from "vue-toast-notification"
 import JSZip from "jszip"
 
+// Heroicons (solid)
+import {
+  PlayIcon,
+  PauseIcon,
+  ForwardIcon,
+  BackwardIcon,
+  QueueListIcon,
+  TrashIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/vue/24/solid"
+
 const player = usePlayerStore()
 const userStore = useUserStore()
 const toast = useToast()
 
 const showQueue = ref(false)
+const isExpanded = ref(false)
 const current = computed(() => player.current)
 const duration = ref(0)
 const position = ref(0)
 let raf = null
 
-const zipProgress = ref(0)
-const zipTotal = ref(0)
-const zipProgressVisible = ref(false)
-
-const progressPercent = computed(() => (zipTotal.value ? (zipProgress.value / zipTotal.value) * 100 : 0))
+const durationText = computed(() => toTime(duration.value))
+const currentTimeText = computed(() => toTime(position.value))
 
 function loop() {
   if (player.sound) {
     try {
-      const d = player.sound.duration() || 0
-      const p = player.sound.seek() || 0
-      duration.value = Math.floor(d)
-      position.value = Math.floor(p)
+      duration.value = Math.floor(player.sound.duration() || 0)
+      position.value = Math.floor(player.sound.seek() || 0)
     } catch {}
   }
   raf = requestAnimationFrame(loop)
 }
-
-const durationText = computed(() => toTime(duration.value))
-const currentTimeText = computed(() => toTime(position.value))
 
 function toTime(s) {
   const m = Math.floor(s / 60)
@@ -137,13 +153,10 @@ function toTime(s) {
 }
 
 function onSeek(e) {
-  const val = Number(e.target.value)
-  player.seekTo(val)
+  player.seekTo(Number(e.target.value))
 }
-
 function onVol(e) {
-  const v = Number(e.target.value)
-  player.setVolume(v)
+  player.setVolume(Number(e.target.value))
 }
 
 function toggle() {
@@ -153,20 +166,13 @@ function toggle() {
   }
   player.togglePlay()
 }
-
 function prev() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura para usar o player 🎶")
-    return
-  }
-  player.prev()
+  if (userStore.hasActiveSubscription) player.prev()
+  else toast.warning("Ative sua assinatura para usar o player 🎶")
 }
 function next() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura para usar o player 🎶")
-    return
-  }
-  player.next()
+  if (userStore.hasActiveSubscription) player.next()
+  else toast.warning("Ative sua assinatura para usar o player 🎶")
 }
 
 function toggleQueue() {
@@ -175,7 +181,7 @@ function toggleQueue() {
 
 function playAt(i) {
   if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura para escutar músicas 🎶")
+    toast.warning("Ative sua assinatura 🎶")
     return
   }
   player.play(i)
@@ -187,35 +193,23 @@ function clearQueue() {
   player.clearQueue()
 }
 
-// Download individual
 function download(music) {
   if (!music.downloadUrl) return
   const a = document.createElement("a")
   a.href = music.downloadUrl
   a.download = music.fileName || "musica.mp3"
-  document.body.appendChild(a)
   a.click()
-  a.remove()
 }
 
-// Download all as ZIP com barra de progresso
 async function downloadAllZip() {
   if (!player.queue.length) return
-
-  zipProgress.value = 0
-  zipTotal.value = 0
-  zipProgressVisible.value = true
-
   const zip = new JSZip()
   const seen = new Set()
-
   const uniqueTracks = player.queue.filter(t => {
     if (seen.has(t.fileId)) return false
     seen.add(t.fileId)
     return true
   })
-
-  zipTotal.value = uniqueTracks.length
 
   for (const track of uniqueTracks) {
     if (!track.downloadUrl) continue
@@ -223,35 +217,18 @@ async function downloadAllZip() {
       const res = await fetch(track.downloadUrl)
       const blob = await res.blob()
       zip.file(track.fileName || "musica.mp3", blob)
-      zipProgress.value++
-    } catch (err) {
-      console.error("Erro ao adicionar ao ZIP:", track.title, err)
-      toast.error(`Erro ao adicionar ${track.title} ao ZIP`)
-      zipProgress.value++
-    }
+    } catch {}
   }
+  const content = await zip.generateAsync({ type: "blob" })
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(content)
+  a.download = "FilaMusicas.zip"
+  a.click()
+}
 
-  try {
-    const content = await zip.generateAsync({ type: "blob" }, metadata => {
-      zipProgress.value = metadata.percent / 100 * zipTotal.value
-    })
-
-    const a = document.createElement("a")
-    a.href = URL.createObjectURL(content)
-    a.download = "FilaMusicas.zip"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(a.href)
-
-    toast.success("Download do ZIP iniciado!")
-  } catch (err) {
-    console.error("Erro ao gerar ZIP:", err)
-    toast.error("Erro ao gerar o ZIP")
-  } finally {
-    zipProgressVisible.value = false
-    zipProgress.value = 0
-    zipTotal.value = 0
+function handleExpandClick() {
+  if (window.innerWidth <= 768) {
+    isExpanded.value = !isExpanded.value
   }
 }
 
@@ -269,17 +246,15 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #141414;
+  background: #181818;
   color: #fff;
-  border-top: 1px solid #232323;
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
-  gap: 6px;
   align-items: center;
-  margin-top: 3rem;
   padding: 10px 16px;
-  z-index: 40;
-  font-family: Inter, system-ui, sans-serif;
+  border-top: 1px solid #2a2a2a;
+  z-index: 50;
+  transition: all 0.3s ease;
 }
 .player.placeholder {
   justify-content: center;
@@ -290,41 +265,28 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
-}
-.zip-progress {
-  margin-top: 12px;
-}
-.progress-bar {
-  width: 100%;
-  height: 10px;
-  background: #2a2a2a;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: #1db954;
-  width: 0%;
-  transition: width 0.2s;
 }
 .thumb {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: #1b1b1b;
-  border: 1px solid #262626;
+  overflow: hidden;
+  background: #2a2a2a;
+  flex-shrink: 0;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .info .t {
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .info .a {
   font-size: 12px;
-  color: #9aa0a6;
+  color: #aaa;
 }
 .center {
   display: flex;
@@ -334,113 +296,91 @@ onBeforeUnmount(() => {
 }
 .controls {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .controls button {
-  background: #202020;
-  border: 1px solid #2a2a2a;
-  color: #f0f0f0;
-  padding: 6px 10px;
-  border-radius: 8px;
+  background: #222;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
   cursor: pointer;
 }
 .controls button:hover {
-  background: #262626;
+  background: #333;
+}
+.icon {
+  width: 20px;
+  height: 20px;
 }
 .bar {
   display: grid;
   grid-template-columns: 48px 1fr 48px;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   width: 100%;
 }
 .seek {
   width: 100%;
-  appearance: none;
-  height: 6px;
-  background: #262626;
-  border-radius: 999px;
-}
-.seek::-webkit-slider-thumb {
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #1db954;
 }
 .time {
   font-size: 11px;
-  color: #9aa0a6;
+  color: #aaa;
   text-align: center;
 }
 .right {
   display: flex;
-  justify-content: end;
   align-items: center;
   gap: 8px;
+  justify-content: flex-end;
 }
 .vol {
-  width: 110px;
+  width: 80px;
 }
-.queue {
-  background: #202020;
-  border: 1px solid #2a2a2a;
-  color: #f0f0f0;
-  padding: 6px 10px;
+.badge {
+  background: #1db954;
+  color: #fff;
+  font-size: 11px;
   border-radius: 8px;
-  cursor: pointer;
+  padding: 2px 6px;
+  margin-left: 4px;
 }
-.queue:hover {
-  background: #262626;
-}
-@media (max-width: 900px) {
-  .player {
-    grid-template-columns: 1fr 1fr;
-  }
-  .right {
-    display: flex; /* mostrar volume e fila mesmo em mobile */
-    flex-direction: column;
-    gap: 4px;
-  }
-  .queue-buttons {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-}
-.overlay {
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: flex-end;
   justify-content: center;
-  z-index: 50;
+  align-items: center;
+  z-index: 100;
 }
 .modal {
-  width: min(720px, 96vw);
-  max-height: 60vh;
-  background: #151515;
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  border: 1px solid #262626;
-  padding: 14px;
-  overflow: auto;
+  background: #202020;
+  border-radius: 12px;
+  padding: 16px;
+  width: min(600px, 90%);
+  max-height: 80vh;
+  overflow-y: auto;
 }
 .modal-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
 }
 .clear {
-  background: #2a2a2a;
-  border: 1px solid #333;
+  background: #333;
+  border: none;
   color: #fff;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
+}
+.clear:hover {
+  background: #444;
 }
 .list {
   display: flex;
@@ -448,57 +388,133 @@ onBeforeUnmount(() => {
   gap: 6px;
 }
 .row {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 8px 6px;
+  background: #2a2a2a;
+  padding: 8px;
   border-radius: 8px;
-  border: 1px solid #232323;
-  background: #121212;
 }
 .row.active {
-  outline: 1px solid #1db95455;
-  background: #141414;
+  background: #1db95422;
 }
 .meta {
   display: flex;
-  align-items: center;
   gap: 10px;
+  align-items: center;
 }
 .mini {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: #1b1b1b;
-  border: 1px solid #262626;
+  border-radius: 6px;
+  background: #333;
+  overflow: hidden;
+  flex-shrink: 0;
 }
+
+.mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .rt {
-  font-weight: 700;
   font-size: 14px;
+  font-weight: 600;
 }
 .ra {
   font-size: 12px;
-  color: #9aa0a6;
+  color: #aaa;
 }
 .row-actions {
-  display: grid;
-  grid-auto-flow: column;
+  display: flex;
   gap: 6px;
 }
 .row-actions button {
-  background: #202020;
-  border: 1px solid #2a2a2a;
+  background: none;
+  border: none;
   color: #fff;
-  padding: 4px 8px;
-  border-radius: 8px;
   cursor: pointer;
 }
-.row-actions button:hover {
-  background: #262626;
-}
 .empty {
-  color: #9aa0a6;
-  padding: 20px;
   text-align: center;
+  color: #aaa;
+  padding: 16px;
 }
-</style>
+@media (max-width: 768px) {
+  .player {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .player.expanded {
+    top: 0;
+    height: 100vh;
+    flex-direction: column;
+    grid-template-columns: 1fr;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .player.expanded .left {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .player.expanded .thumb {
+    width: 80%;
+    max-width: 320px;
+    height: auto;
+    aspect-ratio: 1 / 1; /* Mantém quadrada */
+    margin: 0 auto;
+  }
+
+  .player.expanded .thumb img {
+    border-radius: 12px;
+  }
+
+  .player.expanded .info {
+    margin-top: 16px;
+  }
+
+  .player.expanded .info .t {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+
+  .player.expanded .info .a {
+    font-size: 14px;
+    color: #bbb;
+  }
+
+  .player.expanded .center {
+    width: 100%;
+    margin-top: 30px;
+    gap: 20px;
+  }
+
+  .player.expanded .controls {
+    gap: 24px;
+  }
+
+  .player.expanded .bar {
+    width: 90%;
+    margin: 0 auto;
+  }
+
+  .player.expanded .right {
+    width: 90%;
+    margin: 20px auto 0;
+    justify-content: center;
+  }
+
+  .vol {
+    width: 100%;
+  }
+}</style>

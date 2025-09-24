@@ -15,7 +15,20 @@
         placeholder="🔍 Pesquisar músicas, cantores ou estilos..."
       />
     </section>
-
+      <!-- Estilos -->
+      <div class="filter">
+        <label>Adicionar Estilo</label>
+        <select v-model="estiloSelecionado" @change="addEstilo">
+          <option value="">Selecionar</option>
+          <option v-for="r in estilos" :key="r" :value="r">{{ r }}</option>
+        </select>
+        <div class="chip-grid">
+          <div v-for="r in filtros.estilos" :key="r" class="chip active">
+            {{ r }}
+            <span class="chip-remove" @click="removeEstilo(r)">✕</span>
+          </div>
+        </div>
+      </div>
     <!-- Filtros com selects -->
     <section class="filters">
       <!-- Cantores -->
@@ -33,20 +46,7 @@
         </div>
       </div>
 
-      <!-- Estilos -->
-      <div class="filter">
-        <label>Adicionar Estilo</label>
-        <select v-model="estiloSelecionado" @change="addEstilo">
-          <option value="">Selecionar</option>
-          <option v-for="r in estilos" :key="r" :value="r">{{ r }}</option>
-        </select>
-        <div class="chip-grid">
-          <div v-for="r in filtros.estilos" :key="r" class="chip active">
-            {{ r }}
-            <span class="chip-remove" @click="removeEstilo(r)">✕</span>
-          </div>
-        </div>
-      </div>
+
     </section>
 
     <!-- Status -->
@@ -82,12 +82,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { db } from "@/firebase";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useUserStore } from "@/stores/userStore";
 import { useToast } from "vue-toast-notification";
+
 
 const musicas = ref([]);
 const loading = ref(true);
@@ -96,7 +97,6 @@ const player = usePlayerStore();
 const userStore = useUserStore();
 const toast = useToast();
 const showScrollTop = ref(false);
-
 // filtros agora tem arrays
 const filtros = ref({ cantores: [], estilos: [], busca: "" });
 const cantorSelecionado = ref("");
@@ -132,7 +132,9 @@ const filtradas = computed(() => {
     return cantorMatch && estiloMatch && buscaMatch;
   });
 });
-
+watch(filtradas, (nova) => {
+  player.setFullList(nova)
+}, { immediate: true })
 // Seleção dinâmica
 function addCantor() {
   if (cantorSelecionado.value && !filtros.value.cantores.includes(cantorSelecionado.value)) {

@@ -8,6 +8,7 @@ export const usePlayerStore = defineStore("player", {
     sound: null,        
     isPlaying: false,
     volume: 1.0,
+    fullList: [], // lista completa de músicas filtradas
   }),
 
   getters: {
@@ -17,10 +18,13 @@ export const usePlayerStore = defineStore("player", {
   },
 
   actions: {
+    setFullList(list) {
+      this.fullList = list || []
+    },
+
     addToQueue(track, { playNow = false } = {}) {
-      if (!track?.downloadUrl) {
-        return
-      }
+      if (!track?.downloadUrl) return
+
       this.queue.push(track)
 
       if (this.currentIndex === -1) {
@@ -43,9 +47,9 @@ export const usePlayerStore = defineStore("player", {
         volume: this.volume,
         preload: true,
 
-        onplay: () => { this.isPlaying = true; },
-        onpause: () => { this.isPlaying = false; },
-        onstop: () => { this.isPlaying = false; },
+        onplay: () => { this.isPlaying = true },
+        onpause: () => { this.isPlaying = false },
+        onstop: () => { this.isPlaying = false },
         onend: () => { this.next() },
         onloaderror: (id, err) => console.error("[player] onloaderror", err),
         onplayerror: (id, err) => {
@@ -57,9 +61,7 @@ export const usePlayerStore = defineStore("player", {
     },
 
     play(index = this.currentIndex) {
-      if (index < 0 || index >= this.queue.length) {
-        return
-      }
+      if (index < 0 || index >= this.queue.length) return
 
       if (this.sound) {
         try { this.sound.stop(); this.sound.unload() } catch {}
@@ -96,10 +98,21 @@ export const usePlayerStore = defineStore("player", {
 
     next() {
       if (this.currentIndex < this.queue.length - 1) {
+        // ainda tem música na fila
         this.play(this.currentIndex + 1)
       } else {
-        console.log("[player] next: fim da fila")
-        this.stop()
+        // acabou a fila, procurar na lista completa
+        if (this.current && this.fullList.length) {
+          const indexInList = this.fullList.findIndex(m => m.id === this.current.id)
+          const proxima = this.fullList[indexInList + 1] || this.fullList[0] // loop infinito
+
+          if (proxima) {
+            this.addToQueue(proxima, { playNow: true })
+          }
+        } else {
+          console.log("[player] next: fim da fila e sem fullList")
+          this.stop()
+        }
       }
     },
 
