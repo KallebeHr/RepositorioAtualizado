@@ -2,20 +2,31 @@
   <div class="upload-page">
     <header class="header">
       <h1 class="title">🚀 Upload de Músicas em Lote</h1>
-      <p class="subtitle">Selecione várias músicas de uma vez, escolha cantor e estilo, e envie tudo!</p>
+      <p class="subtitle">
+        Selecione várias músicas de uma vez, escolha cantor e estilo, e envie tudo!
+      </p>
     </header>
 
     <div class="upload-card">
+      <!-- Seleção de arquivos -->
       <div class="form-group">
         <label>Arquivos das Músicas</label>
-        <input type="file" multiple @change="handleMultipleFiles" accept="audio/*" />
+        <input
+          type="file"
+          multiple
+          @change="handleMultipleFiles"
+          accept="audio/*"
+        />
       </div>
 
+      <!-- Estilo -->
       <div class="form-group">
         <label>Estilo</label>
         <select v-model="selectedEstilo" @change="handleEstiloChange">
           <option disabled value="">Selecione o estilo</option>
-          <option v-for="e in estilos" :key="e.id" :value="e.nome">{{ e.nome }}</option>
+          <option v-for="e in estilos" :key="e.id" :value="e.nome">
+            {{ e.nome }}
+          </option>
           <option value="__novo__">+ Adicionar novo estilo</option>
         </select>
       </div>
@@ -26,11 +37,14 @@
         <button class="secondary" @click="addEstilo">Salvar Estilo</button>
       </div>
 
+      <!-- Cantor -->
       <div class="form-group">
         <label>Cantor</label>
         <select v-model="selectedCantor" @change="handleCantorChange">
           <option disabled value="">Selecione o cantor</option>
-          <option v-for="c in cantores" :key="c.id" :value="c.nome">{{ c.nome }}</option>
+          <option v-for="c in cantores" :key="c.id" :value="c.nome">
+            {{ c.nome }}
+          </option>
           <option value="__novo__">+ Adicionar novo cantor</option>
         </select>
       </div>
@@ -41,6 +55,7 @@
         <button class="secondary" @click="addCantor">Salvar Cantor</button>
       </div>
 
+      <!-- Botão Enviar -->
       <div class="form-actions" v-if="musicForms.length">
         <button class="primary" :disabled="uploading" @click="uploadAll">
           {{ uploading ? "Enviando todas..." : "Enviar Todas as Músicas" }}
@@ -48,19 +63,48 @@
       </div>
     </div>
 
+    <!-- Lista das músicas -->
     <div v-if="musicForms.length" class="preview">
       <h3>🎶 Músicas selecionadas:</h3>
+
       <ul>
-        <li v-for="(m, i) in musicForms" :key="i">
-          {{ m.title }} <span v-if="m.success">✅</span>
+        <li v-for="(m, i) in musicForms" :key="i" class="music-item">
+          <div class="music-info">
+            <strong>{{ m.title }}</strong>
+            <span v-if="m.success">✅</span>
+          </div>
+
+          <!-- Barra de progresso individual -->
+          <v-progress-linear
+            :model-value="m.progress"
+            height="8"
+            color="blue"
+            rounded
+            striped
+            class="my-2"
+          ></v-progress-linear>
+          <small>{{ m.progress }}%</small>
         </li>
       </ul>
+
+      <!-- Barra de progresso geral -->
+      <div class="overall-progress" v-if="uploading">
+        <h4>Progresso total</h4>
+        <v-progress-linear
+          :model-value="overallProgress"
+          height="10"
+          color="green"
+          rounded
+          striped
+        ></v-progress-linear>
+        <small>{{ overallProgress }}%</small>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
 import { db } from "@/firebase"
 import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore"
 import axios from "axios"
@@ -78,6 +122,13 @@ const error = ref("")
 const cantoresColRef = collection(db, "cantores")
 const estilosColRef = collection(db, "estilos")
 
+// Barra de progresso geral
+const overallProgress = computed(() => {
+  if (!musicForms.value.length) return 0
+  const total = musicForms.value.reduce((sum, m) => sum + m.progress, 0)
+  return Math.round(total / musicForms.value.length)
+})
+
 async function fetchCantores() {
   const snapshot = await getDocs(cantoresColRef)
   cantores.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
@@ -92,7 +143,8 @@ function handleMultipleFiles(e) {
   musicForms.value = files.map(file => ({
     file,
     title: file.name.replace(/\.[^/.]+$/, ""), // remove extensão
-    success: false
+    success: false,
+    progress: 0
   }))
 }
 
@@ -125,15 +177,23 @@ async function uploadAll() {
   }
   uploading.value = true
   error.value = ""
+
   try {
     for (const form of musicForms.value) {
       const formData = new FormData()
       formData.append("file", form.file)
+
+      // axios com progresso individual
       const { data } = await axios.post("http://localhost:3001/upload-music", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (event) => {
+          if (event.total) {
+            form.progress = Math.round((event.loaded * 100) / event.total)
+          }
+        }
       })
-      const { fileId, downloadUrl } = data
 
+      const { fileId, downloadUrl } = data
       await addDoc(collection(db, "musicas"), {
         title: form.title,
         fileName: form.file.name,
@@ -143,6 +203,7 @@ async function uploadAll() {
         cantor: selectedCantor.value,
         createdAt: serverTimestamp(),
       })
+
       form.success = true
     }
   } catch (err) {
@@ -194,7 +255,18 @@ onMounted(() => {
   font-size: 16px;
   color: #9aa0a6;
 }
-
+.music-item {
+  margin-bottom: 16px;
+  list-style: none;
+}
+.music-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.overall-progress {
+  margin-top: 20px;
+}
 .upload-card {
   max-width: 600px;
   margin: 0 auto 20px;

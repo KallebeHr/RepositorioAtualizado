@@ -1,6 +1,6 @@
 <template>
   <div class='container'>
-    <MusicList />
+    <MusicList style="background-color: 121212;" />
   </div>
 </template>
 
@@ -13,7 +13,7 @@ import MusicList from '@/components/MusicList.vue';
 .container{
     display:flex;
     background-color: #121212;
-    height: 98vh;
+    height: auto;
 
     }
 </style>

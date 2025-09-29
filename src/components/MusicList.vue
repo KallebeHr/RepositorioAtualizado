@@ -250,6 +250,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   background: #111;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
+  height: auto;
 }
 
 /* Header */
@@ -319,7 +320,6 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
 .chip {
   padding: 8px 14px;
   border-radius: 20px;
-  background: #202020;
   color: #eaeaea;
   border: 1px solid #2a2a2a;
   font-size: 13px;
