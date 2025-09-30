@@ -11,7 +11,7 @@
       <div class="buttons">
         <a href="/" class="btn green">Comprar assinatura</a>
         <a href="/AllMusic" class="btn green">Ouvir Agora</a>
-        <a href="/Repertorios" class="btn green">Garantir Meu Repertório</a>
+        <a href="/Repertorios" class="btn green">Baixar Repertório</a>
       </div>
 
       <div class="platforms">

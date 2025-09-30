@@ -1,7 +1,7 @@
 <template>
   <div class="music-page">
     <header class="header">
-      <h1 class="title">🎶 Repertório Completo 🎶</h1>
+      <h1 class="title">🎶 Repertório Completos 🎶</h1>
       <p class="subtitle">
         Explore músicas, artistas e estilos • Adicione à fila • Toque agora • Baixe
       </p>
@@ -244,20 +244,21 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
 </script>
 
 <style scoped>
+/* base */
+* { box-sizing: border-box; }
 .music-page {
   width: 100%;
-  padding: 24px 32px;
+  padding: 24px 16px;
   background: #111;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
   height: auto;
+  overflow-x: hidden;       /* evita scroll lateral */
+  max-width: 100%;
 }
 
 /* Header */
-.header {
-  text-align: center;
-  margin-bottom: 32px;
-}
+.header { text-align: center; margin-bottom: 32px; }
 .title {
   font-size: 40px;
   font-weight: 900;
@@ -265,15 +266,10 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.subtitle {
-  color: #9aa0a6;
-  font-size: 16px;
-}
+.subtitle { color: #9aa0a6; font-size: 16px; }
 
 /* Pesquisa */
-.search {
-  margin: 20px 0;
-}
+.search { margin: 20px 0; }
 .search input {
   width: 100%;
   padding: 14px 18px;
@@ -287,20 +283,15 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
 /* Selects + chips */
 .filters {
   display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: 12px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 .filter {
-  flex: 1;
-  min-width: 220px;
+  flex: 1 1 220px;      /* flex-basis para filas responsivas */
+  min-width: 160px;
 }
-.filter label {
-  display: block;
-  margin-bottom: 6px;
-  color: #9aa0a6;
-  font-size: 14px;
-}
+.filter label { display: block; margin-bottom: 6px; color: #9aa0a6; font-size: 14px; }
 .filter select {
   width: 100%;
   background: #181818;
@@ -308,15 +299,15 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   border: 1px solid #2a2a2a;
   border-radius: 10px;
   padding: 10px 14px;
-  margin-bottom: 10px;
+}
+
+/* reduz selects em telas bem pequenas para não forçar overflow */
+@media (max-width: 600px) {
+  .filter { flex: 1 1 100%; min-width: 0; }
 }
 
 /* Chips */
-.chip-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+.chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   padding: 8px 14px;
   border-radius: 20px;
@@ -326,32 +317,27 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   display: flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.chip.active {
-  background: #1db954;
-  color: #0b0b0b;
-}
-.chip-remove {
-  cursor: pointer;
-  font-weight: bold;
-}
+.chip.active { background: #1db954; color: #0b0b0b; }
+.chip-remove { cursor: pointer; font-weight: bold; }
 
 /* Status */
-.status {
-  margin: 20px 0;
-  color: #e0e0e0;
-  text-align: center;
-}
-.status.error {
-  color: #ff7676;
-}
+.status { margin: 20px 0; color: #e0e0e0; text-align: center; }
+.status.error { color: #ff7676; }
 
 /* Grid de cards */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
+  width: 100%;
 }
+
+/* Card geral */
 .card {
   background: #181818;
   border-radius: 16px;
@@ -361,82 +347,132 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
   flex-direction: column;
   justify-content: space-between;
   min-height: 300px;
+  overflow: hidden;      /* impede que conteúdo estoure o card */
+  max-width: 100%;
 }
+
+/* Imagem */
 .cover {
   width: 100%;
   height: 180px;
   border-radius: 12px;
   object-fit: cover;
   margin-bottom: 12px;
+  flex-shrink: 0;
 }
+
+/* Conteúdo do texto - importante: min-width:0 para flexbox */
+.info {
+  flex: 1 1 auto;
+  min-width: 0;          /* crucial para evitar overflow por texto longo */
+  overflow: hidden;
+}
+
+/* Título e meta com line-clamp 3 */
 .track-title {
   font-size: 16px;
   font-weight: 700;
   margin: 0 0 4px;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;    /* máximo 3 linhas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-height: calc(1.2em * 3);
 }
 .track-meta {
   font-size: 13px;
   color: #9aa0a6;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-height: calc(1.1em * 3);
 }
+
+/* Ações */
 .actions {
   display: flex;
   justify-content: space-between;
-  margin-top: auto;
+  margin-top: 12px;
   gap: 8px;
+  flex-shrink: 0;   /* não deixa as ações encolherem até sumirem */
 }
-button.primary,
-button.ghost {
+
+/* Botões */
+button.primary, button.ghost {
   flex: 1;
   height: 38px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   font-weight: 600;
+  white-space: nowrap;
+  min-width: 40px;
 }
-button.primary {
-  background: #1db954;
-  color: #0b0b0b;
-}
-button.ghost {
-  background: #202020;
-  color: #eaeaea;
-}
+button.primary { background: #1db954; color: #0b0b0b; }
+button.ghost   { background: #202020; color: #eaeaea; }
 
-/* Mobile - cards em lista */
+/* --- Responsivo mobile: layout em linha, sem overflow --- */
 @media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+  .grid { grid-template-columns: 1fr; }
+
   .card {
     flex-direction: row;
     align-items: center;
-    min-height: auto;
     gap: 12px;
+    padding: 12px;
+    min-height: auto;
   }
+
   .cover {
     width: 70px;
     height: 70px;
     margin: 0;
+    flex-shrink: 0;
+    border-radius: 10px;
   }
+
   .info {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;       /* obrigatória para truncar */
+    padding-right: 5px; /* espaço para as ações */
+    overflow: hidden;
   }
+
+  /* mantemos clamping, reduzimos font-size para caber */
+  .track-title { -webkit-line-clamp: 3; font-size: 14px; max-height: calc(1.15em * 3); }
+  .track-meta  { -webkit-line-clamp: 2; font-size: 12px; max-height: calc(1.1em * 2); }
+
+  /* Forçamos as ações a não desaparecerem (sempre visíveis) */
   .actions {
     flex-direction: column;
+    align-items: center;
     justify-content: center;
     gap: 6px;
-    margin-top: 0;
+    flex: 0 0 auto;
   }
-  button.primary,
-  button.ghost {
+  button.primary, button.ghost {
     flex: none;
     width: 40px;
     height: 36px;
     padding: 0;
+    font-size: 14px;
   }
 }
 
-/* Botão voltar ao topo */
+/* botão voltar ao topo (mantive) */
 .scroll-top {
   position: fixed;
   bottom: 120px;

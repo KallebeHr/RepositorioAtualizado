@@ -193,7 +193,7 @@ const menuItems = [
   { title: "COMO ATIVAR OU BAIXAR", href: "/Tutoriais" },
   { title: "MÚSICAS", href: "/AllMusic" },
   { title: "REPERTÓRIOS", href: "/Repertorios" },
-  { title: "CANTORES", href: "/Cantores" },
+  { title: "BAIXAR POR CANTORES", href: "/Cantores" },
 ];
 const libraryItems = [{ title: "FAVORITOS ", href: "#" }];
 
