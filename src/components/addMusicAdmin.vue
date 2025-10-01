@@ -185,7 +185,7 @@ onMounted(() => {
   .overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.8); /* escurece o fundo */
+  background: rgba(0,0,0,0.8); 
 }
 }
 
