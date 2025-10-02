@@ -9,13 +9,14 @@
     <!-- Thumbnail e Info -->
     <div class="left">
       <div class="thumb">
-  <img src="/LogoMusic.jpg" class="cover" />
-</div>
+        <img src="/LogoMusic.jpg" class="cover" />
+      </div>
       <div class="info">
         <div class="t">{{ current.title }}</div>
         <div class="a">{{ current.cantor }}</div>
       </div>
     </div>
+
     <!-- Controles -->
     <div class="center">
       <div class="controls">
@@ -25,6 +26,15 @@
           <PlayIcon v-else class="icon" />
         </button>
         <button @click.stop="next"><ForwardIcon class="icon" /></button>
+        <!-- Favoritar música atual -->
+        <button
+          @click.stop="toggleFavorite(current)"
+          class="favorite"
+          :class="{ active: isFavorite(current.id) }"
+          title="Favoritar"
+        >
+          <StarIcon class="icon" />
+        </button>
       </div>
 
       <div class="bar">
@@ -85,8 +95,8 @@
         >
           <div class="meta">
             <div class="mini">
-   <img src="/LogoMusic.jpg" class="cover" />
-</div>
+              <img src="/LogoMusic.jpg" class="cover" />
+            </div>
             <div>
               <div class="rt">{{ q.title }}</div>
               <div class="ra">{{ q.cantor }}</div>
@@ -96,6 +106,15 @@
             <button @click="playAt(i)"><PlayIcon class="icon" /></button>
             <button @click="remove(i)"><TrashIcon class="icon" /></button>
             <button @click="download(q)"><ArrowDownTrayIcon class="icon" /></button>
+            <!-- Favoritar música da fila -->
+            <button
+              @click="toggleFavorite(q)"
+              class="favorite"
+              :class="{ active: isFavorite(q.id) }"
+              title="Favoritar"
+            >
+              <StarIcon class="icon" />
+            </button>
           </div>
         </div>
       </div>
@@ -110,8 +129,6 @@ import { usePlayerStore } from "@/stores/usePlayerStore"
 import { useUserStore } from "@/stores/userStore"
 import { useToast } from "vue-toast-notification"
 import JSZip from "jszip"
-
-// Heroicons (solid)
 import {
   PlayIcon,
   PauseIcon,
@@ -120,7 +137,11 @@ import {
   QueueListIcon,
   TrashIcon,
   ArrowDownTrayIcon,
+  StarIcon,
 } from "@heroicons/vue/24/solid"
+
+import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"
+import { db } from "@/firebase"
 
 const player = usePlayerStore()
 const userStore = useUserStore()
@@ -232,6 +253,35 @@ function handleExpandClick() {
   }
 }
 
+/* ---------- FAVORITOS ---------- */
+function isFavorite(musicId) {
+  return userStore.user?.favorites?.includes(musicId)
+}
+
+async function toggleFavorite(m) {
+  if (!userStore.user) {
+    toast.warning("Você precisa estar logado para favoritar músicas ⭐")
+    return
+  }
+
+  const userRef = doc(db, "users", userStore.user.uid)
+
+  try {
+    if (isFavorite(m.id)) {
+      await updateDoc(userRef, { favorites: arrayRemove(m.id) })
+      userStore.user.favorites = userStore.user.favorites.filter(id => id !== m.id)
+      toast.success(`Removida dos favoritos: ${m.title}`)
+    } else {
+      await updateDoc(userRef, { favorites: arrayUnion(m.id) })
+      userStore.user.favorites = [...(userStore.user.favorites || []), m.id]
+      toast.success(`Adicionada aos favoritos: ${m.title}`)
+    }
+  } catch (err) {
+    console.error("Erro ao atualizar favoritos:", err)
+    toast.error("Não foi possível atualizar os favoritos.")
+  }
+}
+
 onMounted(() => {
   raf = requestAnimationFrame(loop)
 })
@@ -274,7 +324,6 @@ onBeforeUnmount(() => {
   background: #2a2a2a;
   flex-shrink: 0;
 }
-
 .thumb img {
   width: 100%;
   height: 100%;
@@ -311,6 +360,9 @@ onBeforeUnmount(() => {
 .icon {
   width: 20px;
   height: 20px;
+}
+.favorite.active .icon {
+  color: #ffd700; /* estrela dourada */
 }
 .bar {
   display: grid;
@@ -411,13 +463,11 @@ onBeforeUnmount(() => {
   overflow: hidden;
   flex-shrink: 0;
 }
-
 .mini img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .rt {
   font-size: 14px;
   font-weight: 600;
@@ -446,7 +496,6 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
     padding: 8px;
   }
-
   .player.expanded {
     top: 0;
     height: 100vh;
@@ -457,7 +506,6 @@ onBeforeUnmount(() => {
     padding: 20px;
     text-align: center;
   }
-
   .player.expanded .left {
     flex-direction: column;
     align-items: center;
@@ -465,56 +513,47 @@ onBeforeUnmount(() => {
     gap: 12px;
     margin-top: 30px;
   }
-
   .player.expanded .thumb {
     width: 80%;
     max-width: 320px;
     height: auto;
-    aspect-ratio: 1 / 1; /* Mantém quadrada */
+    aspect-ratio: 1 / 1;
     margin: 0 auto;
   }
-
   .player.expanded .thumb img {
     border-radius: 12px;
   }
-
   .player.expanded .info {
     margin-top: 16px;
   }
-
   .player.expanded .info .t {
     font-size: 20px;
     font-weight: bold;
     margin-bottom: 6px;
   }
-
   .player.expanded .info .a {
     font-size: 14px;
     color: #bbb;
   }
-
   .player.expanded .center {
     width: 100%;
     margin-top: 30px;
     gap: 20px;
   }
-
   .player.expanded .controls {
     gap: 24px;
   }
-
   .player.expanded .bar {
     width: 90%;
     margin: 0 auto;
   }
-
   .player.expanded .right {
     width: 90%;
     margin: 20px auto 0;
     justify-content: center;
   }
-
   .vol {
     width: 100%;
   }
-}</style>
+}
+</style>

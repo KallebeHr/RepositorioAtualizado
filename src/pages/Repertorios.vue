@@ -1,7 +1,7 @@
 <template>
   <div class="repertorio-page">
     <header class="header">
-      <h1 class="title">🎶 Repertório Setembro 🎶</h1>
+      <h1 class="title">🎶 Repertório 🎶</h1>
       <p class="subtitle">Clique no botão para baixar todas as músicas em ZIP</p>
     </header>
 

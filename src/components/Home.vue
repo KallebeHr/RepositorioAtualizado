@@ -9,7 +9,8 @@
       </p>
 
       <div class="buttons">
-        <a href="/" class="btn green">Comprar assinatura</a>
+        <a v-if="!userStore.hasActiveSubscription" href="/" class="btn green">Comprar assinatura</a>
+
         <a href="/AllMusic" class="btn green">Ouvir Agora</a>
         <a href="/Repertorios" class="btn green">Baixar Repertório</a>
       </div>
@@ -33,6 +34,10 @@
 </template>
 
 <script setup>
+import { usePlayerStore } from "@/stores/usePlayerStore";
+import { useUserStore } from "@/stores/userStore";
+const userStore = useUserStore();
+
 </script>
 
 <style scoped>

@@ -195,7 +195,7 @@ const menuItems = [
   { title: "REPERTÓRIOS", href: "/Repertorios" },
   { title: "BAIXAR POR CANTORES", href: "/Cantores" },
 ];
-const libraryItems = [{ title: "FAVORITOS ", href: "#" }];
+const libraryItems = [{ title: "FAVORITOS ", href: "/favoritos" }];
 
 // funções de assinatura
 async function verificarAssinatura() {
