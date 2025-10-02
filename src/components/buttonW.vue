@@ -20,7 +20,7 @@
 
 <script setup>
 const openWhatsApp = () => {
-  window.open('https://wa.me/5586994227005?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20', '_blank')
+  window.open('https://wa.me/5586994288565?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20', '_blank')
 }
 </script>
 
