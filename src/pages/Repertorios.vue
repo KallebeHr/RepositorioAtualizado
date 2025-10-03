@@ -85,50 +85,32 @@ function normalizeTrack(m) {
   }
 }
 
-// Download ZIP
 async function handleDownloadAll() {
-   toast.warning("Desativa por enquanto 🎶");
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
+    return
+  }
 
-  // if (!userStore.hasActiveSubscription) {
-  //   toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
-  //   return
-  // }
+  try {
+    let counter = 3
 
-  // try {
-  //   const tracks = musicas.value.filter(m => m.downloadUrl)
-  //   if (!tracks.length) {
-  //     toast.warning("Nenhuma música disponível para download")
-  //     return
-  //   }
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`)
+      counter--
 
-  //   const JSZip = (await import("jszip")).default
-  //   const zip = new JSZip()
-  //   progress.value = 0
+      if (counter < 0) {
+        clearInterval(interval)
+        window.location.href = "https://www.mediafire.com/folder/tfb99z6tatwja/OUTUBRO"
+      }
+    }, 1000)
 
-  //   for (let i = 0; i < tracks.length; i++) {
-  //     const t = normalizeTrack(tracks[i])
-  //     const res = await fetch(t.downloadUrl)
-  //     const blob = await res.blob()
-  //     zip.file(t.fileName, blob)
-  //     progress.value = Math.round(((i + 1) / tracks.length) * 100)
-  //   }
-
-  //   const content = await zip.generateAsync({ type: "blob" })
-  //   const a = document.createElement("a")
-  //   a.href = URL.createObjectURL(content)
-  //   a.download = `repertorio-setembro.zip`
-  //   a.click()
-  //   URL.revokeObjectURL(a.href)
-
-  //   toast.success("Repertório completo baixado!")
-  //   progress.value = 100
-  //   setTimeout(() => progress.value = null, 2000)
-  // } catch (err) {
-  //   console.error("[Repertorio] erro no ZIP:", err)
-  //   toast.error("Falha ao baixar ZIP")
-  //   progress.value = null
-  // }
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err)
+    toast.error("Erro ao redirecionar para a página de download")
+    progress.value = null
+  }
 }
+
 
 // Scroll-top
 function handleScroll() { showScrollTop.value = window.scrollY > 200 }

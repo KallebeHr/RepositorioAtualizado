@@ -101,51 +101,51 @@ function countMusicas(cantor) {
 
 // Função intermediária para checar assinatura antes do download
 function handleDownload(cantor) {
-   toast.warning("Desativa por enquanto 🎶");
+  //  toast.warning("Desativa por enquanto 🎶");
 
-//   if (!userStore.hasActiveSubscription) {
-//     toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
-//     return
-//   }
-//   downloadAll(cantor)
-// }
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
+    return
+  }
+  downloadAll(cantor)
+}
 
-// // Download ZIP com progresso
-// async function downloadAll(cantor) {
-//   try {
-//     const tracks = musicas.value.filter(m => m.cantor === cantor && m.downloadUrl)
-//     if (!tracks.length) {
-//       toast.warning("Nenhuma música disponível para download")
-//       return
-//     }
+// Download ZIP com progresso
+async function downloadAll(cantor) {
+  try {
+    const tracks = musicas.value.filter(m => m.cantor === cantor && m.downloadUrl)
+    if (!tracks.length) {
+      toast.warning("Nenhuma música disponível para download")
+      return
+    }
 
-//     const JSZip = (await import("jszip")).default
-//     const zip = new JSZip()
-//     progress[cantor] = 0
+    const JSZip = (await import("jszip")).default
+    const zip = new JSZip()
+    progress[cantor] = 0
 
-//     for (let i = 0; i < tracks.length; i++) {
-//       const t = tracks[i]
-//       const res = await fetch(t.downloadUrl)
-//       const blob = await res.blob()
-//       zip.file(t.fileName || `${t.title || "musica"}.mp3`, blob)
-//       progress[cantor] = Math.round(((i + 1) / tracks.length) * 100)
-//     }
+    for (let i = 0; i < tracks.length; i++) {
+      const t = tracks[i]
+      const res = await fetch(t.downloadUrl)
+      const blob = await res.blob()
+      zip.file(t.fileName || `${t.title || "musica"}.mp3`, blob)
+      progress[cantor] = Math.round(((i + 1) / tracks.length) * 100)
+    }
 
-//     const content = await zip.generateAsync({ type: "blob" })
-//     const a = document.createElement("a")
-//     a.href = URL.createObjectURL(content)
-//     a.download = `${cantor}-musicas.zip`
-//     a.click()
-//     URL.revokeObjectURL(a.href)
+    const content = await zip.generateAsync({ type: "blob" })
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(content)
+    a.download = `${cantor}-musicas.zip`
+    a.click()
+    URL.revokeObjectURL(a.href)
 
-//     toast.success(`ZIP de ${cantor} baixado!`)
-//     progress[cantor] = 100
-//     setTimeout(() => delete progress[cantor], 2000)
-//   } catch (err) {
-//     console.error("[Cantores] erro no download:", err)
-//     toast.error("Falha ao baixar ZIP")
-//     delete progress[cantor]
-//   }
+    toast.success(`ZIP de ${cantor} baixado!`)
+    progress[cantor] = 100
+    setTimeout(() => delete progress[cantor], 2000)
+  } catch (err) {
+    console.error("[Cantores] erro no download:", err)
+    toast.error("Falha ao baixar ZIP")
+    delete progress[cantor]
+  }
 }
 
 // Scroll-top
