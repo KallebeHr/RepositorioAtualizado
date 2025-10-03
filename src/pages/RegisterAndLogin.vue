@@ -139,8 +139,7 @@ await setDoc(doc(db, "users", res.user.uid), {
   email: email.value,
   createdAt: new Date(),
   customID,
-  hasSubscription: false,
-  subscription: "normal"          
+  hasSubscription: false,         
 })
 
     window.location.href = "/"

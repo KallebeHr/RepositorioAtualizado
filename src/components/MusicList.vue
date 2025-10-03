@@ -18,7 +18,7 @@
 
     <!-- Estilos -->
     <div class="filter">
-      <label>Adicionar Estilo</label>
+      <h1 class="title">Selecionar Estilo</h1>
       <select v-model="estiloSelecionado" @change="addEstilo">
         <option value="">Selecionar</option>
         <option v-for="r in estilosList" :key="r" :value="r">{{ r }}</option>
@@ -34,7 +34,7 @@
     <!-- Cantores -->
     <section class="filters" v-if="filtros.estilos.length">
       <div class="filter">
-        <label>Adicionar Cantor</label>
+        <h1 class="title">Selecionar Cantor</h1>
         <select v-model="cantorSelecionado" @change="addCantor">
           <option value="">Selecionar</option>
           <option v-for="c in cantoresDisponiveis" :key="c" :value="c">{{ c }}</option>
@@ -47,7 +47,6 @@
         </div>
       </div>
     </section>
-
     <!-- Status -->
     <div v-if="loading" class="status">Carregando músicas...</div>
     <div v-if="error" class="status error">{{ error }}</div>
@@ -369,6 +368,17 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
 button.primary, button.ghost { flex: 1; height: 38px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; white-space: nowrap; min-width: 40px; }
 button.primary { background: #1db954; color: #0b0b0b; }
 button.ghost { background: #202020; color: #eaeaea; }
+.title {
+  font-size: 40px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #1db954, #00c3ff, #1db954);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 4s infinite linear;
+}
+@keyframes shine { from { background-position: -200px; } to { background-position: 200px; } }
+.subtitle { color: #9aa0a6; font-size: 16px; text-align: center; margin-bottom: 24px; }
+
 @media (max-width: 768px) {
   .grid { grid-template-columns: 1fr; }
   .card { flex-direction: row; align-items: center; gap: 12px; padding: 12px; min-height: auto; }
