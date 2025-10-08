@@ -1,10 +1,43 @@
 <template>
   <div class="admin-container">
     <header class="header">
-      <h1 class="title">🔍 Administração de usuários</h1>
-      <p class="subtitle">Verifique contas, ative ou desative contas ou envie mensagens!</p>
+      <h1 class="title">🔍 Administração de Usuários</h1>
+      <p class="subtitle">
+        Gerencie contas, status de assinatura e envie mensagens diretas.
+      </p>
     </header>
 
+    <!-- Painel de estatísticas -->
+    <section class="stats-panel">
+      <div
+        class="stat-card total"
+        :class="{ active: selectedFilter === 'todos' }"
+        @click="setFilter('todos')"
+      >
+        <h3>Total</h3>
+        <p>{{ users.length }}</p>
+      </div>
+
+      <div
+        class="stat-card active"
+        :class="{ active: selectedFilter === 'ativos' }"
+        @click="setFilter('ativos')"
+      >
+        <h3>Ativos</h3>
+        <p>{{ activeUsers }}</p>
+      </div>
+
+      <div
+        class="stat-card normal"
+        :class="{ active: selectedFilter === 'normais' }"
+        @click="setFilter('normais')"
+      >
+        <h3>Normais</h3>
+        <p>{{ normalUsers }}</p>
+      </div>
+    </section>
+
+    <!-- Busca -->
     <div class="search-box">
       <input
         v-model="search"
@@ -13,12 +46,9 @@
       />
     </div>
 
+    <!-- Lista de usuários -->
     <div class="user-list">
-      <div
-        class="user-card"
-        v-for="user in filteredUsers"
-        :key="user.uid"
-      >
+      <div v-for="user in filteredUsers" :key="user.uid" class="user-card">
         <div class="user-info">
           <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
           <p class="email">{{ user.email }}</p>
@@ -28,7 +58,7 @@
 
         <div class="user-actions">
           <select v-model="user.subscription" @change="updateSubscription(user)">
-            <option value="" disabled selected>Selecionar status</option>
+            <option value="" disabled>Selecionar status</option>
             <option value="normal">Normal</option>
             <option value="ativa">Ativa</option>
           </select>
@@ -38,13 +68,20 @@
           </button>
         </div>
       </div>
+
+      <div v-if="filteredUsers.length === 0" class="no-results">
+        Nenhum usuário encontrado.
+      </div>
     </div>
 
-    <!-- Modal de envio de mensagem -->
+    <!-- Modal de mensagem -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeMessageModal">
       <div class="modal-content">
         <h3>Enviar mensagem para {{ selectedUser.firstName }}</h3>
-        <textarea v-model="messageText" placeholder="Digite sua mensagem aqui..."></textarea>
+        <textarea
+          v-model="messageText"
+          placeholder="Digite sua mensagem aqui..."
+        ></textarea>
         <div class="modal-buttons">
           <button @click="sendMessage">Enviar</button>
           <button class="cancel" @click="closeMessageModal">Cancelar</button>
@@ -68,20 +105,18 @@ const toast = useToast();
 
 const users = ref([]);
 const search = ref("");
-
+const selectedFilter = ref("todos");
 const showModal = ref(false);
 const selectedUser = ref(null);
 const messageText = ref("");
 
+// Busca usuários
 watch(
   () => userStore.user,
   async (val) => {
     if (val) {
-      if (val.role !== "admin") {
-        router.replace("/");
-      } else {
-        await fetchUsers();
-      }
+      if (val.role !== "admin") router.replace("/");
+      else await fetchUsers();
     }
   },
   { immediate: true }
@@ -89,33 +124,64 @@ watch(
 
 async function fetchUsers() {
   const snapshot = await getDocs(collection(db, "users"));
-  users.value = snapshot.docs.map(doc => ({
+  users.value = snapshot.docs.map((doc) => ({
     uid: doc.id,
-    subscription: "normal",
-    ...doc.data()
+    subscription: doc.data().subscription || "normal",
+    ...doc.data(),
   }));
 }
+
+// Estatísticas
+const activeUsers = computed(() =>
+  users.value.filter((u) => u.subscription === "ativa").length
+);
+const normalUsers = computed(() =>
+  users.value.filter((u) => u.subscription === "normal").length
+);
+
+// Função para mudar o filtro
+function setFilter(type) {
+  selectedFilter.value = type;
+}
+
+// Filtro principal (busca + tipo)
+const filteredUsers = computed(() => {
+  let list = [...users.value];
+
+  // Filtragem por tipo
+  if (selectedFilter.value === "ativos") {
+    list = list.filter((u) => u.subscription === "ativa");
+  } else if (selectedFilter.value === "normais") {
+    list = list.filter((u) => u.subscription === "normal");
+  }
+
+  // Filtro de busca
+  if (search.value) {
+    const s = search.value.toLowerCase();
+    list = list.filter((u) => {
+      const fullName = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
+      const email = u.email?.toLowerCase() || "";
+      const customID = u.customID?.toLowerCase() || "";
+      const uid = u.uid?.toLowerCase() || "";
+      const dateStr = u.createdAt ? formatDate(u.createdAt) : "";
+      return (
+        fullName.includes(s) ||
+        email.includes(s) ||
+        customID.includes(s) ||
+        uid.includes(s) ||
+        dateStr.includes(s)
+      );
+    });
+  }
+
+  return list;
+});
 
 function formatDate(timestamp) {
   if (!timestamp) return "-";
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  return date.toLocaleString();
+  return date.toLocaleDateString();
 }
-
-const filteredUsers = computed(() => {
-  if (!search.value) return users.value;
-
-  return users.value.filter(u => {
-    const fullName = (u.firstName?.toLowerCase() + " " + u.lastName?.toLowerCase());
-    const email = u.email?.toLowerCase() || "";
-    const customID = u.customID?.toLowerCase() || "";
-    const uid = u.uid || "";
-    const dateStr = u.createdAt ? formatDate(u.createdAt) : "";
-
-    const s = search.value.toLowerCase();
-    return fullName.includes(s) || email.includes(s) || customID.includes(s) || uid.includes(s) || dateStr.includes(s);
-  });
-});
 
 async function updateSubscription(user) {
   try {
@@ -123,24 +189,22 @@ async function updateSubscription(user) {
     await updateDoc(userRef, { subscription: user.subscription });
     toast.success(`Assinatura de ${user.firstName} atualizada!`);
   } catch (err) {
-    console.error("Erro ao atualizar assinatura:", err);
+    console.error(err);
     toast.error("Erro ao atualizar assinatura!");
   }
 }
 
-// Funções do modal
+// Modal
 function openMessageModal(user) {
   selectedUser.value = user;
   messageText.value = "";
   showModal.value = true;
 }
-
 function closeMessageModal() {
   showModal.value = false;
   selectedUser.value = null;
   messageText.value = "";
 }
-
 async function sendMessage() {
   if (!messageText.value.trim()) {
     toast.warning("Digite uma mensagem antes de enviar!");
@@ -148,11 +212,13 @@ async function sendMessage() {
   }
   try {
     const userRef = doc(db, "users", selectedUser.value.uid);
-    await updateDoc(userRef, { messages: arrayUnion(messageText.value.trim()) });
+    await updateDoc(userRef, {
+      messages: arrayUnion(messageText.value.trim()),
+    });
     toast.success(`Mensagem enviada para ${selectedUser.value.firstName}!`);
     closeMessageModal();
   } catch (err) {
-    console.error("Erro ao enviar mensagem:", err);
+    console.error(err);
     toast.error("Erro ao enviar a mensagem!");
   }
 }
@@ -167,14 +233,12 @@ async function sendMessage() {
   color: #fff;
   margin-bottom: 5rem;
 }
+
 .header {
   text-align: center;
   margin-bottom: 30px;
 }
-.user-info .createdAt {
-  font-size: 12px;
-  color: #00d1b2;
-}
+
 .title {
   font-size: 36px;
   font-weight: 900;
@@ -183,14 +247,57 @@ async function sendMessage() {
   -webkit-text-fill-color: transparent;
   animation: shine 4s infinite linear;
 }
+
 @keyframes shine {
   from { background-position: -200px; }
   to { background-position: 200px; }
 }
+
 .subtitle {
   font-size: 16px;
   color: #9aa0a6;
 }
+
+/* Painel de estatísticas */
+.stats-panel {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  flex: 1 1 200px;
+  background: #1a1a1a;
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid #00ffd5;
+  transition: transform 0.2s, box-shadow 0.3s;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: scale(1.05);
+}
+
+
+
+.stat-card h3 {
+  color: #00ffd5;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.stat-card p {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat-card.total p { color: #00c3ff; }
+.stat-card.active p { color: #1db954; }
+.stat-card.normal p { color: #ffb84d; }
 
 .search-box {
   margin-bottom: 25px;
@@ -209,17 +316,13 @@ async function sendMessage() {
   transition: box-shadow 0.3s, border 0.3s;
 }
 
-.search-box input::placeholder {
-  color: #ffffff;
-  font-weight: 500;
-}
-
 .search-box input:focus {
   outline: none;
   border-color: #00ffd5;
   box-shadow: 0 0 10px #00ffd5;
 }
 
+/* Lista de usuários */
 .user-list {
   display: flex;
   flex-direction: column;
@@ -263,6 +366,11 @@ async function sendMessage() {
   color: #777;
 }
 
+.user-info .createdAt {
+  font-size: 12px;
+  color: #00d1b2;
+}
+
 .user-actions {
   display: flex;
   gap: 12px;
@@ -281,12 +389,6 @@ async function sendMessage() {
   transition: all 0.2s;
 }
 
-.user-actions select:focus {
-  outline: none;
-  border-color: #00ffee24;
-  box-shadow: 0 0 8px #00fff0;
-}
-
 .user-actions button {
   padding: 8px 14px;
   border-radius: 12px;
@@ -301,31 +403,21 @@ async function sendMessage() {
 
 .user-actions button:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 10px #ff00ff2a, 0 0 10px #00fff0;
+  box-shadow: 0 0 10px #00fff0;
 }
 
-@media (max-width: 768px) {
-  .user-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .user-actions {
-    width: 100%;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-  .user-actions button,
-  .user-actions select {
-    flex: 1 1 45%;
-    margin-bottom: 6px;
-  }
+.no-results {
+  text-align: center;
+  color: #bbb;
+  margin-top: 20px;
+  font-style: italic;
 }
 
 /* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -377,5 +469,17 @@ async function sendMessage() {
 .modal-buttons button:not(.cancel) {
   background: #1db954;
   color: #121212;
+}
+
+@media (max-width: 768px) {
+  .user-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .user-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
 }
 </style>

@@ -13,7 +13,7 @@ import MusicList from '@/components/MusicList.vue';
 .container{
     display:flex;
     background-color: #121212;
-    height: auto;
+    min-height: 200vh;
 
     }
 </style>
