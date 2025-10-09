@@ -254,17 +254,17 @@ async function ativarAssinatura() {
       return $toast.error("Chave inválida!");
 
     // Define data atual e data de término (30 dias depois)
-    const dataInicio = new Date();
-    const dataFim = new Date();
-    dataFim.setDate(dataInicio.getDate() + 30);
+    const start = new Date();
+    const end = new Date();
+    end.setDate(start.getDate() + 30);
 
-    // Salva os dados no Firestore
+    // Atualiza o Firestore
     await setDoc(
       doc(db, "users", userId),
       {
         subscription: "ativa",
-        dataInicio: dataInicio.toISOString(),
-        dataFim: dataFim.toISOString(),
+        subscriptionStart: start.toISOString(),
+        subscriptionEnd: end.toISOString(),
       },
       { merge: true }
     );
@@ -272,8 +272,8 @@ async function ativarAssinatura() {
     assinaturaAtiva.value = true;
     assinaturaModal.value = false;
 
-    // reload com contagem
-    $toast.success("Ativada com sucesso, a página será recarregada", {
+    // Reload com contagem
+    $toast.success("Ativada com sucesso! A página será recarregada", {
       position: "top",
     });
     for (let i = 3; i > 0; i--) {
@@ -286,6 +286,7 @@ async function ativarAssinatura() {
     $toast.error("Erro ao ativar assinatura!");
   }
 }
+
 
 
 // notificações

@@ -163,7 +163,7 @@ async function login() {
     }
     window.location.href = "/"
   } catch (err) {
-    error.value = err.message
+    error.value = 'Senha ou Email incorretos!'
     loading.value = false
   }
 }

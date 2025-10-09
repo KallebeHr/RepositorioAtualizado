@@ -5,6 +5,8 @@
       <p class="subtitle">
         Gerencie contas, status de assinatura e envie mensagens diretas.
       </p>
+
+      
     </header>
 
     <!-- Painel de estatísticas -->
@@ -15,7 +17,7 @@
         @click="setFilter('todos')"
       >
         <h3>Total</h3>
-        <p>{{ users.length }}</p>
+        <p>{{ users.length }}</p> 
       </div>
 
       <div
@@ -104,7 +106,6 @@ import {
   doc,
   updateDoc,
   arrayUnion,
-  serverTimestamp,
 } from "firebase/firestore";
 import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
@@ -242,7 +243,9 @@ async function updateSubscription(user) {
         subscriptionStart: startDate,
         subscriptionEnd: endDate,
       });
-      toast.success(`Assinatura ativada para ${user.firstName} até ${endDate.toLocaleDateString()}`);
+      toast.success(
+        `Assinatura ativada para ${user.firstName} até ${endDate.toLocaleDateString()}`
+      );
     } else {
       await updateDoc(userRef, {
         subscription: "normal",
@@ -256,6 +259,38 @@ async function updateSubscription(user) {
   } catch (err) {
     console.error(err);
     toast.error("Erro ao atualizar assinatura!");
+  }
+}
+
+// Atribuir 30 dias a todos os usuários ativos
+async function assignDatesToActiveUsers() {
+  try {
+    const activeList = users.value.filter(
+      (u) => u.subscription === "ativa"
+    );
+
+    if (activeList.length === 0) {
+      toast.info("Nenhum usuário ativo encontrado.");
+      return;
+    }
+
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(startDate.getDate() + 30);
+
+    for (const u of activeList) {
+      const userRef = doc(db, "users", u.uid);
+      await updateDoc(userRef, {
+        subscriptionStart: startDate,
+        subscriptionEnd: endDate,
+      });
+    }
+
+    toast.success(`Datas aplicadas a ${activeList.length} usuários ativos!`);
+    await fetchUsers();
+  } catch (err) {
+    console.error(err);
+    toast.error("Erro ao atribuir datas!");
   }
 }
 
