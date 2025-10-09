@@ -250,17 +250,35 @@ async function ativarAssinatura() {
 
     const chaveDoc = querySnapshot.docs[0];
     const keys = chaveDoc.data().Keys || [];
-    if (!keys.includes(chaveAssinatura.value)) return $toast.error("Chave inválida!");
+    if (!keys.includes(chaveAssinatura.value))
+      return $toast.error("Chave inválida!");
 
-    await setDoc(doc(db, "users", userId), { subscription: "ativa" }, { merge: true });
+    // Define data atual e data de término (30 dias depois)
+    const dataInicio = new Date();
+    const dataFim = new Date();
+    dataFim.setDate(dataInicio.getDate() + 30);
+
+    // Salva os dados no Firestore
+    await setDoc(
+      doc(db, "users", userId),
+      {
+        subscription: "ativa",
+        dataInicio: dataInicio.toISOString(),
+        dataFim: dataFim.toISOString(),
+      },
+      { merge: true }
+    );
+
     assinaturaAtiva.value = true;
     assinaturaModal.value = false;
 
     // reload com contagem
-    $toast.success('Ativao com sucesso, a pagina será recarregada', { position: 'top' });
+    $toast.success("Ativada com sucesso, a página será recarregada", {
+      position: "top",
+    });
     for (let i = 3; i > 0; i--) {
-      $toast.info(`Recarregando em ${i}...`, { position: 'top' });
-      await new Promise(res => setTimeout(res, 1000));
+      $toast.info(`Recarregando em ${i}...`, { position: "top" });
+      await new Promise((res) => setTimeout(res, 1000));
     }
     window.location.reload();
   } catch (err) {
@@ -268,6 +286,7 @@ async function ativarAssinatura() {
     $toast.error("Erro ao ativar assinatura!");
   }
 }
+
 
 // notificações
 async function openNotificationsModal() {

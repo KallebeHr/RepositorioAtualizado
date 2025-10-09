@@ -54,6 +54,10 @@
           <p class="email">{{ user.email }}</p>
           <p class="id">ID: {{ user.customID || user.uid }}</p>
           <p class="createdAt">Inscrito: {{ formatDate(user.createdAt) }}</p>
+          <p v-if="user.subscription === 'ativa'" class="subscription-dates">
+            Início: {{ formatDate(user.subscriptionStart) }} <br />
+            Expira em: {{ formatDate(user.subscriptionEnd) }}
+          </p>
         </div>
 
         <div class="user-actions">
@@ -94,7 +98,14 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { db } from "@/firebase";
-import { collection, getDocs, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  arrayUnion,
+  serverTimestamp,
+} from "firebase/firestore";
 import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toast-notification";
@@ -110,7 +121,7 @@ const showModal = ref(false);
 const selectedUser = ref(null);
 const messageText = ref("");
 
-// Busca usuários
+// Observa se o admin está logado e carrega usuários
 watch(
   () => userStore.user,
   async (val) => {
@@ -122,13 +133,45 @@ watch(
   { immediate: true }
 );
 
+// Busca usuários e atualiza assinaturas expiradas
 async function fetchUsers() {
   const snapshot = await getDocs(collection(db, "users"));
-  users.value = snapshot.docs.map((doc) => ({
-    uid: doc.id,
-    subscription: doc.data().subscription || "normal",
-    ...doc.data(),
-  }));
+  const now = new Date();
+
+  const fetchedUsers = [];
+  for (const d of snapshot.docs) {
+    const data = d.data();
+    let subscription = data.subscription || "normal";
+    let start = data.subscriptionStart
+      ? new Date(data.subscriptionStart.seconds * 1000)
+      : null;
+    let end = data.subscriptionEnd
+      ? new Date(data.subscriptionEnd.seconds * 1000)
+      : null;
+
+    // Expiração automática
+    if (subscription === "ativa" && end && end < now) {
+      const userRef = doc(db, "users", d.id);
+      await updateDoc(userRef, {
+        subscription: "normal",
+        subscriptionStart: null,
+        subscriptionEnd: null,
+      });
+      subscription = "normal";
+      start = null;
+      end = null;
+    }
+
+    fetchedUsers.push({
+      uid: d.id,
+      subscription,
+      subscriptionStart: start,
+      subscriptionEnd: end,
+      ...data,
+    });
+  }
+
+  users.value = fetchedUsers;
 }
 
 // Estatísticas
@@ -148,14 +191,12 @@ function setFilter(type) {
 const filteredUsers = computed(() => {
   let list = [...users.value];
 
-  // Filtragem por tipo
   if (selectedFilter.value === "ativos") {
     list = list.filter((u) => u.subscription === "ativa");
   } else if (selectedFilter.value === "normais") {
     list = list.filter((u) => u.subscription === "normal");
   }
 
-  // Filtro de busca
   if (search.value) {
     const s = search.value.toLowerCase();
     list = list.filter((u) => {
@@ -177,34 +218,60 @@ const filteredUsers = computed(() => {
   return list;
 });
 
+// Formata datas
 function formatDate(timestamp) {
   if (!timestamp) return "-";
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const date = timestamp.toDate
+    ? timestamp.toDate()
+    : new Date(timestamp.seconds ? timestamp.seconds * 1000 : timestamp);
   return date.toLocaleDateString();
 }
 
+// Atualiza status de assinatura (ativa/normal)
 async function updateSubscription(user) {
   try {
     const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, { subscription: user.subscription });
-    toast.success(`Assinatura de ${user.firstName} atualizada!`);
+
+    if (user.subscription === "ativa") {
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(startDate.getDate() + 30);
+
+      await updateDoc(userRef, {
+        subscription: "ativa",
+        subscriptionStart: startDate,
+        subscriptionEnd: endDate,
+      });
+      toast.success(`Assinatura ativada para ${user.firstName} até ${endDate.toLocaleDateString()}`);
+    } else {
+      await updateDoc(userRef, {
+        subscription: "normal",
+        subscriptionStart: null,
+        subscriptionEnd: null,
+      });
+      toast.info(`Assinatura de ${user.firstName} foi removida.`);
+    }
+
+    await fetchUsers();
   } catch (err) {
     console.error(err);
     toast.error("Erro ao atualizar assinatura!");
   }
 }
 
-// Modal
+// Modal de mensagem
 function openMessageModal(user) {
   selectedUser.value = user;
   messageText.value = "";
   showModal.value = true;
 }
+
 function closeMessageModal() {
   showModal.value = false;
   selectedUser.value = null;
   messageText.value = "";
 }
+
 async function sendMessage() {
   if (!messageText.value.trim()) {
     toast.warning("Digite uma mensagem antes de enviar!");
@@ -265,6 +332,73 @@ async function sendMessage() {
   gap: 18px;
   margin-bottom: 25px;
   flex-wrap: wrap;
+}.admin-container {
+  padding: 20px;
+}
+.header {
+  margin-bottom: 20px;
+}
+.stats-panel {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  cursor: pointer;
+  background: #f2f2f2;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  flex: 1;
+  transition: 0.2s;
+}
+.stat-card.active {
+  background: #d0e8ff;
+}
+.search-box {
+  margin-bottom: 20px;
+}
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.user-card {
+  display: flex;
+  justify-content: space-between;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid #eee;
+}
+.user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+}
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.subscription-dates {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 6px;
 }
 
 .stat-card {
