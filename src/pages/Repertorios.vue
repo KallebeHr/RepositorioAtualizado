@@ -10,7 +10,7 @@
 
     <div v-if="!loading && musicas.length" class="card-repertorio">
       <div class="info">
-        <h2>Repertório Outubro</h2>
+        <h2>Repertório Novembro</h2>
         <p>{{ musicas.length }} músicas disponíveis</p>
       </div>
 
