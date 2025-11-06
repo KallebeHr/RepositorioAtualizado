@@ -134,7 +134,7 @@ async function handleDownloadAllOne() {
 
       if (counter < 0) {
         clearInterval(interval)
-        window.location.href = "https://www.mediafire.com/file_premium/gonyit06jud9viv/PARTE_1_OUTUBRO.rar/file"
+        window.location.href = "https://www.mediafire.com/file_premium/jhmgjbngmsdh5or/PARTE_1.rar/file"
       }
     }, 1000)
 
@@ -159,7 +159,7 @@ async function handleDownloadAllTwo() {
 
       if (counter < 0) {
         clearInterval(interval)
-        window.location.href = "https://www.mediafire.com/file_premium/mq91ersigjbmxa7/PARTE_2_OUTUBRO.rar/file"
+        window.location.href = "https://www.mediafire.com/file_premium/vb11ik8tpyvnjen/PARTE_2.rar/file"
 
       }
     }, 1000)
