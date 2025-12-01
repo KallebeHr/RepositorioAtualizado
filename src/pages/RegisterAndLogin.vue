@@ -19,6 +19,10 @@
         </div>
 
         <label>
+          <input v-model="numero" class="input" type="numero" required />
+          <span>Numero</span>
+        </label>
+        <label>
           <input v-model="email" class="input" type="email" required />
           <span>Email</span>
         </label>
@@ -93,6 +97,7 @@ const isLogin = ref(route.query.mode === "login")
 const firstName = ref("")
 const lastName = ref("")
 const email = ref("")
+const numero = ref("")
 const password = ref("")
 const confirmPassword = ref("")
 const error = ref("")
@@ -137,6 +142,7 @@ await setDoc(doc(db, "users", res.user.uid), {
   firstName: firstName.value,
   lastName: lastName.value,      
   email: email.value,
+  numero: numero.value,
   createdAt: new Date(),
   customID,
   hasSubscription: false,         

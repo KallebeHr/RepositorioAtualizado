@@ -57,6 +57,7 @@
         <div class="user-info">
           <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
           <p class="email">{{ user.email }}</p>
+          <p class="email">{{ user.numero }}</p>
           <p class="id">ID: {{ user.customID || user.uid }}</p>
           <p class="createdAt">Inscrito: {{ formatDate(user.createdAt) }}</p>
           <p v-if="user.subscription === 'ativa'" class="subscription-dates">
@@ -307,6 +308,7 @@ function exportUsersToExcel() {
   const data = users.value.map((u) => ({
     Nome: `${u.firstName || ""} ${u.lastName || ""}`,
     Email: u.email || "-",
+    Numero: u.numero || "-",
     ID: u.customID || u.uid,
     Assinatura: u.subscription,
     "Início da Assinatura": u.subscriptionStart
