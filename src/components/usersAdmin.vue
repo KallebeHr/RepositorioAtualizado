@@ -6,7 +6,10 @@
         Gerencie contas, status de assinatura e envie mensagens diretas.
       </p>
 
-      
+      <!-- BOTÃO NOVO: GERAR EXCEL -->
+      <button class="excel-btn" @click="exportUsersToExcel">
+        📄 Gerar Excel
+      </button>
     </header>
 
     <!-- Painel de estatísticas -->
@@ -97,6 +100,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, watch } from "vue";
 import { db } from "@/firebase";
@@ -110,6 +114,9 @@ import {
 import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toast-notification";
+
+// NOVO: biblioteca para gerar Excel
+import * as XLSX from "xlsx";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -262,38 +269,6 @@ async function updateSubscription(user) {
   }
 }
 
-// Atribuir 30 dias a todos os usuários ativos
-async function assignDatesToActiveUsers() {
-  try {
-    const activeList = users.value.filter(
-      (u) => u.subscription === "ativa"
-    );
-
-    if (activeList.length === 0) {
-      toast.info("Nenhum usuário ativo encontrado.");
-      return;
-    }
-
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(startDate.getDate() + 30);
-
-    for (const u of activeList) {
-      const userRef = doc(db, "users", u.uid);
-      await updateDoc(userRef, {
-        subscriptionStart: startDate,
-        subscriptionEnd: endDate,
-      });
-    }
-
-    toast.success(`Datas aplicadas a ${activeList.length} usuários ativos!`);
-    await fetchUsers();
-  } catch (err) {
-    console.error(err);
-    toast.error("Erro ao atribuir datas!");
-  }
-}
-
 // Modal de mensagem
 function openMessageModal(user) {
   selectedUser.value = user;
@@ -324,7 +299,36 @@ async function sendMessage() {
     toast.error("Erro ao enviar a mensagem!");
   }
 }
+
+/* -----------------------------------------------------
+   🔥 NOVA FUNÇÃO: GERAR E BAIXAR O EXCEL COM OS USUÁRIOS
+------------------------------------------------------ */
+function exportUsersToExcel() {
+  const data = users.value.map((u) => ({
+    Nome: `${u.firstName || ""} ${u.lastName || ""}`,
+    Email: u.email || "-",
+    ID: u.customID || u.uid,
+    Assinatura: u.subscription,
+    "Início da Assinatura": u.subscriptionStart
+      ? formatDate(u.subscriptionStart)
+      : "-",
+    "Fim da Assinatura": u.subscriptionEnd
+      ? formatDate(u.subscriptionEnd)
+      : "-",
+    Criado: u.createdAt ? formatDate(u.createdAt) : "-",
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Usuários");
+
+  XLSX.writeFile(workbook, "usuarios.xlsx");
+
+  toast.success("Excel gerado com sucesso!");
+}
 </script>
+
 
 <style scoped>
 .admin-container {
@@ -545,7 +549,22 @@ async function sendMessage() {
   gap: 12px;
   align-items: center;
 }
+.excel-btn {
+  margin-top: 15px;
+  padding: 10px 18px;
+  background: #00ffd5;
+  color: #000;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: 0.2s;
+}
 
+.excel-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 12px #00ffd5;
+}
 .user-actions select {
   padding: 8px 14px;
   border-radius: 12px;
