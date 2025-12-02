@@ -21,7 +21,7 @@
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllOne"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM NOVEMBRO' }}
         </button>
         <h2>BAIXAR PARTE DOIS</h2>
         <button
@@ -29,7 +29,70 @@
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllTwo"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS NOVEMBRO' }}
+        </button>
+      </div>
+
+      <v-progress-linear
+        v-if="progress !== null"
+        :model-value="progress"
+        color="blue-darken-3"
+        height="6"
+        rounded
+        striped
+        class="progress-bar"
+      ></v-progress-linear>
+    </div>
+<!-- 🔐 MODAL DE SENHA -->
+<div v-if="showModalSenha" class="modal-overlay">
+  <div class="modal-content">
+
+    <h2>🔐 Digite a senha para liberar o download</h2>
+
+    <input 
+      v-model="senhaDigitada" 
+      type="password" 
+      placeholder="Digite a senha..."
+      class="modal-input"
+    />
+
+    <div class="modal-buttons">
+      <button @click="confirmarSenha" class="modal-confirm">
+        Confirmar
+      </button>
+      <button @click="cancelarSenha" class="modal-cancel">
+        Cancelar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+    <div v-if="!loading && !musicas.length" class="status">
+      Nenhuma música disponível.
+    </div>
+    <div v-if="!loading && musicas.length" class="card-repertorio">
+      <div class="info">
+        <h2>Repertório Dezembro</h2>
+        <p>4872 músicas disponíveis</p>
+      </div>
+
+      <div class="actions">
+        <h2>BAIXAR PARTE UM</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllOneDezembro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM DEZEMBRO' }}
+        </button>
+        <h2>BAIXAR PARTE DOIS</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllTwoDezembro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS DEZEMBRO' }}
         </button>
       </div>
 
@@ -63,7 +126,9 @@ const error = ref("")
 const musicas = ref([])
 const progress = ref(null)
 const showScrollTop = ref(false)
-
+const showModalSenha = ref(false);
+const senhaDigitada = ref("");
+let resolveSenha;
 const toast = useToast()
 const userStore = useUserStore()
 
@@ -171,6 +236,92 @@ async function handleDownloadAllTwo() {
   }
 }
 
+function solicitarSenha() {
+  return new Promise((resolve) => {
+    resolveSenha = resolve;
+    senhaDigitada.value = "";
+    showModalSenha.value = true;
+  });
+}
+
+function confirmarSenha() {
+  const senhaCorreta = "8090";
+  const ok = senhaDigitada.value === senhaCorreta;
+
+  showModalSenha.value = false;
+  resolveSenha(ok);
+}
+
+function cancelarSenha() {
+  showModalSenha.value = false;
+  resolveSenha(false);
+}
+
+// ---------------------------------------------
+// 📂 DEZEMBRO - PARTE 1
+async function handleDownloadAllOneDezembro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  const senhaOk = await solicitarSenha();
+  if (!senhaOk) {
+    toast.error("Senha incorreta! ❌");
+    return;
+  }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file/634ad95rqcq7nvw/PARTE+1.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+
+// ---------------------------------------------
+// 📂 DEZEMBRO - PARTE 2
+async function handleDownloadAllTwoDezembro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  const senhaOk = await solicitarSenha();
+  if (!senhaOk) {
+    toast.error("Senha incorreta! ❌");
+    return;
+  }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file/k9t44zfunolg7rp/PARTE+2+.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
 
 // Scroll-top
 function handleScroll() { showScrollTop.value = window.scrollY > 200 }
@@ -188,7 +339,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
   width: 100%;
   padding: 24px 32px;
     background-color: #121212;
-    height: 98vh;
+  height: auto;
   color: #fff;
   font-family: Inter, system-ui, sans-serif;
   display: flex;
@@ -211,6 +362,7 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
 .card-repertorio {
   background: linear-gradient(135deg, #1db954, #00c3ff);
   border-radius: 20px;
+  margin-bottom: 5rem;
   padding: 32px;
   text-align: center;
   width: 100%;
@@ -225,6 +377,70 @@ onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll))
 }
 .card-repertorio h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
 .card-repertorio p { font-size: 16px; margin-bottom: 16px; }
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 25px;
+  width: 90%;
+  max-width: 360px;
+  border-radius: 12px;
+  text-align: center;
+  animation: fadeIn .2s ease;
+  color: #0b0b0b;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  color: #0b0b0b;
+}
+
+.modal-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.modal-confirm {
+  flex: 1;
+  padding: 12px;
+  background: #1976D2;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.modal-cancel {
+  flex: 1;
+  padding: 12px;
+  background: #888;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
 .actions { margin-bottom: 12px; }
 button.primary {

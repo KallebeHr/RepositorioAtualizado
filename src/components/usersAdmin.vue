@@ -6,10 +6,17 @@
         Gerencie contas, status de assinatura e envie mensagens diretas.
       </p>
 
-      <!-- BOTÃO NOVO: GERAR EXCEL -->
-      <button class="excel-btn" @click="exportUsersToExcel">
-        📄 Gerar Excel
-      </button>
+      <!-- BOTÕES DO TOPO -->
+      <div class="top-buttons">
+        <button class="excel-btn" @click="exportUsersToExcel">
+          📄 Gerar Excel
+        </button>
+
+        <!-- NOVO: BOTÃO MENSAGEM EM MASSA -->
+        <button class="mass-btn" @click="openMassMessageModal">
+          📢 Mensagem em Massa
+        </button>
+      </div>
     </header>
 
     <!-- Painel de estatísticas -->
@@ -20,7 +27,7 @@
         @click="setFilter('todos')"
       >
         <h3>Total</h3>
-        <p>{{ users.length }}</p> 
+        <p>{{ users.length }}</p>
       </div>
 
       <div
@@ -84,7 +91,7 @@
       </div>
     </div>
 
-    <!-- Modal de mensagem -->
+    <!-- Modal de mensagem individual -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeMessageModal">
       <div class="modal-content">
         <h3>Enviar mensagem para {{ selectedUser.firstName }}</h3>
@@ -98,9 +105,32 @@
         </div>
       </div>
     </div>
+
+    <!-- 🔥 NOVO: MODAL DE MENSAGEM EM MASSA -->
+    <div
+      v-if="showMassModal"
+      class="modal-overlay"
+      @click.self="closeMassMessageModal"
+    >
+      <div class="modal-content">
+        <h3>Enviar mensagem em massa</h3>
+        <p class="helper">
+          Enviar para: <strong>{{ filteredUsers.length }}</strong> usuários filtrados
+        </p>
+
+        <textarea
+          v-model="massMessageText"
+          placeholder="Digite a mensagem que será enviada para todos..."
+        ></textarea>
+
+        <div class="modal-buttons">
+          <button @click="sendMassMessage">Enviar para Todos</button>
+          <button class="cancel" @click="closeMassMessageModal">Cancelar</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
-
 
 <script setup>
 import { ref, computed, watch } from "vue";
@@ -116,7 +146,6 @@ import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toast-notification";
 
-// NOVO: biblioteca para gerar Excel
 import * as XLSX from "xlsx";
 
 const router = useRouter();
@@ -126,11 +155,16 @@ const toast = useToast();
 const users = ref([]);
 const search = ref("");
 const selectedFilter = ref("todos");
+
 const showModal = ref(false);
 const selectedUser = ref(null);
 const messageText = ref("");
 
-// Observa se o admin está logado e carrega usuários
+/* NOVO */
+const showMassModal = ref(false);
+const massMessageText = ref("");
+
+// Verifica admin
 watch(
   () => userStore.user,
   async (val) => {
@@ -142,14 +176,16 @@ watch(
   { immediate: true }
 );
 
-// Busca usuários e atualiza assinaturas expiradas
+// Carregar usuários
 async function fetchUsers() {
   const snapshot = await getDocs(collection(db, "users"));
   const now = new Date();
 
   const fetchedUsers = [];
+
   for (const d of snapshot.docs) {
     const data = d.data();
+
     let subscription = data.subscription || "normal";
     let start = data.subscriptionStart
       ? new Date(data.subscriptionStart.seconds * 1000)
@@ -158,7 +194,6 @@ async function fetchUsers() {
       ? new Date(data.subscriptionEnd.seconds * 1000)
       : null;
 
-    // Expiração automática
     if (subscription === "ativa" && end && end < now) {
       const userRef = doc(db, "users", d.id);
       await updateDoc(userRef, {
@@ -166,6 +201,7 @@ async function fetchUsers() {
         subscriptionStart: null,
         subscriptionEnd: null,
       });
+
       subscription = "normal";
       start = null;
       end = null;
@@ -183,7 +219,6 @@ async function fetchUsers() {
   users.value = fetchedUsers;
 }
 
-// Estatísticas
 const activeUsers = computed(() =>
   users.value.filter((u) => u.subscription === "ativa").length
 );
@@ -191,12 +226,11 @@ const normalUsers = computed(() =>
   users.value.filter((u) => u.subscription === "normal").length
 );
 
-// Função para mudar o filtro
 function setFilter(type) {
   selectedFilter.value = type;
 }
 
-// Filtro principal (busca + tipo)
+// Filtro + busca
 const filteredUsers = computed(() => {
   let list = [...users.value];
 
@@ -208,12 +242,14 @@ const filteredUsers = computed(() => {
 
   if (search.value) {
     const s = search.value.toLowerCase();
+
     list = list.filter((u) => {
       const fullName = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
       const email = u.email?.toLowerCase() || "";
       const customID = u.customID?.toLowerCase() || "";
       const uid = u.uid?.toLowerCase() || "";
       const dateStr = u.createdAt ? formatDate(u.createdAt) : "";
+
       return (
         fullName.includes(s) ||
         email.includes(s) ||
@@ -227,16 +263,19 @@ const filteredUsers = computed(() => {
   return list;
 });
 
-// Formata datas
+// Datas
 function formatDate(timestamp) {
   if (!timestamp) return "-";
   const date = timestamp.toDate
     ? timestamp.toDate()
     : new Date(timestamp.seconds ? timestamp.seconds * 1000 : timestamp);
+
   return date.toLocaleDateString();
 }
 
-// Atualiza status de assinatura (ativa/normal)
+// ----------------------
+// Atualizar assinatura
+// ----------------------
 async function updateSubscription(user) {
   try {
     const userRef = doc(db, "users", user.uid);
@@ -251,6 +290,7 @@ async function updateSubscription(user) {
         subscriptionStart: startDate,
         subscriptionEnd: endDate,
       });
+
       toast.success(
         `Assinatura ativada para ${user.firstName} até ${endDate.toLocaleDateString()}`
       );
@@ -260,6 +300,7 @@ async function updateSubscription(user) {
         subscriptionStart: null,
         subscriptionEnd: null,
       });
+
       toast.info(`Assinatura de ${user.firstName} foi removida.`);
     }
 
@@ -270,7 +311,7 @@ async function updateSubscription(user) {
   }
 }
 
-// Modal de mensagem
+// -------- MODAL INDIVIDUAL --------
 function openMessageModal(user) {
   selectedUser.value = user;
   messageText.value = "";
@@ -280,30 +321,74 @@ function openMessageModal(user) {
 function closeMessageModal() {
   showModal.value = false;
   selectedUser.value = null;
-  messageText.value = "";
 }
 
+// Enviar individual
 async function sendMessage() {
   if (!messageText.value.trim()) {
-    toast.warning("Digite uma mensagem antes de enviar!");
+    toast.warning("Digite uma mensagem!");
     return;
   }
+
   try {
     const userRef = doc(db, "users", selectedUser.value.uid);
+
     await updateDoc(userRef, {
       messages: arrayUnion(messageText.value.trim()),
     });
+
     toast.success(`Mensagem enviada para ${selectedUser.value.firstName}!`);
     closeMessageModal();
   } catch (err) {
     console.error(err);
-    toast.error("Erro ao enviar a mensagem!");
+    toast.error("Erro ao enviar mensagem");
   }
 }
 
-/* -----------------------------------------------------
-   🔥 NOVA FUNÇÃO: GERAR E BAIXAR O EXCEL COM OS USUÁRIOS
------------------------------------------------------- */
+// --------------
+// 🔥 MENSAGEM EM MASSA
+// --------------
+function openMassMessageModal() {
+  massMessageText.value = "";
+  showMassModal.value = true;
+}
+
+function closeMassMessageModal() {
+  showMassModal.value = false;
+}
+
+// Enviar para todos filtrados
+async function sendMassMessage() {
+  if (!massMessageText.value.trim()) {
+    toast.warning("Digite a mensagem!");
+    return;
+  }
+
+  const list = filteredUsers.value;
+
+  if (list.length === 0) {
+    toast.warning("Nenhum usuário filtrado.");
+    return;
+  }
+
+  try {
+    for (const user of list) {
+      const userRef = doc(db, "users", user.uid);
+
+      await updateDoc(userRef, {
+        messages: arrayUnion(massMessageText.value.trim()),
+      });
+    }
+
+    toast.success(`Mensagem enviada para ${list.length} usuários!`);
+    closeMassMessageModal();
+  } catch (err) {
+    console.error(err);
+    toast.error("Erro ao enviar mensagens em massa!");
+  }
+}
+
+/* EXCEL */
 function exportUsersToExcel() {
   const data = users.value.map((u) => ({
     Nome: `${u.firstName || ""} ${u.lastName || ""}`,
@@ -322,11 +407,9 @@ function exportUsersToExcel() {
 
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
-
   XLSX.utils.book_append_sheet(workbook, worksheet, "Usuários");
 
   XLSX.writeFile(workbook, "usuarios.xlsx");
-
   toast.success("Excel gerado com sucesso!");
 }
 </script>
@@ -404,6 +487,7 @@ function exportUsersToExcel() {
   flex-direction: column;
   gap: 10px;
 }
+
 .user-card {
   display: flex;
   justify-content: space-between;
