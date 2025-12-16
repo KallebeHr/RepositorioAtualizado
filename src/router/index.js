@@ -61,10 +61,7 @@ router.onError((err, to) => {
 router.isReady().then(() => {
   localStorage.removeItem('vuetify:dynamic-reload')
 })
-
-/* ----------------------------------
-   🔐 Auth + role admin
------------------------------------ */
+  
 let authReady = null
 function waitForAuth() {
   if (!authReady) {
