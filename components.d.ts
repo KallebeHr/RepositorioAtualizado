@@ -20,6 +20,7 @@ declare module 'vue' {
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     Home: typeof import('./src/components/Home.vue')['default']
     ListCantores: typeof import('./src/components/ListCantores.vue')['default']
+    MusicCard: typeof import('./src/components/MusicCard.vue')['default']
     MusicList: typeof import('./src/components/MusicList.vue')['default']
     MusicPlayer: typeof import('./src/components/MusicPlayer.vue')['default']
     Pc: typeof import('./src/components/pc.vue')['default']

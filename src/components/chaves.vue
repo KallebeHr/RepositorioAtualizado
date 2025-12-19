@@ -34,19 +34,33 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { db } from "@/firebase";
-import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, setDoc  } from "firebase/firestore";
 
 const keys = ref([]);
 const manualKey = ref("");
-let keysDocRef = null; // referência ao documento com ID aleatório
+let keysDocRef = null; 
 
 async function fetchKeys() {
-  const snapshot = await getDocs(collection(db, "Chaves"));
-  if (!snapshot.empty) {
-    const docSnap = snapshot.docs[0]; // pega o primeiro documento da coleção
-    keysDocRef = doc(db, "Chaves", docSnap.id);
-    keys.value = docSnap.data().Keys || [];
+  const colRef = collection(db, "Chaves");
+  const snapshot = await getDocs(colRef);
+
+  // 👉 Se NÃO existir nenhum documento
+  if (snapshot.empty) {
+    const newDocRef = doc(colRef); // gera ID automático
+
+    await setDoc(newDocRef, {
+      Keys: []
+    });
+
+    keysDocRef = newDocRef;
+    keys.value = [];
+    return;
   }
+
+  // 👉 Se já existir
+  const docSnap = snapshot.docs[0];
+  keysDocRef = doc(db, "Chaves", docSnap.id);
+  keys.value = docSnap.data().Keys || [];
 }
 
 // Adiciona chave aleatória
@@ -67,6 +81,7 @@ async function addRandomKey() {
 async function addManualKey() {
   if (!keysDocRef) return;
   const key = manualKey.value.trim();
+  console.log('entrou')
   if (!key) return;
   try {
     await updateDoc(keysDocRef, {
