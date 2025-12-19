@@ -63,8 +63,10 @@
       <div v-for="user in filteredUsers" :key="user.uid" class="user-card">
         <div class="user-info">
           <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
-          <p class="email">{{ user.email }}</p>
-          <p class="email">{{ user.numero }}</p>
+
+          <p class="email">Email:{{ user.email }}</p>
+          <p class="senha">Senha:{{ user.password }}</p>
+          <p class="email">Numero:{{ user.numero }} </p>
           <p class="id">ID: {{ user.customID || user.uid }}</p>
           <p class="createdAt">Inscrito: {{ formatDate(user.createdAt) }}</p>
           <p v-if="user.subscription === 'ativa'" class="subscription-dates">

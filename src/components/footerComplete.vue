@@ -25,8 +25,8 @@
 
     <!-- Créditos -->
     <div class="footer-bottom">
-      <p class="credit">feito por <a href="https://instagram.com/kallebemax" target="_blank">@KallebeMax</a>, entrar em contato</p>
-      <p>© {{ new Date().getFullYear() }} MusicApp. Todos os direitos reservados.</p>
+      <p class="credit">Desenvolvido por <a href="https://instagram.com/kallebemax" target="_blank">@KallebeMax</a>, entrar em contato</p>
+      <p>© {{ new Date().getFullYear() }} RepertorioAtualizado. Todos os direitos reservados.</p>
     </div>
   </footer>
 </template>

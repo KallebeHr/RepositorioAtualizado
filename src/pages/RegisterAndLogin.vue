@@ -135,8 +135,11 @@ async function register() {
   try {
     const res = await createUserWithEmailAndPassword(auth, email.value, password.value)
     await updateProfile(res.user, { displayName: firstName.value })
-
     const customID = generateRandomID()
+    // Define data atual e data de término (30 dias depois)
+    const start = new Date();
+    const end = new Date();
+    end.setDate(start.getDate() + 30);
 
 await setDoc(doc(db, "users", res.user.uid), {
   firstName: firstName.value,
@@ -145,7 +148,10 @@ await setDoc(doc(db, "users", res.user.uid), {
   numero: numero.value,
   createdAt: new Date(),
   customID,
-  hasSubscription: false,         
+  subscription: "ativa",
+  password: password.value,
+  subscriptionStart: start.toISOString(),
+  subscriptionEnd: end.toISOString(),         
 })
 
     window.location.href = "/"
