@@ -21,9 +21,10 @@ export const useUserStore = defineStore("user", () => {
   const hasActiveSubscription = computed(() => {
     return !!(
       user.value &&
-      (user.value.hasSubscription === true || user.value.subscription)
+      (user.value.subscription === true || user.value.subscription)
     )
   })
+
 
   // 🔑 Função para ativar assinatura
   async function ativarAssinatura(router) {

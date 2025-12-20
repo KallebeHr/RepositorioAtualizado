@@ -29,12 +29,12 @@
 
         <label>
           <input v-model="password" class="input" type="password" required />
-          <span>Senha</span>
+          <span>Crie uma senha</span>
         </label>
 
         <label>
           <input v-model="confirmPassword" class="input" type="password" required />
-          <span>Confirme Senha</span>
+          <span>Confirme sua Senha</span>
         </label>
 
         <button class="submit" type="submit" :disabled="loading">
@@ -155,10 +155,19 @@ await setDoc(doc(db, "users", res.user.uid), {
 })
 
     window.location.href = "/"
-  } catch (err) {
-    error.value = err.message
-    loading.value = false
+} catch (err) {
+  if (err.code === "auth/email-already-in-use") {
+    error.value = "Este email já está cadastrado. Faça login ou use outro email."
+  } else if (err.code === "auth/invalid-email") {
+    error.value = "Email inválido."
+  } else if (err.code === "auth/weak-password") {
+    error.value = "A senha deve ter pelo menos 6 caracteres."
+  } else {
+    error.value = "Erro ao criar conta. Tente novamente."
   }
+
+  loading.value = false
+}
 }
 
 async function login() {
