@@ -7,42 +7,6 @@
 
     <div v-if="loading" class="status">Carregando músicas...</div>
     <div v-if="error" class="status error">{{ error }}</div>
-
-    <div v-if="!loading && musicas.length" class="card-repertorio">
-      <div class="info">
-        <h2>Repertório Novembro</h2>
-        <p>{{ musicas.length }} músicas disponíveis</p>
-      </div>
-
-      <div class="actions">
-        <h2>BAIXAR PARTE UM</h2>
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllOne"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM NOVEMBRO' }}
-        </button>
-        <h2>BAIXAR PARTE DOIS</h2>
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllTwo"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS NOVEMBRO' }}
-        </button>
-      </div>
-
-      <v-progress-linear
-        v-if="progress !== null"
-        :model-value="progress"
-        color="blue-darken-3"
-        height="6"
-        rounded
-        striped
-        class="progress-bar"
-      ></v-progress-linear>
-    </div>
 <!-- 🔐 MODAL DE SENHA -->
 <div v-if="showModalSenha" class="modal-overlay">
   <div class="modal-content">
