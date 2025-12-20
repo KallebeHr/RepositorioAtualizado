@@ -184,57 +184,7 @@ async function handleDownloadAll() {
     progress.value = null
   }
 }
-async function handleDownloadAllOne() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
-    return
-  }
 
-  try {
-    let counter = 3
-
-    const interval = setInterval(() => {
-      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`)
-      counter--
-
-      if (counter < 0) {
-        clearInterval(interval)
-        window.location.href = "https://www.mediafire.com/file_premium/jhmgjbngmsdh5or/PARTE_1.rar/file"
-      }
-    }, 1000)
-
-  } catch (err) {
-    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err)
-    toast.error("Erro ao redirecionar para a página de download")
-    progress.value = null
-  }
-}
-async function handleDownloadAllTwo() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
-    return
-  }
-
-  try {
-    let counter = 3
-
-    const interval = setInterval(() => {
-      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`)
-      counter--
-
-      if (counter < 0) {
-        clearInterval(interval)
-        window.location.href = "https://www.mediafire.com/file_premium/vb11ik8tpyvnjen/PARTE_2.rar/file"
-
-      }
-    }, 1000)
-
-  } catch (err) {
-    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err)
-    toast.error("Erro ao redirecionar para a página de download")
-    progress.value = null
-  }
-}
 
 function solicitarSenha() {
   return new Promise((resolve) => {
@@ -265,11 +215,11 @@ async function handleDownloadAllOneDezembro() {
     return;
   }
 
-  const senhaOk = await solicitarSenha();
-  if (!senhaOk) {
-    toast.error("Senha incorreta! ❌");
-    return;
-  }
+  // const senhaOk = await solicitarSenha();
+  // if (!senhaOk) {
+  //   toast.error("Senha incorreta! ❌");
+  //   return;
+  // }
 
   try {
     let counter = 3;
@@ -298,11 +248,11 @@ async function handleDownloadAllTwoDezembro() {
     return;
   }
 
-  const senhaOk = await solicitarSenha();
-  if (!senhaOk) {
-    toast.error("Senha incorreta! ❌");
-    return;
-  }
+  // const senhaOk = await solicitarSenha();
+  // if (!senhaOk) {
+  //   toast.error("Senha incorreta! ❌");
+  //   return;
+  // }
 
   try {
     let counter = 3;
