@@ -60,7 +60,7 @@
           </v-list-item>
           <v-list-item class="drawer-item support-link">
             <v-list-item-title>
-              <a href="https://wa.me/5586994227005?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20" target="_blank">💬 Suporte WhatsApp</a>
+              <a href="https://wa.me/8695102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20" target="_blank">💬 Suporte WhatsApp</a>
             </v-list-item-title>
           </v-list-item>
         </v-list>

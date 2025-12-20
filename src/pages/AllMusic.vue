@@ -1,6 +1,7 @@
 <template>
   <div class='container'>
     <CentraDeBuscas />
+    <Autoscroll />
     <MusicasAleatorias />
     <!-- <MusicList style="background-color: 121212;" /> -->
     <TopMusicas />
@@ -9,6 +10,7 @@
 </template>
 
 <script setup>
+import Autoscroll from '@/components/autoscroll.vue';
 import MusicList from '@/components/MusicList.vue';
 
 </script>

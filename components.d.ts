@@ -11,6 +11,7 @@ declare module 'vue' {
     AddMusicAdmin: typeof import('./src/components/addMusicAdmin.vue')['default']
     AddMusicListAdmin: typeof import('./src/components/AddMusicListAdmin.vue')['default']
     AppFooter: typeof import('./src/components/AppFooter.vue')['default']
+    Autoscroll: typeof import('./src/components/autoscroll.vue')['default']
     Button: typeof import('./src/components/button.vue')['default']
     ButtonW: typeof import('./src/components/buttonW.vue')['default']
     CentraDeBuscas: typeof import('./src/components/CentraDeBuscas.vue')['default']

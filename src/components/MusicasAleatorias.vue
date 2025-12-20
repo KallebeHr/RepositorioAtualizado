@@ -6,7 +6,7 @@
         <h1 v-else>Olá...</h1>
 
         <span class="subtitle">MÚSICAS PARA VOCÊ COMEÇAR</span>
-        <p class="indicador">Arraste para o lado</p>
+        <p class="indicador">Arraste para o lado</p> <i class="mdi mdi-Chevron-Right"></i> 
       </header>
 
       <Swiper
