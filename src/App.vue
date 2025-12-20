@@ -11,6 +11,8 @@
         <router-view />
       </div>
     </transition>
+     <FooterComplete />
+
   </v-app>
 </template>
 

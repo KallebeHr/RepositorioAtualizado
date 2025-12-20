@@ -64,9 +64,10 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, reactive } from "vue"
 import { db } from "@/firebase"
-import { collection, query, orderBy, getDocs } from "firebase/firestore"
 import { useToast } from "vue-toast-notification"
 import { useUserStore } from "@/stores/userStore"
+import { doc, setDoc, updateDoc, increment, serverTimestamp,collection, query, orderBy, getDocs, where  } from "firebase/firestore"
+
 
 const loading = ref(true)
 const error = ref("")
@@ -94,6 +95,44 @@ async function fetchMusicas() {
     loading.value = false
   }
 }
+async function incrementDownloadCantor(cantor) {
+  console.log("🔥 [DOWNLOAD] Cantor recebido:", cantor)
+
+  try {
+    const colRef = collection(db, "cantores")
+
+    console.log("🔎 [DOWNLOAD] Buscando cantor no Firestore...")
+    const q = query(colRef, where("nome", "==", cantor))
+    const snap = await getDocs(q)
+
+    if (!snap.empty) {
+      // 👉 cantor existe
+      const docRef = snap.docs[0].ref
+
+      console.log("📄 [DOWNLOAD] Documento encontrado:", docRef.id)
+
+      await updateDoc(docRef, {
+        downloads: increment(1),
+        updatedAt: serverTimestamp()
+      })
+
+      console.log("✅ [DOWNLOAD] Downloads incrementado com sucesso!")
+    } else {
+      // 👉 cantor NÃO existe
+      console.warn("⚠️ [DOWNLOAD] Cantor não encontrado, criando novo documento")
+
+      const newDoc = await addDoc(colRef, {
+        nome: cantor,
+        downloads: 1,
+        createdAt: serverTimestamp()
+      })
+
+      console.log("🆕 [DOWNLOAD] Novo cantor criado:", newDoc.id)
+    }
+  } catch (err) {
+    console.error("🚨 [DOWNLOAD] ERRO ao contar download:", err)
+  }
+}
 
 function countMusicas(cantor) {
   return musicas.value.filter(m => m.cantor === cantor).length
@@ -112,6 +151,7 @@ function handleDownload(cantor) {
 
 // Download ZIP com progresso
 async function downloadAll(cantor) {
+
   try {
     const tracks = musicas.value.filter(m => m.cantor === cantor && m.downloadUrl)
     if (!tracks.length) {
@@ -137,13 +177,14 @@ async function downloadAll(cantor) {
     a.download = `${cantor}-musicas.zip`
     a.click()
     URL.revokeObjectURL(a.href)
-
+    await incrementDownloadCantor(cantor)
     toast.success(`ZIP de ${cantor} baixado!`)
     progress[cantor] = 100
     setTimeout(() => delete progress[cantor], 2000)
   } catch (err) {
     console.error("[Cantores] erro no download:", err)
     toast.error("Falha ao baixar ZIP")
+
     delete progress[cantor]
   }
 }

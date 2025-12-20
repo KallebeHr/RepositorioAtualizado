@@ -1,6 +1,10 @@
 <template>
   <div class='container'>
-    <MusicList style="background-color: 121212;" />
+    <CentraDeBuscas />
+    <MusicasAleatorias />
+    <!-- <MusicList style="background-color: 121212;" /> -->
+    <TopMusicas />
+    <TopCantores />
   </div>
 </template>
 
@@ -10,10 +14,15 @@ import MusicList from '@/components/MusicList.vue';
 </script>
 
 <style scoped>
+
 .container{
     display:flex;
-    background-color: #121212;
-    min-height: 200vh;
+    align-items: center;
+    flex-direction: column;
+  background: #111;
 
-    }
+    min-height: 100vh;
+    height: auto;  
+  }
+    
 </style>

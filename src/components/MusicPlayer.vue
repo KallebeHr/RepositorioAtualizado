@@ -6,7 +6,7 @@
     :class="{ expanded: isExpanded }"
     @click="handleExpandClick"
   >
-    <!-- Thumbnail e Info -->
+    <!-- Left -->
     <div class="left">
       <div class="thumb">
         <img src="/LogoMusic.jpg" class="cover" />
@@ -17,23 +17,40 @@
       </div>
     </div>
 
-    <!-- Controles -->
+    <!-- Center -->
     <div class="center">
       <div class="controls">
-        <button @click.stop="prev"><BackwardIcon class="icon" /></button>
-        <button @click.stop="toggle">
-          <PauseIcon v-if="player.isPlaying" class="icon" />
-          <PlayIcon v-else class="icon" />
+        <button @click.stop="prev">
+          <i class="mdi mdi-skip-previous icon"></i>
         </button>
-        <button @click.stop="next"><ForwardIcon class="icon" /></button>
-        <!-- Favoritar música atual -->
+
+        <button @click.stop="toggle">
+          <i
+            v-if="player.isPlaying"
+            class="mdi mdi-pause-circle icon"
+          ></i>
+          <i
+            v-else
+            class="mdi mdi-play-circle icon"
+          ></i>
+        </button>
+
+        <button @click.stop="next">
+          <i class="mdi mdi-skip-next icon"></i>
+        </button>
+
+        <!-- DOWNLOAD CORRIGIDO -->
+        <button @click.stop="download(current)">
+          <i class="mdi mdi-download icon"></i>
+        </button>
+
+        <!-- FAVORITO -->
         <button
           @click.stop="toggleFavorite(current)"
           class="favorite"
           :class="{ active: isFavorite(current.id) }"
-          title="Favoritar"
         >
-          <StarIcon class="icon" />
+          <i class="mdi mdi-star icon"></i>
         </button>
       </div>
 
@@ -43,7 +60,6 @@
           type="range"
           min="0"
           :max="duration"
-          step="1"
           :value="position"
           @input="onSeek"
           class="seek"
@@ -52,7 +68,7 @@
       </div>
     </div>
 
-    <!-- Volume e Fila -->
+    <!-- Right -->
     <div class="right">
       <input
         type="range"
@@ -64,8 +80,10 @@
         class="vol"
       />
       <button @click.stop="toggleQueue">
-        <QueueListIcon class="icon" />
-        <span v-if="player.queue.length" class="badge">{{ player.queue.length }}</span>
+        <i class="mdi mdi-playlist-music icon"></i>
+        <span v-if="player.queue.length" class="badge">
+          {{ player.queue.length }}
+        </span>
       </button>
     </div>
   </div>
@@ -75,52 +93,81 @@
     <span>Selecione uma música para começar…</span>
   </div>
 
-  <!-- Modal da Fila -->
-  <div v-if="showQueue" class="modal-overlay" @click.self="toggleQueue">
-    <div class="modal">
-      <div class="modal-head">
+  <!-- MODAL FILA -->
+<div v-if="showQueue" class="modal-overlay" @click.self="toggleQueue">
+  <div class="modal">
+    <!-- HEADER -->
+    <div class="modal-head">
+      <div class="title">
+        <i class="mdi mdi-playlist-music"></i>
         <h3>Fila de Reprodução</h3>
-        <div class="actions">
-          <button @click="clearQueue" class="clear">Limpar</button>
-          <button @click="downloadAllZip" class="clear">Baixar Todas</button>
-        </div>
       </div>
 
-      <div v-if="player.queue.length" class="list">
-        <div
-          v-for="(q, i) in player.queue"
-          :key="q.fileId || i"
-          class="row"
-          :class="{ active: i === player.currentIndex }"
-        >
-          <div class="meta">
-            <div class="mini">
-              <img src="/LogoMusic.jpg" class="cover" />
-            </div>
-            <div>
-              <div class="rt">{{ q.title }}</div>
-              <div class="ra">{{ q.cantor }}</div>
-            </div>
+      <div class="actions">
+        <button class="btn danger" @click="clearQueue">
+          <i class="mdi mdi-trash-can-outline"></i>
+          Limpar
+        </button>
+
+        <button class="btn primary" @click="downloadAllZip">
+          <i class="mdi mdi-download-multiple"></i>
+          Baixar tudo
+        </button>
+      </div>
+    </div>
+
+    <!-- LISTA -->
+    <div v-if="player.queue.length" class="list">
+      <div
+        v-for="(q, i) in player.queue"
+        :key="q.fileId || i"
+        class="row"
+        :class="{ active: i === player.currentIndex }"
+      >
+        <div class="meta">
+          <div class="mini">
+            <img src="/LogoMusic.jpg" />
           </div>
-          <div class="row-actions">
-            <button @click="playAt(i)"><PlayIcon class="icon" /></button>
-            <button @click="remove(i)"><TrashIcon class="icon" /></button>
-            <button @click="download(q)"><ArrowDownTrayIcon class="icon" /></button>
-            <!-- Favoritar música da fila -->
-            <button
-              @click="toggleFavorite(q)"
-              class="favorite"
-              :class="{ active: isFavorite(q.id) }"
-              title="Favoritar"
-            >
-              <StarIcon class="icon" />
-            </button>
+
+          <div class="text">
+            <div class="rt">{{ q.title }}</div>
+            <div class="ra">{{ q.cantor }}</div>
           </div>
         </div>
+
+        <div class="row-actions">
+          <button @click="playAt(i)" title="Reproduzir">
+            <i class="mdi mdi-play-circle-outline"></i>
+          </button>
+
+          <button @click="download(q)" title="Baixar">
+            <i class="mdi mdi-download"></i>
+          </button>
+
+          <button
+            @click="toggleFavorite(q)"
+            class="favorite"
+            :class="{ active: isFavorite(q.id) }"
+            title="Favoritar"
+          >
+            <i class="mdi mdi-star"></i>
+          </button>
+
+          <button @click="remove(i)" title="Remover">
+            <i class="mdi mdi-close"></i>
+          </button>
+        </div>
       </div>
-      <div v-else class="empty">Fila vazia</div>
+    </div>
+
+    <!-- EMPTY -->
+    <div v-else class="empty">
+      <i class="mdi mdi-music-off"></i>
+      <p>Fila vazia</p>
     </div>
   </div>
+</div>
+
 </template>
 
 <script setup>
@@ -129,17 +176,6 @@ import { usePlayerStore } from "@/stores/usePlayerStore"
 import { useUserStore } from "@/stores/userStore"
 import { useToast } from "vue-toast-notification"
 import JSZip from "jszip"
-import {
-  PlayIcon,
-  PauseIcon,
-  ForwardIcon,
-  BackwardIcon,
-  QueueListIcon,
-  TrashIcon,
-  ArrowDownTrayIcon,
-  StarIcon,
-} from "@heroicons/vue/24/solid"
-
 import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/firebase"
 
@@ -150,6 +186,7 @@ const toast = useToast()
 const showQueue = ref(false)
 const isExpanded = ref(false)
 const current = computed(() => player.current)
+
 const duration = ref(0)
 const position = ref(0)
 let raf = null
@@ -169,8 +206,24 @@ function loop() {
 
 function toTime(s) {
   const m = Math.floor(s / 60)
-  const ss = Math.floor(s % 60).toString().padStart(2, "0")
+  const ss = String(s % 60).padStart(2, "0")
   return `${m}:${ss}`
+}
+
+function toggle() {
+  if (!userStore.hasActiveSubscription)
+    return toast.warning("Ative sua assinatura 🎶")
+  player.togglePlay()
+}
+function prev() {
+  userStore.hasActiveSubscription
+    ? player.prev()
+    : toast.warning("Ative sua assinatura 🎶")
+}
+function next() {
+  userStore.hasActiveSubscription
+    ? player.next()
+    : toast.warning("Ative sua assinatura 🎶")
 }
 
 function onSeek(e) {
@@ -180,31 +233,13 @@ function onVol(e) {
   player.setVolume(Number(e.target.value))
 }
 
-function toggle() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura para usar o player 🎶")
-    return
-  }
-  player.togglePlay()
-}
-function prev() {
-  if (userStore.hasActiveSubscription) player.prev()
-  else toast.warning("Ative sua assinatura para usar o player 🎶")
-}
-function next() {
-  if (userStore.hasActiveSubscription) player.next()
-  else toast.warning("Ative sua assinatura para usar o player 🎶")
-}
-
 function toggleQueue() {
   showQueue.value = !showQueue.value
 }
 
 function playAt(i) {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura 🎶")
-    return
-  }
+  if (!userStore.hasActiveSubscription)
+    return toast.warning("Ative sua assinatura 🎶")
   player.play(i)
 }
 function remove(i) {
@@ -214,37 +249,61 @@ function clearQueue() {
   player.clearQueue()
 }
 
-function download(music) {
-  if (!music.downloadUrl) return
-  const a = document.createElement("a")
-  a.href = music.downloadUrl
-  a.download = music.fileName || "musica.mp3"
-  a.click()
+async function download(m) {
+  if (!userStore.hasActiveSubscription)
+    return toast.warning("Assinatura necessária")
+  if (!m?.downloadUrl) return
+
+  try {
+    const res = await fetch(m.downloadUrl)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = m.fileName || "musica.mp3"
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch {
+    toast.error("Erro ao baixar")
+  }
 }
 
 async function downloadAllZip() {
-  if (!player.queue.length) return
   const zip = new JSZip()
   const seen = new Set()
-  const uniqueTracks = player.queue.filter(t => {
-    if (seen.has(t.fileId)) return false
-    seen.add(t.fileId)
-    return true
-  })
 
-  for (const track of uniqueTracks) {
-    if (!track.downloadUrl) continue
-    try {
-      const res = await fetch(track.downloadUrl)
-      const blob = await res.blob()
-      zip.file(track.fileName || "musica.mp3", blob)
-    } catch {}
+  for (const m of player.queue) {
+    if (seen.has(m.fileId) || !m.downloadUrl) continue
+    seen.add(m.fileId)
+    const res = await fetch(m.downloadUrl)
+    zip.file(m.fileName || "musica.mp3", await res.blob())
   }
+
   const content = await zip.generateAsync({ type: "blob" })
   const a = document.createElement("a")
   a.href = URL.createObjectURL(content)
   a.download = "FilaMusicas.zip"
   a.click()
+}
+
+function isFavorite(id) {
+  return userStore.user?.favorites?.includes(id)
+}
+
+async function toggleFavorite(m) {
+  if (!userStore.user)
+    return toast.warning("Faça login para favoritar ⭐")
+
+  const refUser = doc(db, "users", userStore.user.uid)
+
+  if (isFavorite(m.id)) {
+    await updateDoc(refUser, { favorites: arrayRemove(m.id) })
+    userStore.user.favorites =
+      userStore.user.favorites.filter(f => f !== m.id)
+  } else {
+    await updateDoc(refUser, { favorites: arrayUnion(m.id) })
+    userStore.user.favorites.push(m.id)
+  }
 }
 
 function handleExpandClick() {
@@ -253,44 +312,13 @@ function handleExpandClick() {
   }
 }
 
-/* ---------- FAVORITOS ---------- */
-function isFavorite(musicId) {
-  return userStore.user?.favorites?.includes(musicId)
-}
-
-async function toggleFavorite(m) {
-  if (!userStore.user) {
-    toast.warning("Você precisa estar logado para favoritar músicas ⭐")
-    return
-  }
-
-  const userRef = doc(db, "users", userStore.user.uid)
-
-  try {
-    if (isFavorite(m.id)) {
-      await updateDoc(userRef, { favorites: arrayRemove(m.id) })
-      userStore.user.favorites = userStore.user.favorites.filter(id => id !== m.id)
-      toast.success(`Removida dos favoritos: ${m.title}`)
-    } else {
-      await updateDoc(userRef, { favorites: arrayUnion(m.id) })
-      userStore.user.favorites = [...(userStore.user.favorites || []), m.id]
-      toast.success(`Adicionada aos favoritos: ${m.title}`)
-    }
-  } catch (err) {
-    console.error("Erro ao atualizar favoritos:", err)
-    toast.error("Não foi possível atualizar os favoritos.")
-  }
-}
-
-onMounted(() => {
-  raf = requestAnimationFrame(loop)
-})
-onBeforeUnmount(() => {
-  if (raf) cancelAnimationFrame(raf)
-})
+onMounted(() => (raf = requestAnimationFrame(loop)))
+onBeforeUnmount(() => raf && cancelAnimationFrame(raf))
 </script>
 
 <style scoped>
+
+
 .player {
   position: fixed;
   left: 0;
@@ -399,97 +427,192 @@ onBeforeUnmount(() => {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: 200;
 }
+
 .modal {
-  background: #202020;
-  border-radius: 12px;
-  padding: 16px;
-  width: min(600px, 90%);
-  max-height: 80vh;
-  overflow-y: auto;
+  background: #181818;
+  width: min(720px, 95%);
+  max-height: 85vh;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
+
+/* HEADER */
 .modal-head {
+  position: sticky;
+  top: 0;
+  background: #202020;
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  border-bottom: 1px solid #2a2a2a;
+  z-index: 2;
 }
+.modal-head .title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-head h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-head i {
+  font-size: 22px;
+  color: #1db954;
+}
+/* BOTÕES HEADER */
 .actions {
   display: flex;
   gap: 8px;
 }
-.clear {
-  background: #333;
-  border: none;
-  color: #fff;
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
+  border: none;
   cursor: pointer;
+  font-size: 13px;
 }
-.clear:hover {
-  background: #444;
+
+.btn i {
+  font-size: 18px;
 }
+
+.btn.primary {
+  background: #ffffff;
+  color: #000;
+}
+
+.btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+.btn.danger {
+  background: #2a2a2a;
+  color: #ff6b6b;
+}
+
+.btn.danger:hover {
+  background: #3a3a3a;
+}
+
+/* LISTA */
 .list {
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  overflow-y: auto;
 }
+
 .row {
+  background: #222;
+  border-radius: 12px;
+  padding: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background 0.2s ease;
+}
+
+.row:hover {
   background: #2a2a2a;
-  padding: 8px;
-  border-radius: 8px;
 }
+
 .row.active {
-  background: #1db95422;
+  background: rgba(29, 185, 84, 0.15);
 }
+
+/* META */
 .meta {
   display: flex;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
+
 .mini {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  background: #333;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
 }
+
 .mini img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
+.text {
+  min-width: 0;
+}
+
 .rt {
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 .ra {
   font-size: 12px;
   color: #aaa;
 }
+
+/* AÇÕES */
 .row-actions {
   display: flex;
   gap: 6px;
 }
+
 .row-actions button {
   background: none;
   border: none;
-  color: #fff;
+  color: #ccc;
   cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
 }
+
+.row-actions button:hover {
+  background: #333;
+  color: #fff;
+}
+
+.favorite.active i {
+  color: #ffd700;
+}
+/* EMPTY */
 .empty {
-  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   color: #aaa;
-  padding: 16px;
+  gap: 8px;
+}
+
+.empty i {
+  font-size: 40px;
+  opacity: 0.6;
 }
 @media (max-width: 768px) {
   .player {

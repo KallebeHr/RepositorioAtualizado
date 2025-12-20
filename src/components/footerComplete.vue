@@ -1,123 +1,179 @@
 <template>
   <footer class="footer">
     <div class="footer-container">
-      <!-- Logo / Nome -->
+
+      <!-- Marca -->
       <div class="footer-brand">
-        <h2>🎶 Repertorio Atualizado</h2>
+        <h2>
+          <i class="mdi mdi-music-note"></i>
+          Repertório Atualizado
+        </h2>
         <p>Seu repertório digital de músicas</p>
       </div>
 
-      <!-- Links rápidos -->
+      <!-- Navegação -->
       <nav class="footer-links">
-        <a href="#">Repertório</a>
-        <a href="#">Planos</a> 
-        <a href="#">Contato</a>
-        <a href="#">Sobre</a>
+        <a href="/repertorios">
+          <i class="mdi mdi-playlist-music"></i>
+          Repertório
+        </a>
+        <a href="/tutoriais">
+          <i class="mdi mdi-information-outline"></i>
+          Tutoriais
+        </a>
+        <a href="#">
+          <i class="mdi mdi-crown"></i>
+          Baixar por cantores
+        </a>
+        <a href="https://wa.me/5586995102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!">
+          <i class="mdi mdi-email-outline"></i>
+          Entrar em contato
+        </a>
       </nav>
 
       <!-- Redes sociais -->
       <div class="footer-social">
-        <a href="#" aria-label="Instagram">📸</a>
-        <a href="https://wa.me/5586994227005?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20" aria-label="WhatsApp">💬</a>
-        <a href="#" aria-label="YouTube">▶</a>
+        <a href="#" aria-label="Instagram">
+          <i class="mdi mdi-instagram"></i>
+        </a>
+
+        <a
+          href="https://wa.me/5586995102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!"
+          aria-label="WhatsApp"
+          target="_blank"
+        >
+          <i class="mdi mdi-whatsapp"></i>
+        </a>
+
+        <a href="#" aria-label="YouTube">
+          <i class="mdi mdi-youtube"></i>
+        </a>
       </div>
+
     </div>
 
-    <!-- Créditos -->
+    <!-- Rodapé inferior -->
     <div class="footer-bottom">
-      <p class="credit">Desenvolvido por <a href="https://instagram.com/kallebemax" target="_blank">@KallebeMax</a>, entrar em contato</p>
-      <p>© {{ new Date().getFullYear() }} RepertorioAtualizado. Todos os direitos reservados.</p>
+      <p class="credit">
+        Desenvolvido por
+        <a href="https://instagram.com/kallebemax" target="_blank">
+          @KallebeMax
+        </a>
+      </p>
+
+      <p>
+        © {{ new Date().getFullYear() }} Repertório Atualizado.
+        Todos os direitos reservados.
+      </p>
     </div>
   </footer>
 </template>
-
-<script setup>
-</script>
-
 <style scoped>
-.footer {
+  .footer {
   background: #111;
-  color: #eee;
-  padding: 40px 24px 20px;
+  color: #e5e7eb;
+  padding: 48px 24px 24px;
+  margin-bottom: 10rem;
   font-family: Inter, system-ui, sans-serif;
+  width: 100%;
 }
+
 .footer-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 32px;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
 }
+
+/* Marca */
 .footer-brand h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-weight: 800;
   color: #1db954;
 }
+
 .footer-brand p {
+  margin-top: 6px;
   font-size: 14px;
-  color: #aaa;
+  color: #9ca3af;
 }
+
+/* Links */
 .footer-links {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  font-size: 15px;
+  flex-direction: column;
+  gap: 12px;
 }
+
 .footer-links a {
-  color: #ccc;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-links a:hover {
-  color: #1db954;
-}
-.footer-social {
   display: flex;
-  gap: 16px;
-  font-size: 22px;
-}
-.footer-social a {
-  color: #ccc;
+  align-items: center;
+  gap: 10px;
+  color: #d1d5db;
   text-decoration: none;
+  font-size: 15px;
   transition: color 0.2s, transform 0.2s;
 }
+
+.footer-links a:hover {
+  color: #1db954;
+  transform: translateX(4px);
+}
+
+/* Social */
+.footer-social {
+  display: flex;
+  gap: 18px;
+  font-size: 26px;
+}
+
+.footer-social a {
+  color: #d1d5db;
+  transition: color 0.2s, transform 0.2s;
+}
+
 .footer-social a:hover {
   color: #1db954;
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
+
+/* Bottom */
 .footer-bottom {
-  margin-top: 32px;
+  margin-top: 36px;
   text-align: center;
   font-size: 13px;
-  color: #888;
+  color: #9ca3af;
 }
+
 .footer-bottom a {
   color: #1db954;
   text-decoration: none;
 }
+
 .footer-bottom a:hover {
   text-decoration: underline;
 }
+
 .credit {
-  margin-top: 6px;
-  font-size: 13px;
+  margin-bottom: 6px;
 }
 
-/* Responsividade */
+/* Responsivo */
 @media (max-width: 768px) {
   .footer-container {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
+
   .footer-links {
-    justify-content: center;
-  }
-  .footer-social {
-    justify-content: center;
+    align-items: center;
   }
 }
+
 </style>
