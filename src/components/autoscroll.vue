@@ -1,38 +1,19 @@
 <template>
-  <section class="z-10 pt-8 pb-8 relative">
+  <section class="ticker-section">
     <div class="max-w-7xl mx-auto px-4">
-      <div class="text-center mb-12">
 
-      </div>
-
-      <!-- Container -->
-      <div
-        class="overflow-hidden relative"
-        :style="maskStyle"
-      >
-        <!-- Track -->
+      <!-- VIEWPORT -->
+      <div class="ticker-viewport" :style="maskStyle">
+        <!-- TRACK -->
         <div class="ticker-track">
-          <!-- Bloco A -->
           <div class="ticker-group">
-            <span
-              v-for="(brand, i) in brands"
-              :key="'a-' + i"
-              class="brand"
-              :class="brand.class"
-            >
-              {{ brand.name }}
+            <span v-for="(b, i) in brands" :key="'a' + i" class="brand">
+              {{ b }}
             </span>
           </div>
-
-          <!-- Bloco B (clone) -->
           <div class="ticker-group">
-            <span
-              v-for="(brand, i) in brands"
-              :key="'b-' + i"
-              class="brand"
-              :class="brand.class"
-            >
-              {{ brand.name }}
+            <span v-for="(b, i) in brands" :key="'b' + i" class="brand">
+              {{ b }}
             </span>
           </div>
         </div>
@@ -43,11 +24,12 @@
 
 <script setup>
 const brands = [
-  { name: 'Forro antigos', class: 'font-bold' },
-  { name: 'Rey Vaqueiro', class: 'font-semibold' },
-  { name: 'Natanzinho Lima', class: 'font-normal' },
-  { name: 'Safadão', class: 'font-semibold' },
-  { name: 'Passagens de som', class: 'font-normal' }
+  'Rey Vaqueiro',
+  'Passagens de Som',
+  'Forro Antigos',
+  'Natanzinho Lima',
+  'Reggaes',
+  'Medio Alterados'
 ]
 
 const maskStyle = `
@@ -57,44 +39,71 @@ const maskStyle = `
 </script>
 
 <style scoped>
-@keyframes ticker {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+/* BLOQUEIA QUALQUER SCROLL */
+.ticker-section {
+  overflow-x: hidden;
 }
 
-/* TRACK PRINCIPAL */
+/* TÍTULO */
+.title {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  margin-bottom: 3rem;
+  letter-spacing: 0.08em;
+}
+
+/* VIEWPORT PRECISA DE ALTURA */
+.ticker-viewport {
+  position: relative;
+  overflow: hidden;
+  width: 15rem;
+  height: 48px; /* 🔥 ISSO É O QUE FALTAVA */
+}
+
+/* TRACK CENTRALIZADO */
 .ticker-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
   display: flex;
-  width: 200%;
-  animation: ticker 35s linear infinite;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  animation: ticker 10s linear infinite;
+  will-change: transform;
 }
 
-/* PAUSA NO HOVER */
+/* PAUSA */
 .ticker-track:hover {
   animation-play-state: paused;
 }
 
-/* CADA METADE */
+/* GRUPOS */
 .ticker-group {
-  width: 50%;
   display: flex;
-  align-items: center;
-  justify-content: space-around;
-  white-space: nowrap;
+  gap: 4rem;
+  padding-right: 4rem;
 }
 
 /* ITEM */
 .brand {
   font-size: 1.125rem;
-  color: #a1a1aa;
+  color: #9ca3af;
   transition: color 0.3s;
 }
 
 .brand:hover {
   color: white;
+}
+
+/* ANIMAÇÃO */
+@keyframes ticker {
+  from {
+    transform: translate(0, -50%);
+  }
+  to {
+    transform: translate(-50%, -50%);
+  }
 }
 </style>
