@@ -29,7 +29,20 @@ const brands = [
   'Forro Antigos',
   'Natanzinho Lima',
   'Reggaes',
-  'Medio Alterados'
+  'Medio Alterados',
+'Forró Novo',
+'Gospel',
+'Flashback',
+'Trap',
+'Arrocha',
+'Forró de favela',
+'Funk',
+'Brega funk',
+'Eletrônica',
+'Pancadão',
+'Avulsa',
+'Seresta',
+'Repike'
 ]
 
 const maskStyle = `
