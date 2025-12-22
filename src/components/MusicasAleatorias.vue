@@ -5,7 +5,7 @@
         <h1 v-if="!userStore.loadingUser">Olá, {{ userStore.user.name }}</h1>
         <h1 v-else>Olá...</h1>
 
-        <span class="subtitle">MÚSICAS PARA VOCÊ COMEÇAR</span>
+        <span class="subtitle">MÚSICAS MAIS TOCADAS PARA VOCÊ COMEÇAR</span>
         <p class="indicador">Arraste para o lado</p> <i class="mdi mdi-Chevron-Right"></i> 
       </header>
 
@@ -68,7 +68,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue"
-import { db } from "@/firebase"
+import { db  } from "@/firebase"
 import {
   collection,
   getDocs,
@@ -78,7 +78,8 @@ import {
   updateDoc,
   increment,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  orderBy
 } from "firebase/firestore"
 
 import { Swiper, SwiperSlide } from "swiper/vue"
@@ -108,7 +109,12 @@ function requireSubscription() {
 
 /* FETCH */
 async function fetchMusicas() {
-  const q = query(collection(db, "musicas"), limit(24))
+  const q = query(
+    collection(db, "musicas"),
+    orderBy("playCount", "desc"), // 🔥 mais tocadas primeiro
+    limit(24)
+  )
+
   const snap = await getDocs(q)
 
   musicas.value = snap.docs.map(d => ({
@@ -117,11 +123,13 @@ async function fetchMusicas() {
     artist: d.data().cantor,
     cover: d.data().coverUrl,
     downloadUrl: d.data().downloadUrl,
-    fileName: `${d.data().title}.mp3`
+    fileName: `${d.data().title}.mp3`,
+    playCount: d.data().playCount || 0
   }))
 
   paginate()
 }
+
 
 /* PAGINAÇÃO */
 function paginate() {
