@@ -4,11 +4,7 @@
 
       <!-- Marca -->
       <div class="footer-brand">
-        <h2>
-          <i class="mdi mdi-music-note"></i>
-          Repertório Atualizado
-        </h2>
-        <p>Seu repertório digital de músicas</p>
+        <img src="/LogoRepertorio.png"  class="logoImg" alt="">
       </div>
 
       <!-- Navegação -->
@@ -96,7 +92,10 @@
   font-weight: 800;
   color: #1db954;
 }
-
+.logoImg{
+width: auto;
+height: 10rem;
+}
 .footer-brand p {
   margin-top: 6px;
   font-size: 14px;
