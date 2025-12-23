@@ -5,7 +5,7 @@
         <h1 v-if="!userStore.loadingUser">Olá, {{ userStore.user.name }}</h1>
         <h1 v-else>Olá...</h1>
 
-        <span class="subtitle">As 32 MÚSICAS MAIS TOCADAS PARA VOCÊ COMEÇAR</span>
+        <span class="subtitle">As 24 MÚSICAS MAIS TOCADAS PARA VOCÊ COMEÇAR</span>
         <p class="indicador">Arraste para o lado</p> <i class="mdi mdi-Chevron-Right"></i> 
       </header>
 
