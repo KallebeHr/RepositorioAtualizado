@@ -5,7 +5,7 @@
         <h1 v-if="!userStore.loadingUser">Olá, {{ userStore.user.name }}</h1>
         <h1 v-else>Olá...</h1>
 
-        <span class="subtitle">MÚSICAS MAIS TOCADAS PARA VOCÊ COMEÇAR</span>
+        <span class="subtitle">As 32 MÚSICAS MAIS TOCADAS PARA VOCÊ COMEÇAR</span>
         <p class="indicador">Arraste para o lado</p> <i class="mdi mdi-Chevron-Right"></i> 
       </header>
 
@@ -17,6 +17,8 @@
           768: { slidesPerView: 2 },
           1200: { slidesPerView: 3 }
         }"
+        :modules="[Pagination]"
+  :pagination="{ clickable: true }"
       >
       <SwiperSlide v-for="(page, index) in pages" :key="index">
           <ul class="music-list">
@@ -25,6 +27,9 @@
               :key="m.id"
               class="music-row"
               @click="handleCardTap(m)"
+              :modules="[Navigation]"
+  navigation
+
             >
               <!-- CAPA -->
               <div class="left">
@@ -67,6 +72,9 @@
 </template>
 
 <script setup>
+  import { Pagination, Navigation  } from "swiper/modules"
+import "swiper/css/pagination"
+import "swiper/css/navigation"
 import { ref, onMounted } from "vue"
 import { db  } from "@/firebase"
 import {
@@ -379,6 +387,15 @@ onMounted(fetchMusicas)
   background: rgba(0, 0, 0, 0.45);
   color: #aaa;
   cursor: pointer;
+}
+@keyframes swipe-hint {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-10px); }
+  100% { transform: translateX(0); }
+}
+
+.music-swiper {
+  animation: swipe-hint 1.5s ease-in-out 2;
 }
 
 .icon-btn:hover {
