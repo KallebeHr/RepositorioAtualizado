@@ -37,7 +37,7 @@
     </div>
     <div v-if="!loading && musicas.length" class="card-repertorio">
       <div class="info">
-        <h2>Repertório Dezembro</h2>
+        <h2>Repertório Janeiro</h2>
         <p>4872 músicas disponíveis</p>
       </div>
 
@@ -48,7 +48,7 @@
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllOneDezembro"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM DEZEMBRO' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM JANEIRO' }}
         </button>
         <h2>BAIXAR PARTE DOIS</h2>
         <button
@@ -56,7 +56,23 @@
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllTwoDezembro"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS DEZEMBRO' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS JANEIRO' }}
+        </button>
+        <h2>BAIXAR PARTE TRÊS</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllTresDezembro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE TRÊS JANEIRO' }}
+        </button>
+        <h2>BAIXAR PARTE QUATRO</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllForDezembro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE QUATRO JANEIRO' }}
         </button>
       </div>
 
@@ -194,7 +210,7 @@ async function handleDownloadAllOneDezembro() {
 
       if (counter < 0) {
         clearInterval(interval);
-        window.location.href = "https://www.mediafire.com/file/634ad95rqcq7nvw/PARTE+1.rar/file";
+        window.location.href = "https://www.mediafire.com/file/qkkpa60tb44q5tf/parte+1.rar/file";
       }
     }, 1000);
 
@@ -227,7 +243,69 @@ async function handleDownloadAllTwoDezembro() {
 
       if (counter < 0) {
         clearInterval(interval);
-        window.location.href = "https://www.mediafire.com/file/k9t44zfunolg7rp/PARTE+2+.rar/file";
+        window.location.href = "https://www.mediafire.com/file/ckf6bddwsnrb6yj/parte+2.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+// 📂 DEZEMBRO - PARTE 3
+async function handleDownloadAllTresDezembro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  // const senhaOk = await solicitarSenha();
+  // if (!senhaOk) {
+  //   toast.error("Senha incorreta! ❌");
+  //   return;
+  // }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file/rhgt23e0yk96v2k/parte+3.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+// 📂 DEZEMBRO - PARTE 4
+async function handleDownloadAllForDezembro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  // const senhaOk = await solicitarSenha();
+  // if (!senhaOk) {
+  //   toast.error("Senha incorreta! ❌");
+  //   return;
+  // }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file/jy401nz0eumz6ur/parte+4.rar/file";
       }
     }, 1000);
 
