@@ -9,7 +9,7 @@
       </p>
 
       <div class="buttons">
-        <a v-if="!userStore.hasActiveSubscription" href="https://wa.me/8695102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20" class="btn green">Comprar assinatura</a>
+        <a v-if="!userStore.hasActiveSubscription" href="https://wa.me/5586995102595?text=Ol%C3%A1!%20tenho%20interesse%20no%20*REPERTORIO%20ATUALIZADO*" class="btn green">Comprar assinatura</a>
         <a v-else class="btn green"> Assinatura ativada com Sucesso!</a>
         <a href="/AllMusic" class="btn green">Ouvir Agora</a>
         <a href="/Repertorios" class="btn green">Baixar Repertório</a>
