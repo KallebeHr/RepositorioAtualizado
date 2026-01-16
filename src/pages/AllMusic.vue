@@ -5,6 +5,7 @@
     <MusicasAleatorias />
     <!-- <MusicList style="background-color: 121212;" /> -->
     <TopMusicas />
+    <Autoscroll />
     <TopCantores />
   </div>
 </template>

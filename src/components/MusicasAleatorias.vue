@@ -109,7 +109,7 @@ const pages = ref([])
 ====================== */
 function requireSubscription() {
   if (!userStore.hasActiveSubscription) {
-    toast.warning("Assinatura necessária")
+    toast.warning("Assinatura necessária, clique aqui para ativar")
     return false
   }
   return true
