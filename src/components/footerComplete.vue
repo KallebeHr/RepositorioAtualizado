@@ -7,8 +7,11 @@
         <img src="/LogoRepertorio.png"  class="logoImg" alt="">
       </div>
 
-      <!-- Navegação -->
       <nav class="footer-links">
+        <a href="/repertorios">
+          <i class="mdi mdi-playlist-music"></i>
+          Entre no grupo PRIVADO
+        </a>
         <a href="/repertorios">
           <i class="mdi mdi-playlist-music"></i>
           Repertório
@@ -27,7 +30,6 @@
         </a>
       </nav>
 
-      <!-- Redes sociais -->
       <div class="footer-social">
         <a href="#" aria-label="Instagram">
           <i class="mdi mdi-instagram"></i>
@@ -48,7 +50,6 @@
 
     </div>
 
-    <!-- Rodapé inferior -->
     <div class="footer-bottom">
       <p class="credit">
         Desenvolvido por
