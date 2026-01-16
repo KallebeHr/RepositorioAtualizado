@@ -18,12 +18,20 @@ export const useUserStore = defineStore("user", () => {
   }
 
   // 🔑 Computed para saber se o user já tem assinatura ativa
-  const hasActiveSubscription = computed(() => {
-    return !!(
-      user.value &&
-      (user.value.subscription === true || user.value.subscription)
-    )
-  })
+const hasActiveSubscription = computed(() => {
+  if (!user.value) return false
+
+  if (user.value.subscription !== "ativa") return false
+
+  if (!user.value.subscriptionEnd) return false
+
+  const end = user.value.subscriptionEnd.toDate
+    ? user.value.subscriptionEnd.toDate()
+    : new Date(user.value.subscriptionEnd)
+
+  return end > new Date()
+})
+
 
 
   // 🔑 Função para ativar assinatura
