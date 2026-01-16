@@ -170,8 +170,8 @@ const modalRef = ref(null)
 
 // ✅ troque pelo seu link real (checkout/whats/etc)
 const ctaLink = computed(() => {
-  return `https://wa.me/5599999999999?text=${encodeURIComponent(
-    "Quero ativar minha assinatura para liberar os downloads."
+  return `https://wa.me/5586995102595?text=${encodeURIComponent(
+    "Quero ativar meu acesso do site, para ouvir e baixar sem limites."
   )}`
 })
 
