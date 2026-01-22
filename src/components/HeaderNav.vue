@@ -158,11 +158,19 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/firebase";
-import { doc, getDocs, setDoc, collection } from "firebase/firestore";
-import 'vue-toast-notification/dist/theme-sugar.css';
-import { useToast } from 'vue-toast-notification';
+import {
+  doc,
+  getDocs,
+  setDoc,
+  collection,
+  query,
+  where,
+  limit,
+} from "firebase/firestore";
+import "vue-toast-notification/dist/theme-sugar.css";
+import { useToast } from "vue-toast-notification";
 
 const dropdownOpen = ref(false);
 const hasNotification = ref(true);
@@ -183,7 +191,7 @@ const chaveAssinatura = ref("");
 const assinaturaAtiva = ref(false);
 
 // notificações
-const notificacoesModal  = ref(false);
+const notificacoesModal = ref(false);
 const messages = ref([]);
 const loadingMessages = ref(false);
 
@@ -197,47 +205,96 @@ const menuItems = [
 ];
 const libraryItems = [{ title: "FAVORITOS ", href: "/favoritos" }];
 
-// funções de assinatura
+
+// 🔥 FUNÇÃO CORRIGIDA — VERIFICA ASSINATURA E EXPIRAÇÃO
 async function verificarAssinatura() {
   try {
     const user = auth.currentUser;
-    if (!user) return;
 
-    const usersSnapshot = await getDocs(collection(db, "users"));
-    const userDoc = usersSnapshot.docs.find(
-      (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
+    if (!user) {
+      assinaturaAtiva.value = false;
+      return;
+    }
+
+    const email = (user.email || "").toLowerCase();
+
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email),
+      limit(1)
     );
 
-    if (userDoc && userDoc.data().subscription === "ativa") {
-      assinaturaAtiva.value = true;
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      assinaturaAtiva.value = false;
+      return;
+    }
+
+    const userDocSnap = snap.docs[0];
+    const data = userDocSnap.data();
+
+    const endRaw = data.subscriptionEnd;
+    const endDate = endRaw ? new Date(endRaw) : null;
+    const now = new Date();
+
+    const aindaValida =
+      data.subscription === "ativa" &&
+      endDate instanceof Date &&
+      !isNaN(endDate) &&
+      endDate > now;
+
+    assinaturaAtiva.value = !!aindaValida;
+
+    // Se expirou → marcar automaticamente como inativa
+    if (!aindaValida &&
+        data.subscription === "ativa" &&
+        endDate &&
+        endDate <= now) {
+      await setDoc(
+        doc(db, "users", userDocSnap.id),
+        { subscription: "inativa" },
+        { merge: true }
+      );
     }
   } catch (err) {
     console.error("Erro ao verificar assinatura:", err);
+    assinaturaAtiva.value = false;
   }
 }
 
+
+// abrir modal assinatura
 function openAssinaturaModal() {
   if (assinaturaAtiva.value) {
-    $toast.info("Sua conta já está ativa!", { position: 'top-center' });
+    $toast.info("Sua conta já está ativa!", { position: "top-center" });
     return;
   }
   assinaturaModal.value = true;
   chaveAssinatura.value = "";
 }
 
+
+// ativar assinatura
 async function ativarAssinatura() {
   try {
     const user = auth.currentUser;
     if (!user) return $toast.error("Usuário não autenticado");
 
-    const usersSnapshot = await getDocs(collection(db, "users"));
-    const userDoc = usersSnapshot.docs.find(
-      (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
-    );
-    if (!userDoc) return $toast.error("Usuário não encontrado");
+    const email = (user.email || "").toLowerCase();
 
-    const userId = userDoc.id;
+    // busca direta com query
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email),
+      limit(1)
+    );
+
+    const usersSnapshot = await getDocs(q);
+    if (usersSnapshot.empty) return $toast.error("Usuário não encontrado");
+
+    const userDoc = usersSnapshot.docs[0];
     const userData = userDoc.data();
+    const userId = userDoc.id;
 
     if (userData.subscription === "ativa") {
       assinaturaAtiva.value = true;
@@ -253,12 +310,10 @@ async function ativarAssinatura() {
     if (!keys.includes(chaveAssinatura.value))
       return $toast.error("Chave inválida!");
 
-    // Define data atual e data de término (30 dias depois)
     const start = new Date();
     const end = new Date();
     end.setDate(start.getDate() + 30);
 
-    // Atualiza o Firestore
     await setDoc(
       doc(db, "users", userId),
       {
@@ -272,10 +327,10 @@ async function ativarAssinatura() {
     assinaturaAtiva.value = true;
     assinaturaModal.value = false;
 
-    // Reload com contagem
     $toast.success("Ativada com sucesso! A página será recarregada", {
       position: "top",
     });
+
     for (let i = 3; i > 0; i--) {
       $toast.info(`Recarregando em ${i}...`, { position: "top" });
       await new Promise((res) => setTimeout(res, 1000));
@@ -286,7 +341,6 @@ async function ativarAssinatura() {
     $toast.error("Erro ao ativar assinatura!");
   }
 }
-
 
 
 // notificações
@@ -300,18 +354,22 @@ async function openNotificationsModal() {
       return;
     }
 
-    const usersSnapshot = await getDocs(collection(db, "users"));
-    const userDoc = usersSnapshot.docs.find(
-      (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
+    const email = (user.email || "").toLowerCase();
+
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email),
+      limit(1)
     );
 
-    if (!userDoc) {
+    const usersSnapshot = await getDocs(q);
+    if (usersSnapshot.empty) {
       $toast.error("Usuário não encontrado no Firestore", { position: "top" });
       loadingMessages.value = false;
       return;
     }
 
-    const userData = userDoc.data();
+    const userData = usersSnapshot.docs[0].data();
     messages.value = userData.messages || [];
     notificacoesModal.value = true;
   } catch (err) {
@@ -322,10 +380,11 @@ async function openNotificationsModal() {
   }
 }
 
-// -----------------
-// Outras funções
-// -----------------
-function toggleDropdown() { dropdownOpen.value = !dropdownOpen.value; }
+
+// funções gerais
+function toggleDropdown() {
+  dropdownOpen.value = !dropdownOpen.value;
+}
 function toggleSearch() {
   if (!isMobile.value) return;
   searchActive.value = !searchActive.value;
@@ -333,15 +392,33 @@ function toggleSearch() {
 }
 
 async function logout() {
-  try { await signOut(auth); userStore.clearUser(); window.location.href = "/"; } 
-  catch (err) { console.error(err); }
+  try {
+    await signOut(auth);
+    userStore.clearUser();
+    window.location.href = "/";
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-function goToAuth(mode) { router.push({ path: "/RegisterAndLogin", query: { mode } }); }
+function goToAuth(mode) {
+  router.push({ path: "/RegisterAndLogin", query: { mode } });
+}
 
 function handleClickOutside(event) {
-  if (dropdownOpen.value && userRef.value && !userRef.value.contains(event.target)) dropdownOpen.value = false;
-  if (searchActive.value && searchRef.value && !searchRef.value.contains(event.target)) searchActive.value = false;
+  if (
+    dropdownOpen.value &&
+    userRef.value &&
+    !userRef.value.contains(event.target)
+  )
+    dropdownOpen.value = false;
+
+  if (
+    searchActive.value &&
+    searchRef.value &&
+    !searchRef.value.contains(event.target)
+  )
+    searchActive.value = false;
 }
 
 function handleResize() {
@@ -350,17 +427,20 @@ function handleResize() {
   if (!isMobile.value && wasMobile) searchActive.value = false;
 }
 
+
+// 🚀 AUTENTICAÇÃO MONITORA E VERIFICA ASSINATURA AUTOMÁTICA
 onMounted(() => {
-  verificarAssinatura();
+  const unsub = onAuthStateChanged(auth, () => {
+    verificarAssinatura();
+  });
+
   window.addEventListener("resize", handleResize);
   document.addEventListener("click", handleClickOutside);
-});
 
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
-  document.removeEventListener("click", handleClickOutside);
+  onBeforeUnmount(() => unsub());
 });
 </script>
+
 
 
 <style scoped>
