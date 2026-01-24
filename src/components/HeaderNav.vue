@@ -32,7 +32,7 @@
           <v-list-subheader class="drawer-subtitle">LIVRARIA</v-list-subheader>
           <v-list-item v-for="item in libraryItems" :key="item.title" class="drawer-item">
             <v-list-item-title>
-              <a :href="item.href" @click="test">{{ item.title }}</a>
+              <a :href="item.href">{{ item.title }}</a>
             </v-list-item-title>
           </v-list-item>
         </v-list>
@@ -40,27 +40,36 @@
         <!-- EXTRAS -->
         <v-list>
           <v-list-subheader class="drawer-subtitle">EXTRAS</v-list-subheader>
+
           <v-list-item class="drawer-item">
             <v-list-item-title>
               <a
                 href="https://www.instagram.com/repertorio___atualizado?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                 target="_blank"
-              >📸 Instagram</a>
+                >📸 Instagram</a
+              >
             </v-list-item-title>
           </v-list-item>
+
           <v-list-item class="drawer-item">
             <v-list-item-title>
               <a href="https://youtube.com/seuapp" target="_blank">▶️ YouTube</a>
             </v-list-item-title>
           </v-list-item>
+
           <v-list-item class="drawer-item vip-link">
             <v-list-item-title>
               <a href="#" target="_blank">🌟 Grupo VIP</a>
             </v-list-item-title>
           </v-list-item>
+
           <v-list-item class="drawer-item support-link">
             <v-list-item-title>
-              <a href="https://wa.me/8695102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20" target="_blank">💬 Suporte WhatsApp</a>
+              <a
+                href="https://wa.me/8695102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20"
+                target="_blank"
+                >💬 Suporte WhatsApp</a
+              >
             </v-list-item-title>
           </v-list-item>
         </v-list>
@@ -73,8 +82,6 @@
           <li><a href="/Repertorios">REPERTÓRIOS</a></li>
         </ul>
       </nav>
-
- 
     </div>
 
     <!-- Header Direito: Usuário -->
@@ -93,10 +100,15 @@
               <li v-if="userStore.user?.role === 'admin'">
                 <a href="/admin"> ⚙ Administração</a>
               </li>
+
               <li>
-                <a href="#" v-if="!assinaturaAtiva" @click.prevent="openAssinaturaModal">🔑 Ativar Assinatura</a>
+                <!-- ✅ NADA de .open() aqui -->
+                <a href="#" v-if="!assinaturaAtiva" @click.prevent="openAssinaturaModal">
+                  🔑 Ativar Assinatura
+                </a>
                 <span v-else class="ativado">✅Assinatura ativa</span>
               </li>
+
               <li><a href="#" @click.prevent="openNotificationsModal">🔔 Notificações</a></li>
               <li><a href="#" @click.prevent="logout">🚪 Sair</a></li>
             </ul>
@@ -112,23 +124,101 @@
       </div>
     </div>
 
-    <!-- Modal Ativar Assinatura -->
-    <v-dialog v-model="assinaturaModal" max-width="400px">
-      <v-card>
-        <v-card-title>Ativar Assinatura</v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="chaveAssinatura"
-            label="Digite sua chave"
-            outlined
-            dense
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn text @click="assinaturaModal = false">Cancelar</v-btn>
-          <v-btn color="primary" @click="ativarAssinatura">Ativar</v-btn>
-        </v-card-actions>
+    <!-- ✅ Modal Assinatura (controlado por boolean) -->
+    <v-dialog
+      v-model="assinaturaModal"
+      max-width="980"
+      persistent
+      transition="dialog-bottom-transition"
+    >
+      <v-card class="premium-modal" elevation="14">
+        <!-- Fechar -->
+        <v-btn icon variant="text" class="premium-close" @click="assinaturaModal = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+
+        <div class="premium-wrap">
+          <!-- LADO ESQUERDO -->
+          <div class="premium-left">
+            <div class="premium-icon">
+              <v-icon size="34">mdi-book-open-variant</v-icon>
+            </div>
+
+            <h2 class="premium-title">Acesso Premium</h2>
+
+            <p class="premium-subtitle">
+              Desbloqueie player, downloads e fila ilimitada com sua assinatura.
+            </p>
+
+            <div class="premium-badge">
+              <v-icon size="18">mdi-flash</v-icon>
+              <span>Ativação em segundos</span>
+            </div>
+          </div>
+
+          <!-- LADO DIREITO -->
+          <div class="premium-right">
+            <h1 class="premium-h1">Escolha como quer continuar</h1>
+
+            <p class="premium-desc">
+              Para liberar todos os recursos, você precisa ativar ou adquirir sua assinatura.
+            </p>
+
+            <!-- PASSOS -->
+            <div class="premium-steps">
+              <div class="premium-step">
+                <div class="step-num">1</div>
+                <div class="step-txt">
+                  <div class="step-title">Comprar assinatura</div>
+                  <div class="step-sub">Fale direto com nossa equipe pelo WhatsApp.</div>
+                </div>
+              </div>
+
+              <div class="premium-step">
+                <div class="step-num">2</div>
+                <div class="step-txt">
+                  <div class="step-title">Receber sua chave</div>
+                  <div class="step-sub">A liberação é enviada após a confirmação.</div>
+                </div>
+              </div>
+
+              <div class="premium-step">
+                <div class="step-num">3</div>
+                <div class="step-txt">
+                  <div class="step-title">Ativar assinatura</div>
+                  <div class="step-sub">Digite sua chave e aproveite para baixar e ouvir online.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- INPUT CHAVE -->
+            <transition name="fade">
+              <div class="premium-input-area">
+                <v-text-field
+                  v-model="chaveAssinatura"
+                  label="Digite sua chave"
+                  variant="outlined"
+                  density="comfortable"
+                  prepend-inner-icon="mdi-key-variant"
+                  @keydown.enter.prevent="ativarAssinatura"
+                />
+              </div>
+            </transition>
+
+            <div class="premium-actions">
+              <v-btn class="premium-buy" @click="comprarAssinatura">
+                <v-icon start>mdi-whatsapp</v-icon>
+                Comprar assinatura
+              </v-btn>
+            </div>
+
+            <v-btn variant="text" class="premium-cancel" @click="assinaturaModal = false">
+              Cancelar
+            </v-btn>
+
+            <div class="premium-footer">Suporte disponível para ajudar você</div>
+          </div>
+        </div>
       </v-card>
     </v-dialog>
 
@@ -155,38 +245,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import { useUserStore } from "@/stores/userStore";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/firebase";
-import {
-  doc,
-  getDocs,
-  setDoc,
-  collection,
-  query,
-  where,
-  limit,
-} from "firebase/firestore";
+import { doc, getDocs, setDoc, collection, query, where, limit } from "firebase/firestore";
 import "vue-toast-notification/dist/theme-sugar.css";
 import { useToast } from "vue-toast-notification";
 
 const dropdownOpen = ref(false);
 const hasNotification = ref(true);
+
 const drawer = ref(false);
 const $toast = useToast();
+
 const searchActive = ref(false);
 const isMobile = ref(window.innerWidth <= 950);
 const searchRef = ref(null);
 const searchInputRef = ref(null);
 const userRef = ref(null);
 const headerRef = ref(null);
+
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 
 // assinatura
-const assinaturaModal = ref(false);
+const assinaturaModal = ref(false); // ✅ boolean (nada de .open)
 const chaveAssinatura = ref("");
 const assinaturaAtiva = ref(false);
 
@@ -205,28 +291,33 @@ const menuItems = [
 ];
 const libraryItems = [{ title: "FAVORITOS ", href: "/favoritos" }];
 
+function comprarAssinatura() {
+  window.open("https://wa.me/5586995102595?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20repertorio.", "_blank");
+}
 
-// 🔥 FUNÇÃO CORRIGIDA — VERIFICA ASSINATURA E EXPIRAÇÃO
-async function verificarAssinatura() {
+/**
+ * ✅ VERIFICA ASSINATURA + EXPIRAÇÃO
+ * ✅ SE NÃO ESTIVER ATIVA: ABRE O MODAL (ao logar / refresh / troca de rota)
+ */
+async function verificarAssinatura({ forceOpenModal = true } = {}) {
   try {
     const user = auth.currentUser;
 
     if (!user) {
       assinaturaAtiva.value = false;
+      // sem login: não força abrir
+      if (forceOpenModal) assinaturaModal.value = false;
       return;
     }
 
     const email = (user.email || "").toLowerCase();
 
-    const q = query(
-      collection(db, "users"),
-      where("email", "==", email),
-      limit(1)
-    );
-
+    const q = query(collection(db, "users"), where("email", "==", email), limit(1));
     const snap = await getDocs(q);
+
     if (snap.empty) {
       assinaturaAtiva.value = false;
+      if (forceOpenModal) assinaturaModal.value = true;
       return;
     }
 
@@ -245,25 +336,28 @@ async function verificarAssinatura() {
 
     assinaturaAtiva.value = !!aindaValida;
 
-    // Se expirou → marcar automaticamente como inativa
-    if (!aindaValida &&
-        data.subscription === "ativa" &&
-        endDate &&
-        endDate <= now) {
-      await setDoc(
-        doc(db, "users", userDocSnap.id),
-        { subscription: "inativa" },
-        { merge: true }
-      );
+    // expirou -> marca inativa
+    if (!aindaValida && data.subscription === "ativa" && endDate && endDate <= now) {
+      await setDoc(doc(db, "users", userDocSnap.id), { subscription: "inativa" }, { merge: true });
+      assinaturaAtiva.value = false;
+    }
+
+    if (forceOpenModal) {
+      if (!assinaturaAtiva.value) {
+        assinaturaModal.value = true;
+        chaveAssinatura.value = "";
+      } else {
+        assinaturaModal.value = false;
+      }
     }
   } catch (err) {
     console.error("Erro ao verificar assinatura:", err);
     assinaturaAtiva.value = false;
+    if (forceOpenModal && auth.currentUser) assinaturaModal.value = true;
   }
 }
 
-
-// abrir modal assinatura
+// abrir modal assinatura (manual)
 function openAssinaturaModal() {
   if (assinaturaAtiva.value) {
     $toast.info("Sua conta já está ativa!", { position: "top-center" });
@@ -273,8 +367,7 @@ function openAssinaturaModal() {
   chaveAssinatura.value = "";
 }
 
-
-// ativar assinatura
+// ativar assinatura (✅ sem reload pra não “matar” o fluxo)
 async function ativarAssinatura() {
   try {
     const user = auth.currentUser;
@@ -282,14 +375,8 @@ async function ativarAssinatura() {
 
     const email = (user.email || "").toLowerCase();
 
-    // busca direta com query
-    const q = query(
-      collection(db, "users"),
-      where("email", "==", email),
-      limit(1)
-    );
-
-    const usersSnapshot = await getDocs(q);
+    const qUser = query(collection(db, "users"), where("email", "==", email), limit(1));
+    const usersSnapshot = await getDocs(qUser);
     if (usersSnapshot.empty) return $toast.error("Usuário não encontrado");
 
     const userDoc = usersSnapshot.docs[0];
@@ -302,13 +389,14 @@ async function ativarAssinatura() {
       return $toast.info("Já possui assinatura");
     }
 
-    const querySnapshot = await getDocs(collection(db, "Chaves"));
-    if (querySnapshot.empty) return $toast.error("Nenhuma chave encontrada!");
+    const keysSnap = await getDocs(collection(db, "Chaves"));
+    if (keysSnap.empty) return $toast.error("Nenhuma chave encontrada!");
 
-    const chaveDoc = querySnapshot.docs[0];
+    const chaveDoc = keysSnap.docs[0];
     const keys = chaveDoc.data().Keys || [];
-    if (!keys.includes(chaveAssinatura.value))
-      return $toast.error("Chave inválida!");
+
+    const chave = (chaveAssinatura.value || "").trim();
+    if (!keys.includes(chave)) return $toast.error("Chave inválida!");
 
     const start = new Date();
     const end = new Date();
@@ -324,24 +412,19 @@ async function ativarAssinatura() {
       { merge: true }
     );
 
+    $toast.success("Ativada com sucesso!", { position: "top" });
+    window.location.reload();
+
     assinaturaAtiva.value = true;
     assinaturaModal.value = false;
 
-    $toast.success("Ativada com sucesso! A página será recarregada", {
-      position: "top",
-    });
-
-    for (let i = 3; i > 0; i--) {
-      $toast.info(`Recarregando em ${i}...`, { position: "top" });
-      await new Promise((res) => setTimeout(res, 1000));
-    }
-    window.location.reload();
+    // revalida
+    await verificarAssinatura({ forceOpenModal: false });
   } catch (err) {
     console.error(err);
     $toast.error("Erro ao ativar assinatura!");
   }
 }
-
 
 // notificações
 async function openNotificationsModal() {
@@ -356,16 +439,11 @@ async function openNotificationsModal() {
 
     const email = (user.email || "").toLowerCase();
 
-    const q = query(
-      collection(db, "users"),
-      where("email", "==", email),
-      limit(1)
-    );
-
+    const q = query(collection(db, "users"), where("email", "==", email), limit(1));
     const usersSnapshot = await getDocs(q);
+
     if (usersSnapshot.empty) {
       $toast.error("Usuário não encontrado no Firestore", { position: "top" });
-      loadingMessages.value = false;
       return;
     }
 
@@ -380,11 +458,11 @@ async function openNotificationsModal() {
   }
 }
 
-
-// funções gerais
+// gerais
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value;
 }
+
 function toggleSearch() {
   if (!isMobile.value) return;
   searchActive.value = !searchActive.value;
@@ -406,19 +484,13 @@ function goToAuth(mode) {
 }
 
 function handleClickOutside(event) {
-  if (
-    dropdownOpen.value &&
-    userRef.value &&
-    !userRef.value.contains(event.target)
-  )
+  if (dropdownOpen.value && userRef.value && !userRef.value.contains(event.target)) {
     dropdownOpen.value = false;
+  }
 
-  if (
-    searchActive.value &&
-    searchRef.value &&
-    !searchRef.value.contains(event.target)
-  )
+  if (searchActive.value && searchRef.value && !searchRef.value.contains(event.target)) {
     searchActive.value = false;
+  }
 }
 
 function handleResize() {
@@ -427,19 +499,32 @@ function handleResize() {
   if (!isMobile.value && wasMobile) searchActive.value = false;
 }
 
+let unsubAuth = null;
 
-// 🚀 AUTENTICAÇÃO MONITORA E VERIFICA ASSINATURA AUTOMÁTICA
 onMounted(() => {
-  const unsub = onAuthStateChanged(auth, () => {
-    verificarAssinatura();
+  unsubAuth = onAuthStateChanged(auth, async () => {
+    await verificarAssinatura({ forceOpenModal: true });
   });
 
   window.addEventListener("resize", handleResize);
   document.addEventListener("click", handleClickOutside);
-
-  onBeforeUnmount(() => unsub());
 });
+
+onBeforeUnmount(() => {
+  if (unsubAuth) unsubAuth();
+  window.removeEventListener("resize", handleResize);
+  document.removeEventListener("click", handleClickOutside);
+});
+
+// ✅ troca de rota -> abre se não tiver assinatura
+watch(
+  () => route.fullPath,
+  async () => {
+    await verificarAssinatura({ forceOpenModal: true });
+  }
+);
 </script>
+
 
 
 
@@ -731,4 +816,180 @@ onMounted(() => {
   color: #fff;
   background: rgba(37, 211, 102, 0.15);
 }
+.premium-modal {
+  border-radius: 22px;
+  overflow: hidden;
+  position: relative;
+}
+
+.premium-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 20;
+}
+
+/* GRID */
+.premium-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  min-height: 460px;
+}
+
+/* LEFT */
+.premium-left {
+  background: linear-gradient(135deg, #00d7d2, #00c3be);
+  color: white;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.premium-icon {
+  width: 74px;
+  height: 74px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.15);
+  display: grid;
+  place-items: center;
+}
+
+.premium-title {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.premium-subtitle {
+  opacity: .95;
+  font-size: 15px;
+  max-width: 260px;
+}
+
+.premium-badge {
+  background: rgba(255,255,255,.18);
+  padding: 8px 12px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+}
+
+/* RIGHT */
+.premium-right {
+  padding: 40px 42px;
+}
+
+.premium-h1 {
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.premium-desc {
+  color: #475569;
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+
+.premium-steps {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.premium-step {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 12px;
+}
+
+.step-num {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(0, 215, 210, .15);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.step-title {
+  font-weight: 800;
+}
+
+.step-sub {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.premium-input-area {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* AÇÕES */
+.premium-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.premium-cancel {
+  color: #64748b !important;
+  font-weight: 900;
+  border-radius: 12px;
+  box-shadow: 0 12px 22px rgba(65, 212, 209, 0.28);
+  align-items: center;
+  width: 100%;
+  margin-top: 1rem;
+  background: #d1ffe2 !important;
+
+}
+
+.premium-buy {
+  background: #25D366 !important;
+  color: #fff !important;
+  font-weight: 800;
+  border-radius: 12px;
+}
+
+.premium-cta {
+  background: linear-gradient(135deg, #00d7d2, #00b8b3);
+  color: #0b1220 !important;
+  font-weight: 900;
+  border-radius: 12px;
+  box-shadow: 0 12px 22px rgba(0, 215, 210, .28);
+}
+
+.premium-footer {
+  margin-top: 14px;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 13px;
+}
+
+/* TRANSIÇÃO DO INPUT */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all .25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+/* RESPONSIVO */
+@media (max-width: 860px) {
+  .premium-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
 </style>

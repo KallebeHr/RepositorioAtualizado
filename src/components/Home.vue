@@ -10,7 +10,7 @@
 
       <div class="buttons">
         <a v-if="!userStore.hasActiveSubscription" href="https://wa.me/5586995102595?text=Ol%C3%A1!%20tenho%20interesse%20no%20*REPERTORIO%20ATUALIZADO*" class="btn green">Comprar assinatura</a>
-        <a v-else class="btn green"> Assinatura ativada com Sucesso!</a>
+        <a v-else class="btn green sucess"> Assinatura ativada com Sucesso!</a>
         <a href="/AllMusic" class="btn green">Ouvir Agora</a>
         <a href="/Repertorios" class="btn green">Baixar Repertório</a>
       </div>
@@ -106,6 +106,16 @@ a{
 .btn.green {
   background: #22c55e;
   color: #fff;
+}
+.btn.green.sucess {
+  background: #22c55e1c;
+  color: #fff;
+}
+.btn.green.sucess:hover {
+  background: #22c55e00;
+  color: #fff;
+  transform: scale(1);
+
 }
 
 .btn.green:hover {

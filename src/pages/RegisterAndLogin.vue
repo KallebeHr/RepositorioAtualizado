@@ -148,10 +148,11 @@ await setDoc(doc(db, "users", res.user.uid), {
   numero: numero.value,
   createdAt: new Date(),
   customID,
-  subscription: "ativa",
+  subscription: "false",
+  // subscription: "ativa",
   password: password.value,
-  subscriptionStart: start.toISOString(),
-  subscriptionEnd: end.toISOString(),         
+  // subscriptionStart: start.toISOString(),
+  // subscriptionEnd: end.toISOString(),         
 })
 
     window.location.href = "/"

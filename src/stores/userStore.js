@@ -48,12 +48,10 @@ const hasActiveSubscription = computed(() => {
       const userRef = doc(db, "users", user.value.uid)
       await updateDoc(userRef, {
         hasSubscription: true,
-        subscription: "ouro",
       })
 
       // Atualiza localmente
       user.value.hasSubscription = true
-      user.value.subscription = "ouro"
 
       // 🔑 Força reatividade
       user.value = { ...user.value }
