@@ -142,6 +142,7 @@
           <div class="premium-left">
             <div class="premium-icon">
               <v-icon size="34">mdi-book-open-variant</v-icon>
+              <
             </div>
 
             <h2 class="premium-title">Acesso Premium</h2>
@@ -161,7 +162,7 @@
             <h1 class="premium-h1">Escolha como quer continuar</h1>
 
             <p class="premium-desc">
-              Para liberar todos os recursos, você precisa ativar ou adquirir sua assinatura.
+              Para liberar todos os recursos, você precisa ativar ou adquirir seu Acesso.
             </p>
 
             <!-- PASSOS -->
@@ -169,7 +170,7 @@
               <div class="premium-step">
                 <div class="step-num">1</div>
                 <div class="step-txt">
-                  <div class="step-title">Comprar assinatura</div>
+                  <div class="step-title">Comprar Acesso</div>
                   <div class="step-sub">Fale direto com nossa equipe pelo WhatsApp.</div>
                 </div>
               </div>
@@ -185,7 +186,7 @@
               <div class="premium-step">
                 <div class="step-num">3</div>
                 <div class="step-txt">
-                  <div class="step-title">Ativar assinatura</div>
+                  <div class="step-title">Ativar Acesso</div>
                   <div class="step-sub">Digite sua chave e aproveite para baixar e ouvir online.</div>
                 </div>
               </div>
@@ -206,6 +207,10 @@
             </transition>
 
             <div class="premium-actions">
+              <v-btn class="premium-buy"  @click="ativarAssinatura">
+                <v-icon start>mdi-cash</v-icon>
+                Confirmar chave de acesso
+              </v-btn>
               <v-btn class="premium-buy" @click="comprarAssinatura">
                 <v-icon start>mdi-whatsapp</v-icon>
                 Comprar assinatura
