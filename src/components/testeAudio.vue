@@ -857,7 +857,7 @@ onMounted(() => {
 .eq-fab {
   position: fixed;
   right: 18px;
-  bottom: 18px;
+  bottom: 10rem;
   width: 58px;
   height: 58px;
   border-radius: 18px;
