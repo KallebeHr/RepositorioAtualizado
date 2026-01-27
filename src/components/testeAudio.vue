@@ -134,7 +134,7 @@
 
                     <button class="eq-btn primary" @click="applyPreset('bass')" type="button">
                       <span class="mdi mdi-waveform"></span>
-                      Bass+
+                      Grave Medio+
                     </button>
 
                     <button class="eq-btn primary" @click="applyPreset('vocal')" type="button">
@@ -463,14 +463,13 @@ const eqPanelRef = ref(null)
 /** Estado do EQ */
 const eqEnabled = ref(true)
 
-/** 6 bandas */
 const bands = ref([
-  { key: "60", label: "60Hz", freq: 60, gain: 0 },
-  { key: "170", label: "170Hz", freq: 170, gain: 0 },
-  { key: "350", label: "350Hz", freq: 350, gain: 0 },
-  { key: "1k", label: "1kHz", freq: 1000, gain: 0 },
-  { key: "3.5k", label: "3.5kHz", freq: 3500, gain: 0 },
-  { key: "10k", label: "10kHz", freq: 10000, gain: 0 }
+  { key: "60", label: "Grave", freq: 60, gain: 0 },
+  { key: "170", label: "Medio Grave", freq: 170, gain: 0 },
+  { key: "350", label: "Medio", freq: 350, gain: 0 },
+  { key: "1k", label: "Voz", freq: 1000, gain: 0 },
+  { key: "3.5k", label: "Voz-agudo", freq: 3500, gain: 0 },
+  { key: "10k", label: "Agudo", freq: 10000, gain: 0 }
 ])
 
 /** WebAudio internals */
