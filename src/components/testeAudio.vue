@@ -219,10 +219,7 @@
 
                   <div class="eq-note">
                     <span class="mdi mdi-information-outline"></span>
-                    <p>
-                      Se você usa músicas hospedadas fora do seu domínio, pode existir bloqueio de CORS.
-                      Você já marca <b>crossOrigin</b>, mas o servidor precisa permitir.
-                    </p>
+                    <MusicPlayer />
                   </div>
                 </section>
 
@@ -340,6 +337,7 @@ import { useUserStore } from "@/stores/userStore"
 import { usePlayerStore } from "@/stores/usePlayerStore"
 import { useToast } from "vue-toast-notification"
 import "vue-toast-notification/dist/theme-sugar.css"
+import MusicPlayer from "./MusicPlayer.vue"
 
 const userStore = useUserStore()
 const player = usePlayerStore()
@@ -1419,7 +1417,7 @@ onBeforeUnmount(() => {
 
 /* info note */
 .eq-note{
-  margin-top: 14px;
+  margin-top: 8rem;
   display:flex;
   gap:10px;
   align-items:flex-start;

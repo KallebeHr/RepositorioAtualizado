@@ -148,7 +148,7 @@
             <h2 class="premium-title">Acesso Premium</h2>
 
             <p class="premium-subtitle">
-              Desbloqueie player, downloads e fila ilimitada com sua assinatura.
+              Desbloqueie player, downloads e fila ilimitada enquanto sua assinatura estiver ATIVA.
             </p>
 
             <div class="premium-badge">

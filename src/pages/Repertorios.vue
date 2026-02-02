@@ -31,7 +31,69 @@
 
   </div>
 </div>
+<div v-if="!loading && !musicas.length" class="status">
+      Nenhuma música disponível.
+    </div>
+    <div v-if="!loading && musicas.length" class="card-repertorio">
+      <div class="info">
+        <h2>Repertório Fevereiro</h2>
+        <p>5772 músicas disponíveis</p>
+      </div>
 
+      <div class="actions">
+        <h2>BAIXAR PARTE UM FEVEREIRO</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllOneFevereiro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM FEVEREIRO' }}
+        </button>
+        <h2>BAIXAR PARTE DOIS FEVEREIRO</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllTwoFevereiro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS FEVEREIRO' }}
+        </button>
+        <h2>BAIXAR PARTE TRÊS FEVEREIRO</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllTresFevereiro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE TRÊS FEVEREIRO' }}
+        </button>
+        <h2>BAIXAR PARTE FORRO DAS ANTIGAS FEVEREIRO</h2>
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllForFevereiro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE FORRO DAS ANTIGAS FEVEREIRO' }}
+        </button>
+        <h2>BAIXAR PARTE CANAVAL FEVEREIRO</h2>
+
+        <button
+          class="primary"
+          :disabled="progress > 0 && progress < 100"
+          @click="handleDownloadAllFIveFevereiro"
+        >
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE CANAVAL FEVEREIRO' }}
+        </button>
+      </div>
+
+      <v-progress-linear
+        v-if="progress !== null"
+        :model-value="progress"
+        color="blue-darken-3"
+        height="6"
+        rounded
+        striped
+        class="progress-bar"
+      ></v-progress-linear>
+    </div>
     <div v-if="!loading && !musicas.length" class="status">
       Nenhuma música disponível.
     </div>
@@ -86,6 +148,38 @@
         class="progress-bar"
       ></v-progress-linear>
     </div>
+
+    <div v-if="!loading && !musicas.length" class="status">
+      Nenhuma música disponível.
+    </div>
+    <div v-if="loading" class="status">Carregando músicas...</div>
+    <div v-if="error" class="status error">{{ error }}</div>
+<!-- 🔐 MODAL DE SENHA -->
+<div v-if="showModalSenha" class="modal-overlay">
+  <div class="modal-content">
+
+    <h2>🔐 Digite a senha para liberar o download</h2>
+
+    <input 
+      v-model="senhaDigitada" 
+      type="password" 
+      placeholder="Digite a senha..."
+      class="modal-input"
+    />
+
+    <div class="modal-buttons">
+      <button @click="confirmarSenha" class="modal-confirm">
+        Confirmar
+      </button>
+      <button @click="cancelarSenha" class="modal-cancel">
+        Cancelar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+    
 
     <div v-if="!loading && !musicas.length" class="status">
       Nenhuma música disponível.
@@ -175,7 +269,7 @@ function solicitarSenha() {
 }
 
 function confirmarSenha() {
-  const senhaCorreta = "8090";
+  const senhaCorreta = "1246";
   const ok = senhaDigitada.value === senhaCorreta;
 
   showModalSenha.value = false;
@@ -306,6 +400,164 @@ async function handleDownloadAllForDezembro() {
       if (counter < 0) {
         clearInterval(interval);
         window.location.href = "https://www.mediafire.com/file/jy401nz0eumz6ur/parte+4.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+// ---------------------------------------------
+// 📂 FEVEREIRO - PARTE 1
+async function handleDownloadAllOneFevereiro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  const senhaOk = await solicitarSenha();
+  if (!senhaOk) {
+    toast.error("Senha incorreta! ❌");
+    return;
+  }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file_premium/20xutekqoi2gino/parte_1%25284%2529.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+
+// ---------------------------------------------
+// 📂 Fevereiro - PARTE 2
+async function handleDownloadAllTwoFevereiro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  const senhaOk = await solicitarSenha();
+  if (!senhaOk) {
+    toast.error("Senha incorreta! ❌");
+    return;
+  }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file_premium/wm991n13mlg7scn/parte_2%25283%2529.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+// 📂 Fevereiro - PARTE 3
+async function handleDownloadAllTresFevereiro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  const senhaOk = await solicitarSenha();
+  if (!senhaOk) {
+    toast.error("Senha incorreta! ❌");
+    return;
+  }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file_premium/xaicp4k2e6f0r6u/parte_3%25282%2529.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+// 📂 Fevereiro - PARTE 4
+async function handleDownloadAllForFevereiro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  const senhaOk = await solicitarSenha();
+  if (!senhaOk) {
+    toast.error("Senha incorreta! ❌");
+    return;
+  }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file_premium/ay5uadvzl3a6yx9/FORRO_DAS_ANTIGAS.rar/file";
+      }
+    }, 1000);
+
+  } catch (err) {
+    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
+    toast.error("Erro ao redirecionar para a página de download");
+  }
+}
+// 📂 Fevereiro - PARTE 5
+async function handleDownloadAllFIveFevereiro() {
+  if (!userStore.hasActiveSubscription) {
+    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
+    return;
+  }
+
+  const senhaOk = await solicitarSenha();
+  if (!senhaOk) {
+    toast.error("Senha incorreta! ❌");
+    return;
+  }
+
+  try {
+    let counter = 3;
+
+    const interval = setInterval(() => {
+      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
+      counter--;
+
+      if (counter < 0) {
+        clearInterval(interval);
+        window.location.href = "https://www.mediafire.com/file_premium/3r355yz0iqdi8r2/parte_1_carnaval.rar/file";
       }
     }, 1000);
 

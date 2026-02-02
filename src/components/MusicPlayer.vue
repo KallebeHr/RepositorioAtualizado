@@ -333,7 +333,9 @@ onBeforeUnmount(() => raf && cancelAnimationFrame(raf))
   border-top: 1px solid #2a2a2a;
   z-index: 50;
   transition: all 0.3s ease;
+  
 }
+
 .player.placeholder {
   justify-content: center;
   text-align: center;
