@@ -5,7 +5,7 @@
         <h1 v-if="!userStore.loadingUser">Olá, {{ userStore.user.name }}</h1>
         <h1 v-else>Olá...</h1>
 
-        <span class="subtitle">AS 24 MÚSICAS MAIS TOCADAS PARA VOCÊ COMEÇAR</span>
+        <span class="subtitle">AS 56 MÚSICAS MAIS TOCADAS PARA VOCÊ COMEÇAR</span>
 
         <div class="hint-row">
           <p class="indicador">Arraste para o lado</p>
@@ -397,7 +397,7 @@ function requireSubscription() {
           FETCH
 ====================== */
 async function fetchMusicas() {
-  const q = query(collection(db, "musicas"), orderBy("playCount", "desc"), limit(24))
+  const q = query(collection(db, "musicas"), orderBy("playCount", "desc"), limit(56))
   const snap = await getDocs(q)
 
   musicas.value = snap.docs.map(d => ({
@@ -540,33 +540,25 @@ function toggleEqUI() {
   ensureEqConnection()
   refreshVisualizer()
 }
-
 function formatDb(v) {
   const n = Number(v || 0)
   return `${n > 0 ? "+" : ""}${n.toFixed(1)}`
 }
-
 function createContextIfNeeded() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
   if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {})
 }
-
 function findAudioElement() {
   const howl = player?.sound
   const node = howl?._sounds?.[0]?._node
-
   if (node && typeof node.play === "function") {
     try { node.crossOrigin = "anonymous" } catch {}
     return node
   }
-
   return document.querySelector("audio") || null
 }
-
 function buildEqGraph() {
   if (!audioCtx) return
-
-  // preamp (evita clip e vira ponto único de visualização)
   preampNode = audioCtx.createGain()
   preampNode.gain.value = 1
 

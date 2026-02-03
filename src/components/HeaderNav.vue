@@ -362,7 +362,6 @@ async function verificarAssinatura({ forceOpenModal = true } = {}) {
   }
 }
 
-// abrir modal assinatura (manual)
 function openAssinaturaModal() {
   if (assinaturaAtiva.value) {
     $toast.info("Sua conta já está ativa!", { position: "top-center" });
@@ -372,7 +371,6 @@ function openAssinaturaModal() {
   chaveAssinatura.value = "";
 }
 
-// ativar assinatura (✅ sem reload pra não “matar” o fluxo)
 async function ativarAssinatura() {
   try {
     const user = auth.currentUser;
