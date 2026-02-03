@@ -73,14 +73,14 @@
         >
           ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE FORRO DAS ANTIGAS FEVEREIRO' }}
         </button>
-        <h2>BAIXAR PARTE CANAVAL FEVEREIRO</h2>
+        <h2>BAIXAR PARTE CARNAVAL FEVEREIRO</h2>
 
         <button
           class="primary"
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllFIveFevereiro"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE CANAVAL FEVEREIRO' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE CARNAVAL FEVEREIRO' }}
         </button>
       </div>
 
