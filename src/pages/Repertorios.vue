@@ -36,52 +36,36 @@
     </div>
     <div v-if="!loading && musicas.length" class="card-repertorio">
       <div class="info">
-        <h2>Repertório Fevereiro</h2>
+        <h2>Repertório MARÇO</h2>
         <p>5772 músicas disponíveis</p>
       </div>
 
       <div class="actions">
-        <h2>BAIXAR PARTE UM FEVEREIRO</h2>
+        <h2>BAIXAR PARTE UM MARÇO</h2>
         <button
           class="primary"
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllOneFevereiro"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM FEVEREIRO' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM MARÇO' }}
         </button>
-        <h2>BAIXAR PARTE DOIS FEVEREIRO</h2>
+        <h2>BAIXAR PARTE DOIS MARÇO</h2>
         <button
           class="primary"
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllTwoFevereiro"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS FEVEREIRO' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS MARÇO' }}
         </button>
-        <h2>BAIXAR PARTE TRÊS FEVEREIRO</h2>
+        <h2>BAIXAR PARTE TRÊS MARÇO</h2>
         <button
           class="primary"
           :disabled="progress > 0 && progress < 100"
           @click="handleDownloadAllTresFevereiro"
         >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE TRÊS FEVEREIRO' }}
+          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE TRÊS MARÇO' }}
         </button>
-        <h2>BAIXAR PARTE FORRO DAS ANTIGAS FEVEREIRO</h2>
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllForFevereiro"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE FORRO DAS ANTIGAS FEVEREIRO' }}
-        </button>
-        <h2>BAIXAR PARTE CARNAVAL FEVEREIRO</h2>
 
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllFIveFevereiro"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE CARNAVAL FEVEREIRO' }}
-        </button>
       </div>
 
       <v-progress-linear
@@ -97,63 +81,7 @@
     <div v-if="!loading && !musicas.length" class="status">
       Nenhuma música disponível.
     </div>
-    <div v-if="!loading && musicas.length" class="card-repertorio">
-      <div class="info">
-        <h2>Repertório Janeiro</h2>
-        <p>4872 músicas disponíveis</p>
-      </div>
-
-      <div class="actions">
-        <h2>BAIXAR PARTE UM</h2>
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllOneDezembro"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE UM JANEIRO' }}
-        </button>
-        <h2>BAIXAR PARTE DOIS</h2>
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllTwoDezembro"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE DOIS JANEIRO' }}
-        </button>
-        <h2>BAIXAR PARTE TRÊS</h2>
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllTresDezembro"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE TRÊS JANEIRO' }}
-        </button>
-        <h2>BAIXAR PARTE QUATRO</h2>
-        <button
-          class="primary"
-          :disabled="progress > 0 && progress < 100"
-          @click="handleDownloadAllForDezembro"
-        >
-          ⬇ {{ progress > 0 && progress < 100 ? `${progress}%` : 'BAIXAR PARTE QUATRO JANEIRO' }}
-        </button>
-      </div>
-
-      <v-progress-linear
-        v-if="progress !== null"
-        :model-value="progress"
-        color="blue-darken-3"
-        height="6"
-        rounded
-        striped
-        class="progress-bar"
-      ></v-progress-linear>
-    </div>
-
-    <div v-if="!loading && !musicas.length" class="status">
-      Nenhuma música disponível.
-    </div>
-    <div v-if="loading" class="status">Carregando músicas...</div>
-    <div v-if="error" class="status error">{{ error }}</div>
+    
 <!-- 🔐 MODAL DE SENHA -->
 <div v-if="showModalSenha" class="modal-overlay">
   <div class="modal-content">
@@ -269,7 +197,7 @@ function solicitarSenha() {
 }
 
 function confirmarSenha() {
-  const senhaCorreta = "1246";
+  const senhaCorreta = "1247";
   const ok = senhaDigitada.value === senhaCorreta;
 
   showModalSenha.value = false;
@@ -431,7 +359,7 @@ async function handleDownloadAllOneFevereiro() {
 
       if (counter < 0) {
         clearInterval(interval);
-        window.location.href = "https://www.mediafire.com/file_premium/20xutekqoi2gino/parte_1%25284%2529.rar/file";
+        window.location.href = "https://repertorioatualizado.fromsmash.com/MARO-PARTE-1";
       }
     }, 1000);
 
@@ -464,7 +392,7 @@ async function handleDownloadAllTwoFevereiro() {
 
       if (counter < 0) {
         clearInterval(interval);
-        window.location.href = "https://www.mediafire.com/file_premium/wm991n13mlg7scn/parte_2%25283%2529.rar/file";
+        window.location.href = "https://repertorioatualizado.fromsmash.com/MARO-PARTE-2";
       }
     }, 1000);
 
@@ -495,7 +423,7 @@ async function handleDownloadAllTresFevereiro() {
 
       if (counter < 0) {
         clearInterval(interval);
-        window.location.href = "https://www.mediafire.com/file_premium/xaicp4k2e6f0r6u/parte_3%25282%2529.rar/file";
+        window.location.href = "https://repertorioatualizado.fromsmash.com/MARO-PARTE-3";
       }
     }, 1000);
 
@@ -504,68 +432,7 @@ async function handleDownloadAllTresFevereiro() {
     toast.error("Erro ao redirecionar para a página de download");
   }
 }
-// 📂 Fevereiro - PARTE 4
-async function handleDownloadAllForFevereiro() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
-    return;
-  }
 
-  const senhaOk = await solicitarSenha();
-  if (!senhaOk) {
-    toast.error("Senha incorreta! ❌");
-    return;
-  }
-
-  try {
-    let counter = 3;
-
-    const interval = setInterval(() => {
-      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
-      counter--;
-
-      if (counter < 0) {
-        clearInterval(interval);
-        window.location.href = "https://www.mediafire.com/file_premium/ay5uadvzl3a6yx9/FORRO_DAS_ANTIGAS.rar/file";
-      }
-    }, 1000);
-
-  } catch (err) {
-    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
-    toast.error("Erro ao redirecionar para a página de download");
-  }
-}
-// 📂 Fevereiro - PARTE 5
-async function handleDownloadAllFIveFevereiro() {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶");
-    return;
-  }
-
-  const senhaOk = await solicitarSenha();
-  if (!senhaOk) {
-    toast.error("Senha incorreta! ❌");
-    return;
-  }
-
-  try {
-    let counter = 3;
-
-    const interval = setInterval(() => {
-      toast.info(`Obrigado por comprar nosso repertório, você será redirecionado em ${counter}...`);
-      counter--;
-
-      if (counter < 0) {
-        clearInterval(interval);
-        window.location.href = "https://www.mediafire.com/file_premium/3r355yz0iqdi8r2/parte_1_carnaval.rar/file";
-      }
-    }, 1000);
-
-  } catch (err) {
-    console.error("[Repertorio] erro ao iniciar o redirecionamento:", err);
-    toast.error("Erro ao redirecionar para a página de download");
-  }
-}
 
 // Scroll-top
 function handleScroll() { showScrollTop.value = window.scrollY > 200 }
