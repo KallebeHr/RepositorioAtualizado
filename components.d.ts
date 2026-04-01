@@ -23,6 +23,7 @@ declare module 'vue' {
     MusicCard: typeof import('./src/components/MusicCard.vue')['default']
     MusicList: typeof import('./src/components/MusicList.vue')['default']
     MusicPlayer: typeof import('./src/components/MusicPlayer.vue')['default']
+    NovoMusicList: typeof import('./src/components/novoMusicList.vue')['default']
     Pc: typeof import('./src/components/pc.vue')['default']
     Preloader: typeof import('./src/components/Preloader.vue')['default']
     Queue: typeof import('./src/components/Queue.vue')['default']

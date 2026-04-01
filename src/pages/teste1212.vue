@@ -1,6 +1,6 @@
 <template>
   <div class='container'>
-    <testeAudio />
+    <novoMusicList />
   </div>
 </template>
 
@@ -10,5 +10,10 @@ import AddMusicListAdmin from '@/components/AddMusicListAdmin.vue';
 </script>
 
 <style scoped>
-.container{display:flex;}
+.container{
+  display:flex;
+  justify-content: center;
+  height: auto;
+
+  }
 </style>
