@@ -367,12 +367,12 @@ async function download(m) {
   --surface: #1a1a22;
   --surface2: #22222e;
   --border: #2e2e3e;
-  --accent: #7c6af7;
-  --accent2: #a78bfa;
+  --accent: #00d1b2;
+  --accent2: #00d1b2; 
   --text: #e8e8f0;
   --muted: #7070a0;
   --folder: #f59e0b;
-  --folder-artist: #6366f1;
+  --folder-artist: #00d1b2;
   --danger: #ef4444;
 
   min-height: 100vh;
