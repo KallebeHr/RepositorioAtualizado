@@ -289,8 +289,9 @@ const loadingMessages = ref(false);
 // menus
 const menuItems = [
   { title: "INICIO", href: "/" },
-  { title: "COMO ATIVAR OU BAIXAR", href: "/Tutoriais" },
   { title: "MÚSICAS", href: "/AllMusic" },
+  { title: "VER PASTAS", href: "/Pastas" },
+  { title: "COMO ATIVAR OU BAIXAR", href: "/Tutoriais" },
   { title: "REPERTÓRIOS", href: "/Repertorios" },
   { title: "BAIXAR POR CANTORES", href: "/Cantores" },
 ];
@@ -669,6 +670,7 @@ watch(
   align-items: center;
   gap: 5px;
   font-weight: 500;
+  z-index: 1000;
 }
 .messages-list {
   list-style: none;

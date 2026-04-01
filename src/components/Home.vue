@@ -13,6 +13,7 @@
         <a v-else class="btn green sucess"> Assinatura ativada com Sucesso!</a>
         <a href="/AllMusic" class="btn green">Ouvir Agora</a>
         <a href="/Repertorios" class="btn green">Baixar Repertório</a>
+        <a href="/Pastas" class="btn green">Ver Pastas</a>
       </div>
     <Autoscroll />
 
