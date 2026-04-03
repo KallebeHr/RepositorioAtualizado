@@ -30,7 +30,12 @@
 
         <!-- RESULTADOS -->
         <div v-if="musicas.length" class="results">
-          <div v-for="m in musicas" :key="m.id" class="music-card">
+          <div
+            v-for="m in musicas"
+            :key="m.id"
+            class="music-card"
+            @click="play(m)"
+          >
             <img :src="m.coverUrl || '/LogoMusic.jpg'" class="cover" />
 
             <div class="info">
@@ -39,13 +44,13 @@
             </div>
 
             <div class="actions">
-              <button @click="play(m)">
+              <button @click.stop="play(m)">
                 <i class="mdi mdi-play"></i>
               </button>
-              <button @click="addQueue(m)">
+              <button @click.stop="addQueue(m)">
                 <i class="mdi mdi-playlist-plus"></i>
               </button>
-              <button @click="download(m)">
+              <button @click.stop="download(m)">
                 <i class="mdi mdi-download"></i>
               </button>
             </div>
@@ -61,7 +66,7 @@
 <script setup>
 import { ref, nextTick } from "vue"
 import { db } from "@/firebase"
-import { collection, query as fbQuery, getDocs, where, orderBy, limit, doc, updateDoc, increment } from "firebase/firestore"
+import { collection, getDocs, doc, updateDoc, increment } from "firebase/firestore"
 import { usePlayerStore } from "@/stores/usePlayerStore"
 import { useUserStore } from "@/stores/userStore"
 import { useToast } from "vue-toast-notification"
@@ -88,7 +93,6 @@ function closeModal() {
 }
 
 /* BUSCA DIRETA NO FIREBASE */
-let searchTimeout
 async function searchMusicas() {
   const qText = queryText.value.trim().toLowerCase()
   if (!qText) {
@@ -96,11 +100,9 @@ async function searchMusicas() {
     return
   }
 
-  // Pega todas as músicas (ou limite alto, tipo 200-500)
   const snap = await getDocs(collection(db, "musicas"))
   const allMusicas = snap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-  // filtra localmente
   musicas.value = allMusicas.filter(m => {
     const title = m.title?.toLowerCase() || ""
     const cantor = m.cantor?.toLowerCase() || ""
@@ -108,7 +110,6 @@ async function searchMusicas() {
     return title.includes(qText) || cantor.includes(qText) || tipo.includes(qText)
   })
 }
-
 
 /* AÇÕES */
 function play(m) {
@@ -224,6 +225,13 @@ async function download(m) {
   align-items: center;
   justify-content: space-between;
   height: 280px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.music-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
 .cover {
