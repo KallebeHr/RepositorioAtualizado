@@ -33,7 +33,7 @@
       <!-- Card Header -->
       <div class="card-header">
         <div class="card-header-left">
-          <div class="month-badge">ABRIL</div>
+          <div class="month-badge">JULHO</div>
           <h2 class="card-title">Repertório Completo</h2>
           <p class="card-subtitle">
             <span class="count-badge">5.772</span> músicas disponíveis
@@ -224,7 +224,6 @@ const parts = [
   { size: "~900 MB", handler: handleDownloadAllTresFevereiro },
   { size: "~900 MB", handler: handleDownloadAllQuatroFevereiro },
   { size: "~900 MB", handler: handleDownloadAllCincoFevereiro },
-  { size: "~900 MB", handler: handleDownloadAllSeisFevereiro },
 ]
 
 async function fetchMusicas() {
@@ -287,12 +286,11 @@ async function guardedDownload(url) {
   }
 }
 
-async function handleDownloadAllOneFevereiro() { await guardedDownload("https://repertorioatualizado.fromsmash.com/parte-1-abril") }
-async function handleDownloadAllTwoFevereiro() { await guardedDownload("https://repertorioatualizado.fromsmash.com/parte-2-abril") }
-async function handleDownloadAllTresFevereiro() { await guardedDownload("https://repertorioatualizado.fromsmash.com/parte-3-abril") }
-async function handleDownloadAllQuatroFevereiro() { await guardedDownload("https://repertorioatualizado.fromsmash.com/parte-4-abril") }
-async function handleDownloadAllCincoFevereiro() { await guardedDownload("https://repertorioatualizado.fromsmash.com/parte-5-abril") }
-async function handleDownloadAllSeisFevereiro() { await guardedDownload("https://repertorioatualizado.fromsmash.com/parte-6-abril") }
+async function handleDownloadAllOneFevereiro() { await guardedDownload("https://www.mediafire.com/file/3shecj8ih3baik1/PARTE+1.rar/file") }
+async function handleDownloadAllTwoFevereiro() { await guardedDownload("https://www.mediafire.com/file/36r9hsrsyr95web/PARTE+2.rar/file") }
+async function handleDownloadAllTresFevereiro() { await guardedDownload("https://www.mediafire.com/file/msivv695life1hi/PARTE+3.rar/file") }
+async function handleDownloadAllQuatroFevereiro() { await guardedDownload("https://www.mediafire.com/file/q6t3f2a7himvd1b/PARTE+4.rar/file") }
+async function handleDownloadAllCincoFevereiro() { await guardedDownload("https://www.mediafire.com/file/lfix67hnp92jbvy/PARTE+5.rar/file") }
 
 onMounted(() => fetchMusicas())
 </script>
