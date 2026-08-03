@@ -218,12 +218,14 @@ const extraCategories = [
 
 const proofEmojis = ["😄", "🎧", "🎵", "🔥"]
 
+
 const parts = [
   { size: "~900 MB", handler: handleDownloadAllOneFevereiro },
   { size: "~900 MB", handler: handleDownloadAllTwoFevereiro },
   { size: "~900 MB", handler: handleDownloadAllTresFevereiro },
   { size: "~900 MB", handler: handleDownloadAllQuatroFevereiro },
   { size: "~900 MB", handler: handleDownloadAllCincoFevereiro },
+  { size: "~900 MB", handler: handleDownloadAllSeisFevereiro },
 ]
 
 async function fetchMusicas() {
@@ -286,11 +288,12 @@ async function guardedDownload(url) {
   }
 }
 
-async function handleDownloadAllOneFevereiro() { await guardedDownload("https://www.mediafire.com/file/3shecj8ih3baik1/PARTE+1.rar/file") }
-async function handleDownloadAllTwoFevereiro() { await guardedDownload("https://www.mediafire.com/file/36r9hsrsyr95web/PARTE+2.rar/file") }
-async function handleDownloadAllTresFevereiro() { await guardedDownload("https://www.mediafire.com/file/msivv695life1hi/PARTE+3.rar/file") }
-async function handleDownloadAllQuatroFevereiro() { await guardedDownload("https://www.mediafire.com/file/q6t3f2a7himvd1b/PARTE+4.rar/file") }
-async function handleDownloadAllCincoFevereiro() { await guardedDownload("https://www.mediafire.com/file/lfix67hnp92jbvy/PARTE+5.rar/file") }
+async function handleDownloadAllOneFevereiro() { await guardedDownload("https://www.mediafire.com/file/4h5b5q8tma6urts/parte+1+AGT.rar/file") }
+async function handleDownloadAllTwoFevereiro() { await guardedDownload("https://www.mediafire.com/file/zkl41mfs4pfgstk/PARTE+4+AGT.rar/file") }
+async function handleDownloadAllTresFevereiro() { await guardedDownload("https://www.mediafire.com/file/njfmpmhf9d6bpmy/PARTE+6+AGT.rar/file") }
+async function handleDownloadAllQuatroFevereiro() { await guardedDownload("https://www.mediafire.com/file/iinh3v0ktfau77g/PARTE+3+AGT.rar/file") }
+async function handleDownloadAllCincoFevereiro() { await guardedDownload("https://www.mediafire.com/file/hacnnyn5bm7kf6a/PARTE+5+AGT.rar/file") }
+async function handleDownloadAllSeisFevereiro() { await guardedDownload("https://www.mediafire.com/file/5gfx13v03rs4gsp/PARTE+2+AGT.rar/file") }
 
 onMounted(() => fetchMusicas())
 </script>
