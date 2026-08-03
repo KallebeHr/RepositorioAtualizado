@@ -33,7 +33,7 @@
       <!-- Card Header -->
       <div class="card-header">
         <div class="card-header-left">
-          <div class="month-badge">JULHO</div>
+          <div class="month-badge">AGOSTO</div>
           <h2 class="card-title">Repertório Completo</h2>
           <p class="card-subtitle">
             <span class="count-badge">5.772</span> músicas disponíveis
