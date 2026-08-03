@@ -9,16 +9,48 @@
       <div class="form-group">
         <label>Arquivos das Músicas</label>
         <input type="file" multiple @change="handleMultipleFiles" accept="audio/*" />
+        <small class="hint">Você pode selecionar várias músicas de uma vez.</small>
       </div>
 
+      <!-- ESTILO com busca -->
       <div class="form-group">
         <label>Estilo</label>
         <div class="input-with-action">
-          <select v-model="selectedEstilo" @change="handleEstiloChange">
-            <option disabled value="">Selecione o estilo</option>
-            <option v-for="e in estilos" :key="e.id" :value="e.nome">{{ e.nome }}</option>
-            <option value="__novo__">+ Adicionar novo estilo</option>
-          </select>
+          <div class="searchable-select" v-click-outside="closeEstiloDropdown">
+            <div class="searchable-select__control" @click="openEstiloDropdown">
+              <span :class="{ placeholder: !selectedEstilo || selectedEstilo === '__novo__' }">
+                {{ selectedEstilo && selectedEstilo !== '__novo__' ? selectedEstilo : 'Selecione o estilo' }}
+              </span>
+              <span class="arrow">▾</span>
+            </div>
+
+            <div v-if="estiloDropdownOpen" class="searchable-select__panel">
+              <input
+                ref="estiloSearchInput"
+                v-model="searchEstilo"
+                type="text"
+                class="searchable-select__search"
+                placeholder="🔎 Buscar estilo..."
+                @click.stop
+              />
+              <ul class="searchable-select__list">
+                <li
+                  v-for="e in filteredEstilos"
+                  :key="e.id"
+                  @click="pickEstilo(e.nome)"
+                  :class="{ active: e.nome === selectedEstilo }"
+                >
+                  {{ e.nome }}
+                </li>
+                <li v-if="!filteredEstilos.length" class="empty">
+                  Nenhum estilo encontrado para "{{ searchEstilo }}"
+                </li>
+                <li class="new-option" @click="pickEstilo('__novo__')">
+                  + Adicionar novo estilo
+                </li>
+              </ul>
+            </div>
+          </div>
           <button class="action-btn" @click="openEditModal('estilos')">✏️ Alterar</button>
         </div>
       </div>
@@ -28,14 +60,45 @@
         <button class="secondary" @click="addEstilo">Salvar Estilo</button>
       </div>
 
+      <!-- CANTOR com busca -->
       <div class="form-group">
         <label>Cantor</label>
         <div class="input-with-action">
-          <select v-model="selectedCantor" @change="handleCantorChange">
-            <option disabled value="">Selecione o cantor</option>
-            <option v-for="c in cantores" :key="c.id" :value="c.nome">{{ c.nome }}</option>
-            <option value="__novo__">+ Adicionar novo cantor</option>
-          </select>
+          <div class="searchable-select" v-click-outside="closeCantorDropdown">
+            <div class="searchable-select__control" @click="openCantorDropdown">
+              <span :class="{ placeholder: !selectedCantor || selectedCantor === '__novo__' }">
+                {{ selectedCantor && selectedCantor !== '__novo__' ? selectedCantor : 'Selecione o cantor' }}
+              </span>
+              <span class="arrow">▾</span>
+            </div>
+
+            <div v-if="cantorDropdownOpen" class="searchable-select__panel">
+              <input
+                ref="cantorSearchInput"
+                v-model="searchCantor"
+                type="text"
+                class="searchable-select__search"
+                placeholder="🔎 Buscar cantor..."
+                @click.stop
+              />
+              <ul class="searchable-select__list">
+                <li
+                  v-for="c in filteredCantores"
+                  :key="c.id"
+                  @click="pickCantor(c.nome)"
+                  :class="{ active: c.nome === selectedCantor }"
+                >
+                  {{ c.nome }}
+                </li>
+                <li v-if="!filteredCantores.length" class="empty">
+                  Nenhum cantor encontrado para "{{ searchCantor }}"
+                </li>
+                <li class="new-option" @click="pickCantor('__novo__')">
+                  + Adicionar novo cantor
+                </li>
+              </ul>
+            </div>
+          </div>
           <button class="action-btn" @click="openEditModal('cantores')">✏️ Alterar</button>
         </div>
       </div>
@@ -46,14 +109,17 @@
       </div>
 
       <div class="form-actions" v-if="musicForms.length">
-        <button class="primary" :disabled="uploading" @click="uploadAll">
+        <button class="primary" :disabled="uploading || !selectedCantor || !selectedEstilo" @click="uploadAll">
           {{ uploading ? "Enviando todas..." : "Enviar Todas as Músicas" }}
         </button>
+        <small v-if="!selectedCantor || !selectedEstilo" class="hint warn">
+          Selecione um cantor e um estilo para poder enviar.
+        </small>
       </div>
     </div>
 
     <div v-if="musicForms.length" class="preview">
-      <h3>🎶 Músicas selecionadas:</h3>
+      <h3>🎶 Músicas selecionadas ({{ musicForms.length }}):</h3>
       <ul>
         <li v-for="(m, i) in musicForms" :key="i" class="music-item">
           <div class="music-info"><strong>{{ m.title }}</strong><span v-if="m.success">✅</span></div>
@@ -63,14 +129,22 @@
       </ul>
     </div>
 
+    <!-- MODAL DE EDIÇÃO com busca -->
     <div v-if="isEditingModalOpen" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
         <h2>Alterar {{ editingType === 'cantores' ? 'Cantor' : 'Estilo' }}</h2>
         <p v-if="isUpdatingAll" class="updating-warning">⚠️ Atualizando todas as músicas vinculadas... Aguarde.</p>
-        
+
         <div v-if="!editingItem">
+          <input
+            v-model="searchEditItem"
+            type="text"
+            class="modal-search"
+            :placeholder="editingType === 'cantores' ? '🔎 Buscar cantor...' : '🔎 Buscar estilo...'"
+          />
           <ul class="edit-list">
-            <li v-for="item in currentEditList" :key="item.id" @click="selectItemToEdit(item)">{{ item.nome }}</li>
+            <li v-for="item in filteredEditList" :key="item.id" @click="selectItemToEdit(item)">{{ item.nome }}</li>
+            <li v-if="!filteredEditList.length" class="empty">Nenhum resultado para "{{ searchEditItem }}"</li>
           </ul>
         </div>
 
@@ -89,7 +163,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, computed, nextTick } from "vue"
 import { db } from "@/firebase"
 import { 
   collection, addDoc, getDocs, serverTimestamp, doc, 
@@ -97,7 +171,9 @@ import {
 } from "firebase/firestore"
 import axios from "axios"
 
-// Estados
+// ==========================================
+// Estados originais (NÃO alterados)
+// ==========================================
 const musicForms = ref([])
 const cantores = ref([])
 const estilos = ref([])
@@ -118,7 +194,19 @@ const cantoresColRef = collection(db, "cantores")
 const estilosColRef = collection(db, "estilos")
 const musicasColRef = collection(db, "musicas")
 
-// Carregar Dados
+// ==========================================
+// NOVO: estados apenas de UI para a busca
+// (não interferem em nenhuma função original)
+// ==========================================
+const estiloDropdownOpen = ref(false)
+const cantorDropdownOpen = ref(false)
+const searchEstilo = ref("")
+const searchCantor = ref("")
+const searchEditItem = ref("")
+const estiloSearchInput = ref(null)
+const cantorSearchInput = ref(null)
+
+// Carregar Dados (função original, intacta)
 async function fetchCantores() {
   const snapshot = await getDocs(cantoresColRef)
   cantores.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
@@ -130,10 +218,30 @@ async function fetchEstilos() {
 
 const currentEditList = computed(() => editingType.value === 'cantores' ? cantores.value : estilos.value)
 
+// NOVO: lista filtrada usada no modal (baseada na computed original, sem alterá-la)
+const filteredEditList = computed(() => {
+  const term = searchEditItem.value.trim().toLowerCase()
+  if (!term) return currentEditList.value
+  return currentEditList.value.filter(item => item.nome.toLowerCase().includes(term))
+})
+
+// NOVO: listas filtradas para os dropdowns de cantor/estilo
+const filteredEstilos = computed(() => {
+  const term = searchEstilo.value.trim().toLowerCase()
+  if (!term) return estilos.value
+  return estilos.value.filter(e => e.nome.toLowerCase().includes(term))
+})
+const filteredCantores = computed(() => {
+  const term = searchCantor.value.trim().toLowerCase()
+  if (!term) return cantores.value
+  return cantores.value.filter(c => c.nome.toLowerCase().includes(term))
+})
+
 function openEditModal(type) {
   editingType.value = type
   isEditingModalOpen.value = true
   editingItem.value = null
+  searchEditItem.value = "" // reinicia busca ao abrir o modal
 }
 
 function selectItemToEdit(item) {
@@ -143,6 +251,7 @@ function selectItemToEdit(item) {
 
 // ==========================================
 // LÓGICA PRINCIPAL: ATUALIZAÇÃO EM CASCATA
+// (função original, intacta)
 // ==========================================
 async function saveEdit() {
   if (!newEditName.value || !editingItem.value || newEditName.value === editingItem.value.oldName) return
@@ -210,7 +319,7 @@ function closeModal() {
   editingItem.value = null
 }
 
-// Restante das funções (handleMultipleFiles, uploadAll, etc) permanecem iguais...
+// Restante das funções originais (intactas)
 function handleMultipleFiles(e) {
   const files = Array.from(e.target.files)
   musicForms.value = files.map(file => ({
@@ -261,11 +370,63 @@ async function uploadAll() {
   } catch (err) { console.error(err) } finally { uploading.value = false }
 }
 
+// ==========================================
+// NOVO: funções auxiliares apenas de UI (dropdown com busca)
+// Elas só definem selectedCantor/selectedEstilo e chamam
+// as funções originais handleCantorChange/handleEstiloChange.
+// ==========================================
+function openEstiloDropdown() {
+  cantorDropdownOpen.value = false
+  estiloDropdownOpen.value = true
+  searchEstilo.value = ""
+  nextTick(() => estiloSearchInput.value?.focus())
+}
+function closeEstiloDropdown() {
+  estiloDropdownOpen.value = false
+}
+function pickEstilo(nome) {
+  selectedEstilo.value = nome
+  handleEstiloChange() // reaproveita a função original, sem alterá-la
+  estiloDropdownOpen.value = false
+}
+
+function openCantorDropdown() {
+  estiloDropdownOpen.value = false
+  cantorDropdownOpen.value = true
+  searchCantor.value = ""
+  nextTick(() => cantorSearchInput.value?.focus())
+}
+function closeCantorDropdown() {
+  cantorDropdownOpen.value = false
+}
+function pickCantor(nome) {
+  selectedCantor.value = nome
+  handleCantorChange() // reaproveita a função original, sem alterá-la
+  cantorDropdownOpen.value = false
+}
+
+// NOVO: diretiva simples de "clique fora" para fechar os dropdowns
+const vClickOutside = {
+  mounted(el, binding) {
+    el._clickOutsideHandler = (event) => {
+      if (!(el === event.target || el.contains(event.target))) {
+        binding.value(event)
+      }
+    }
+    document.addEventListener("click", el._clickOutsideHandler)
+  },
+  unmounted(el) {
+    document.removeEventListener("click", el._clickOutsideHandler)
+  },
+}
+
 onMounted(() => { fetchCantores(); fetchEstilos(); })
 </script>
 
 <style scoped>
-/* Reutilize os estilos anteriores e adicione estes: */
+.hint { color: #9a9a9a; font-size: 12px; }
+.hint.warn { color: #f1c40f; }
+
 .updating-warning {
   background: #f1c40f;
   color: #000;
@@ -280,6 +441,67 @@ onMounted(() => { fetchCantores(); fetchEstilos(); })
 .modal-content button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Dropdown pesquisável (cantor/estilo) */
+.searchable-select {
+  position: relative;
+  flex: 1;
+}
+.searchable-select__control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: #202020;
+  color: #fff;
+  border: 1px solid #2a2a2a;
+  cursor: pointer;
+}
+.searchable-select__control .placeholder { color: #7a7a7a; }
+.searchable-select__control .arrow { color: #7a7a7a; margin-left: 8px; }
+
+.searchable-select__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #181818;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.searchable-select__search {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #2a2a2a;
+  border-radius: 0;
+  background: #202020;
+}
+.searchable-select__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.searchable-select__list li {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #fff;
+}
+.searchable-select__list li:hover { background: #222; color: #1db954; }
+.searchable-select__list li.active { color: #1db954; font-weight: bold; }
+.searchable-select__list li.empty { color: #7a7a7a; cursor: default; text-align: center; }
+.searchable-select__list li.new-option { color: #00c3ff; border-top: 1px solid #2a2a2a; }
+.searchable-select__list li.new-option:hover { background: #222; }
+
+/* Busca dentro do modal de edição */
+.modal-search {
+  margin-bottom: 10px;
 }
 
 /* ... (demais estilos do CSS anterior) ... */
@@ -298,5 +520,6 @@ button.secondary { background: #333; color: #fff; padding: 10px; border-radius: 
 .edit-list { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #333; }
 .edit-list li { padding: 10px; border-bottom: 1px solid #333; cursor: pointer; }
 .edit-list li:hover { background: #222; color: #1db954; }
+.edit-list li.empty { cursor: default; color: #7a7a7a; text-align: center; }
 .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
 </style>
