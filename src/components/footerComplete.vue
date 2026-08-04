@@ -53,7 +53,7 @@
       <div class="footer-divider"></div>
       <p class="credit">
         Desenvolvido por
-        <a href="https://instagram.com/kallebemax" target="_blank">
+        <a href="#" @click.prevent="openModal">
           @KallebeMax
         </a>
       </p>
@@ -61,9 +61,50 @@
         © {{ new Date().getFullYear() }} Repertório Atualizado. Todos os direitos reservados.
       </p>
     </div>
+
+    <!-- MODAL -->
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <h3>Falar com o desenvolvedor</h3>
+        <p>Como você quer entrar em contato?</p>
+
+        <div class="modal-actions">
+          <a
+            href="https://wa.me/5586981632626"
+            target="_blank"
+            class="btn"
+          >
+            WhatsApp
+          </a>
+
+          <a
+            href="https://instagram.com/kallebemax_"
+            target="_blank"
+            class="btn"
+          >
+            Instagram
+          </a>
+        </div>
+
+        <button class="close-btn" @click="closeModal">Fechar</button>
+      </div>
+    </div>
   </footer>
 </template>
 
+<script setup>
+import { ref } from 'vue'
+
+const showModal = ref(false)
+
+const openModal = () => {
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+}
+</script>
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&display=swap');
 
@@ -102,7 +143,84 @@
   z-index: -1;
   pointer-events: none;
 }
+/* ===================== MODAL ===================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(6px);
+}
 
+.modal-content {
+  background: #050505;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 24px;
+  border-radius: 16px;
+  text-align: center;
+  width: 90%;
+  max-width: 360px;
+  color: #fff;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+.modal-content h3 {
+  margin-bottom: 8px;
+}
+
+.modal-content p {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  color: #050505;
+  background: #22c55e;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  background: #4ade80;
+  transform: translateY(-2px);
+}
+
+.close-btn {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+/* RESPONSIVO */
+@media (max-width: 768px) {
+  .modal-content {
+    padding: 20px;
+  }
+}
 /* ===================== ESTRUTURA PRINCIPAL ===================== */
 .footer-container {
   max-width: 1200px;
