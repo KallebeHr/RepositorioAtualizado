@@ -1,0 +1,16 @@
+import test,{before,after} from 'node:test'
+import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
+import {initializeApp,deleteApp} from 'firebase-admin/app'
+import {getFirestore} from 'firebase-admin/firestore'
+import {execute} from '../api/service.js'
+let app,db
+before(async()=>{app=initializeApp({projectId:'demo-repertorio-api'},'integration');db=getFirestore(app);await db.collection('users').doc('alice').set({role:'user',subscription:'ativa',subscriptionEnd:new Date(Date.now()+10*86400000).toISOString()});await db.collection('users').doc('bob').set({role:'user',subscription:'inativa'});await db.collection('activationKeys').doc(createHash('sha256').update('single-use-key').digest('hex')).set({days:30,usedBy:null});await db.collection('musicas').doc('future').set({title:'Future',publishAt:'2099-01-01'});await db.collection('Chaves').doc('legacy').set({Keys:['legacy-single-use']})})
+after(async()=>deleteApp(app))
+async function context(uid){const ref=db.collection('users').doc(uid);return {db,uid,ref,user:(await ref.get()).data()}}
+test('chave concorrente é usada por uma única conta',async()=>{const results=await Promise.allSettled([execute(await context('alice'),{action:'activate',key:'single-use-key'}),execute(await context('bob'),{action:'activate',key:'single-use-key'})]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected').length,1);const record=await db.collection('activationKeys').doc(createHash('sha256').update('single-use-key').digest('hex')).get();assert.ok(['alice','bob'].includes(record.data().usedBy))})
+test('chave legada é consumida e renova preservando saldo',async()=>{const before=(await context('alice')).user.subscriptionEnd;const result=await execute(await context('alice'),{action:'activate',key:'legacy-single-use'});assert.equal(Date.parse(result.subscriptionEnd)-Date.parse(before),30*86400000);assert.deepEqual((await db.collection('Chaves').doc('legacy').get()).data().Keys,[]);await assert.rejects(execute(await context('bob'),{action:'activate',key:'legacy-single-use'}),e=>e.status===409)})
+test('administração não aceita usuário comum',async()=>{await assert.rejects(execute(await context('alice'),{action:'keys-create'}),e=>e.status===403);await assert.rejects(execute(await context('alice'),{action:'music-edit',ids:['future'],changes:{title:'Evil'}}),e=>e.status===403)})
+test('assinatura expirada não autoriza arquivo nem pacote',async()=>{await db.collection('users').doc('expired').set({subscription:'ativa',subscriptionEnd:'2001-01-01'});await assert.rejects(execute(await context('expired'),{action:'media',id:'future'}),e=>e.status===403);await assert.rejects(execute(await context('expired'),{action:'package-request',ids:['future']}),e=>e.status===403)})
+test('publicação agendada é bloqueada na API mesmo conhecendo ID',async()=>{await assert.rejects(execute(await context('alice'),{action:'media',id:'future'}),e=>e.status===404)})
+test('pacote antigo não autoriza música despublicada',async()=>{await db.collection('packages').doc('future-package').set({ids:['future'],status:'ready',storageKey:'packages/a.zip'});await assert.rejects(execute(await context('alice'),{action:'package-status',id:'future-package'}),e=>e.status===404)})

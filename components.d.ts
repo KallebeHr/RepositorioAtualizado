@@ -21,6 +21,7 @@ declare module 'vue' {
     ModalAssinatura: typeof import('./src/components/modalAssinatura.vue')['default']
     MusicasAleatorias: typeof import('./src/components/MusicasAleatorias.vue')['default']
     MusicCard: typeof import('./src/components/MusicCard.vue')['default']
+    MusicExplorer: typeof import('./src/components/MusicExplorer.vue')['default']
     MusicList: typeof import('./src/components/MusicList.vue')['default']
     MusicPlayer: typeof import('./src/components/MusicPlayer.vue')['default']
     NovoMusicList: typeof import('./src/components/novoMusicList.vue')['default']

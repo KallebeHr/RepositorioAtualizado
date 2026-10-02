@@ -1,44 +1,5 @@
-<template>
-  <v-app>
-    <transition name="fade" mode="out-in">
-      <div v-if="!isLoaded" key="preloader">
-        <Preloader />
-      </div>
-      <div v-else key="content">
-        <buttonW />
-        <MusicPlayer />
-        <HeaderNav />
-        <router-view />
-      </div>
-    </transition>
-     <FooterComplete />
-
-  </v-app>
-</template>
-
+<template><v-app><a class="skip-link" href="#main-content">Ir para o conteúdo</a><HeaderNav/><main id="main-content" tabindex="-1"><router-view/></main><footer class="site-footer"><p>Repertório Atualizado</p><router-link to="/Tutoriais">Ajuda para ouvir, ativar e baixar</router-link><router-link to="/Conta">Minha conta</router-link></footer><MusicPlayer/></v-app></template>
 <script setup>
-import { ref, onMounted } from "vue";
-
-const isLoaded = ref(false);
-
-onMounted(() => {
-  document.onreadystatechange = () => {
-    if (document.readyState === "complete") {
-      setTimeout(() => {
-        isLoaded.value = true;
-      }, 1000); // tempo do preloader
-    }
-  };
-});
+import HeaderNav from '@/components/HeaderNav.vue'
+import MusicPlayer from '@/components/MusicPlayer.vue'
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.6s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

@@ -1,79 +1,45 @@
-# Vuetify (Default)
+# Repertório Atualizado — versão 2
 
-This is the official scaffolding tool for Vuetify, designed to give you a head start in building your new Vuetify application. It sets up a base template with all the necessary configurations and standard directory structure, enabling you to begin development without the hassle of setting up the project from scratch.
+Vue 3 + Vuetify + Pinia, Firebase Authentication/Firestore e API Node para Vercel. Áudios e pacotes privados usam R2 ou B2 S3. A estrutura preserva o projeto Firebase e a coleção `musicas` do site original.
 
-## ❗️ Important Links
+**Comece por [docs/CONFIGURACAO.md](docs/CONFIGURACAO.md).** A atualização depende das variáveis de servidor, das regras Firestore e de um processo para preparar pacotes; não é correto publicar somente o frontend.
 
-- 📄 [Docs](https://vuetifyjs.com/)
-- 🚨 [Issues](https://issues.vuetifyjs.com/)
-- 🏬 [Store](https://store.vuetifyjs.com/)
-- 🎮 [Playground](https://play.vuetifyjs.com/)
-- 💬 [Discord](https://community.vuetifyjs.com)
+## Desenvolvimento
 
-## 💿 Install
-
-Set up your project using your preferred package manager. Use the corresponding command to install the dependencies:
-
-| Package Manager                                                | Command        |
-|---------------------------------------------------------------|----------------|
-| [yarn](https://yarnpkg.com/getting-started)                   | `yarn install` |
-| [npm](https://docs.npmjs.com/cli/v7/commands/npm-install)     | `npm install`  |
-| [pnpm](https://pnpm.io/installation)                          | `pnpm install` |
-| [bun](https://bun.sh/#getting-started)                        | `bun install`  |
-
-After completing the installation, your environment is ready for Vuetify development.
-
-## ✨ Features
-
-- 🖼️ **Optimized Front-End Stack**: Leverage the latest Vue 3 and Vuetify 3 for a modern, reactive UI development experience. [Vue 3](https://v3.vuejs.org/) | [Vuetify 3](https://vuetifyjs.com/en/)
-- 🗃️ **State Management**: Integrated with [Pinia](https://pinia.vuejs.org/), the intuitive, modular state management solution for Vue.
-- 🚦 **Routing and Layouts**: Utilizes Vue Router for SPA navigation and vite-plugin-vue-layouts for organizing Vue file layouts. [Vue Router](https://router.vuejs.org/) | [vite-plugin-vue-layouts](https://github.com/JohnCampionJr/vite-plugin-vue-layouts)
-- ⚡ **Next-Gen Tooling**: Powered by Vite, experience fast cold starts and instant HMR (Hot Module Replacement). [Vite](https://vitejs.dev/)
-- 🧩 **Automated Component Importing**: Streamline your workflow with unplugin-vue-components, automatically importing components as you use them. [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)
-
-These features are curated to provide a seamless development experience from setup to deployment, ensuring that your Vuetify application is both powerful and maintainable.
-
-## 💡 Usage
-
-This section covers how to start the development server and build your project for production.
-
-### Starting the Development Server
-
-To start the development server with hot-reload, run the following command. The server will be accessible at [http://localhost:3000](http://localhost:3000):
-
-```bash
-yarn dev
+```sh
+npm ci
+# Copie .env.server.example para .env.server e preencha localmente.
+npm run dev:api
+# Em outro terminal:
+npm run dev
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+## Principais funcionalidades
 
-> Add NODE_OPTIONS='--no-warnings' to suppress the JSON import warnings that happen as part of the Vuetify import mapping. If you are on Node [v21.3.0](https://nodejs.org/en/blog/release/v21.3.0) or higher, you can change this to NODE_OPTIONS='--disable-warning=5401'. If you don't mind the warning, you can remove this from your package.json dev script.
+- Player único fora das páginas; sequência automática por gênero, fila, temporizador, Media Session e equalizador em menu próprio.
+- Catálogo com filtros combinados, páginas de cantor/gênero/mês, recomendações locais por gênero, playlists privadas e favoritos.
+- Perfil, recuperação de senha, validade e renovação; chaves únicas consumidas em transação.
+- Downloads autorizados e pacotes preparados fora do celular; histórico de solicitações.
+- Upload múltiplo diretamente ao armazenamento com progresso, tentativas individuais, hash de duplicação e confirmação no servidor.
+- Edição em lote, CSV por ID, publicação agendada, verificação de arquivos, gestão de contas, avisos e auditoria.
+- Backup privado e recuperação com prévia; migração gradual B2 → R2 e limpeza de campos de senha antigos.
+- Interface responsiva, teclado, rótulos acessíveis, PWA, economia de imagens e efeitos opcionais.
+- Checkout Pro opcional com webhook assinado e ativação transacional após pagamento aprovado.
 
-### Building for Production
+## Testes
 
-To build your project for production, use:
-
-```bash
-yarn build
+```sh
+npm test
+npm run test:integration
+npx playwright install chromium
+npm run test:browser
+npm run build
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+Os testes usam projetos de demonstração em emuladores, sem modificar a base real. Leia [docs/ENTREGA.md](docs/ENTREGA.md) para o estado da entrega e as limitações de homologação.
 
-Once the build process is completed, your application will be ready for deployment in a production environment.
+## Preparação de pacotes
 
-## 💪 Support Vuetify Development
+A workflow `.github/workflows/prepare-packages.yml` pode executar o processo a cada 15 minutos depois que a atualização estiver na branch padrão e os segredos forem configurados no GitHub. Sem configuração, ela não altera arquivos. A execução agendada do GitHub pode atrasar; não representa processamento instantâneo. Também há opção manual para antecipar grupos.
 
-This project is built with [Vuetify](https://vuetifyjs.com/en/), a UI Library with a comprehensive collection of Vue components. Vuetify is an MIT licensed Open Source project that has been made possible due to the generous contributions by our [sponsors and backers](https://vuetifyjs.com/introduction/sponsors-and-backers/). If you are interested in supporting this project, please consider:
-
-- [Requesting Enterprise Support](https://support.vuetifyjs.com/)
-- [Sponsoring John on Github](https://github.com/users/johnleider/sponsorship)
-- [Sponsoring Kael on Github](https://github.com/users/kaelwd/sponsorship)
-- [Supporting the team on Open Collective](https://opencollective.com/vuetify)
-- [Becoming a sponsor on Patreon](https://www.patreon.com/vuetify)
-- [Becoming a subscriber on Tidelift](https://tidelift.com/subscription/npm/vuetify)
-- [Making a one-time donation with Paypal](https://paypal.me/vuetify)
-
-## 📑 License
-[MIT](http://opensource.org/licenses/MIT)
-
-Copyright (c) 2016-present Vuetify, LLC
+Não coloque credenciais de contas de serviço ou chaves de armazenamento nos commits. `.env.server.example` contém apenas exemplos vazios.

@@ -1,0 +1,1 @@
+[{"AllowedOrigins":["https://SEU_DOMINIO","http://localhost:3000","http://127.0.0.1:3000"],"AllowedMethods":["GET","PUT","HEAD"],"AllowedHeaders":["content-type","x-amz-checksum-sha256","range"],"ExposeHeaders":["ETag","Content-Length","Content-Range","Accept-Ranges","x-amz-checksum-sha256"],"MaxAgeSeconds":3600}]

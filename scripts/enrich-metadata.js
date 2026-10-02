@@ -1,0 +1,6 @@
+import {execFile} from 'node:child_process'
+import {promisify} from 'node:util'
+import {database,signMedia,timestamp} from '../api/_lib/admin.js'
+const run=promisify(execFile),db=database(),apply=process.argv.includes('--apply'),snapshot=await db.collection('musicas').get();let updated=0
+for(const song of snapshot.docs){const track=song.data();if(track.duration && track.size && track.quality)continue;try{const url=await signMedia(track);const {stdout}=await run('ffprobe',['-v','error','-show_entries','format=duration,size,bit_rate,format_name','-of','json',url],{timeout:120000,maxBuffer:1024*1024});const format=JSON.parse(stdout).format || {};const duration=Number(format.duration),size=Number(format.size || track.size),bitrate=Number(format.bit_rate);const values={};if(Number.isFinite(duration)&&duration>0)values.duration=duration;if(Number.isFinite(size)&&size>0)values.size=size;values.quality=[format.format_name,bitrate?`${Math.round(bitrate/1000)} kbps`:''].filter(Boolean).join(' · ');if(apply)await song.ref.update({...values,metadataUpdatedAt:timestamp()});updated++;console.log(song.id,apply?'atualizada':'prévia',JSON.stringify(values))}catch(e){console.error(song.id,'Não foi possível ler os metadados.',e.name)}}
+console.log(`${updated} músicas ${apply?'atualizadas':'na prévia'}. Requer FFmpeg/ffprobe no processo externo.`)
