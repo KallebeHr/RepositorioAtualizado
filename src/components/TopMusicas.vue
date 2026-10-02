@@ -142,129 +142,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, computed } from "vue"
-import { db } from "@/firebase"
-import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  doc,
-  updateDoc,
-  increment
-} from "firebase/firestore"
-import { Swiper, SwiperSlide } from "swiper/vue"
-import { Pagination, Navigation } from "swiper/modules"
-import "swiper/css"
-import "swiper/css/pagination"
-import "swiper/css/navigation"
-import { useToast } from "vue-toast-notification"
-import "vue-toast-notification/dist/theme-sugar.css"
-import { useUserStore } from "@/stores/userStore"
-
-const toast = useToast()
-const userStore = useUserStore()
-
-const topMusicas = ref([])
-const progress = reactive({})
-
-/* ======================
-   MODAL ASSINATURA
-====================== */
-const showSubModal = ref(false)
-const modalRef = ref(null)
-
-// ✅ troque pelo seu link real (checkout/whats/etc)
-const ctaLink = computed(() => {
-  return `https://wa.me/5586995102595?text=${encodeURIComponent(
-    "Quero ativar meu acesso do site, para ouvir e baixar sem limites."
-  )}`
-})
-
-function openSubModal() {
-  showSubModal.value = true
-  nextTick(() => modalRef.value?.focus?.())
-}
-
-function closeSubModal() {
-  showSubModal.value = false
-}
-
-/* ======================
-   GUARD (toast clicável)
-====================== */
-let lastToastAt = 0
-function requireSubscription() {
-  if (!userStore.hasActiveSubscription) {
-    const now = Date.now()
-    if (now - lastToastAt > 1200) {
-      lastToastAt = now
-      toast.open({
-        message: "Acesso restrito. Clique aqui para ativar sua assinatura.",
-        type: "warning",
-        position: "top-right",
-        duration: 3500,
-        dismissible: true,
-        onClick: () => openSubModal()
-      })
-    } else {
-      openSubModal()
-    }
-    return false
-  }
-  return true
-}
-
-/* 🔥 TOP 10 MÚSICAS */
-async function fetchTopMusicas() {
-  const q = query(collection(db, "musicas"), orderBy("playCount", "desc"), limit(10))
-  const snap = await getDocs(q)
-  topMusicas.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-}
-
-/* Clique no card (atalho: tenta baixar) */
-function handleCardTap(music) {
-  // você pode trocar isso por "abrir player" se quiser
-  handleDownload(music)
-}
-
-/* ⬇️ DOWNLOAD INDIVIDUAL */
-async function handleDownload(music) {
-  if (!requireSubscription()) return
-
-  if (!music.downloadUrl) {
-    toast.warning("Arquivo indisponível")
-    return
-  }
-
-  progress[music.id] = 0
-
-  try {
-    const res = await fetch(music.downloadUrl)
-    const blob = await res.blob()
-
-    const a = document.createElement("a")
-    a.href = URL.createObjectURL(blob)
-    a.download = music.fileName || `${music.title}.mp3`
-    a.click()
-    URL.revokeObjectURL(a.href)
-
-    progress[music.id] = 100
-
-    await updateDoc(doc(db, "musicas", music.id), {
-      downloadCount: increment(1)
-    })
-
-    toast.success(`Download concluído: ${music.title}`)
-  } catch (err) {
-    toast.error("Erro ao baixar música")
-  }
-
-  setTimeout(() => delete progress[music.id], 1500)
-}
-
-onMounted(fetchTopMusicas)
+import {computed,ref,nextTick} from 'vue'
+import {useLegacyMusic} from '@/composables/useLegacyMusic'
+import {Swiper,SwiperSlide} from 'swiper/vue'
+import {Pagination,Navigation} from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/navigation'
+const {tracks,showSubModal,modalRef,ctaLink,closeSubModal,download:handleDownload}=useLegacyMusic()
+const topMusicas=computed(()=>[...tracks.value].sort((a,b)=>(b.plays || b.playCount || 0)-(a.plays || a.playCount || 0)).slice(0,10)),progress=ref({})
+const handleCardTap=handleDownload
 </script>
 
 <style scoped>

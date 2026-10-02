@@ -113,7 +113,7 @@ A primeira execução mostra apenas a quantidade, nunca valores de senha. Depois
 - Bancos maiores: `npm run backup` exporta todas as coleções declaradas, sem o limite da resposta HTTP.
 - Prévia de recuperação: `npm run backup -- --restore backups-local/ARQUIVO.json`.
 - Aplicar: acrescente `--apply` depois de revisar.
-- A recuperação atualiza documentos sem apagar documentos extras. Coleções financeiras, consumo de chaves, migração e auditoria não são rebobinadas. Papéis, status e assinaturas de usuários existentes são preservados. Uma conta restaurada sem documento atual precisará ser reconciliada pelo administrador.
+- A recuperação atualiza documentos sem apagar documentos extras. Coleções financeiras, histórico de usos de chaves, migração e auditoria não são rebobinadas. Papéis, status e assinaturas de usuários existentes são preservados. Uma conta restaurada sem documento atual precisará ser reconciliada pelo administrador.
 - Backups excluem senhas. Não incluem os bytes dos áudios/pacotes nem usuários do Firebase Authentication. Faça backup desses serviços separadamente.
 - Recuperações grandes usam lotes; não são uma transação única. Se interrompidas, revise o histórico e repita o processo.
 

@@ -1,6 +1,4 @@
-<template><MusicExplorer mode="artists" heading="Cantores"/></template>
+<template><LegacyCatalog/></template>
 <script setup>
-import MusicExplorer from '@/components/MusicExplorer.vue'
-import {useRoute} from 'vue-router'
-const route=useRoute()
+import LegacyCatalog from '@/components/ListCantores.vue'
 </script>

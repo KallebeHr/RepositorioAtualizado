@@ -142,135 +142,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, computed } from "vue"
-import { db } from "@/firebase"
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore"
-import { Swiper, SwiperSlide } from "swiper/vue"
-import { Pagination, Navigation } from "swiper/modules"
-import "swiper/css"
-import "swiper/css/pagination"
-import "swiper/css/navigation"
-import JSZip from "jszip"
-import { useToast } from "vue-toast-notification"
-import "vue-toast-notification/dist/theme-sugar.css"
-import { useUserStore } from "@/stores/userStore"
-
-const toast = useToast()
-const userStore = useUserStore()
-
-const topCantores = ref([])
-const musicas = ref([])
-const progress = reactive({})
-
-/* ======================
-   MODAL ASSINATURA
-====================== */
-const showSubModal = ref(false)
-const modalRef = ref(null)
-
-// ✅ troque pelo seu link real (checkout/whats/etc)
-const ctaLink = computed(() => {
-  return `https://wa.me/5586995102595?text=${encodeURIComponent(
-    "Quero ativar meu acesso do site, para ouvir e baixar sem limites."
-  )}`
-})
-
-function openSubModal() {
-  showSubModal.value = true
-  nextTick(() => modalRef.value?.focus?.())
-}
-
-function closeSubModal() {
-  showSubModal.value = false
-}
-
-/* ======================
-   GUARD (toast clicável)
-====================== */
-let lastToastAt = 0
-function requireSubscription() {
-  if (!userStore.hasActiveSubscription) {
-    const now = Date.now()
-    if (now - lastToastAt > 1200) {
-      lastToastAt = now
-      toast.open({
-        message: "Acesso restrito. Clique aqui para ativar sua assinatura.",
-        type: "warning",
-        position: "top-right",
-        duration: 3500,
-        dismissible: true,
-        onClick: () => openSubModal()
-      })
-    } else {
-      openSubModal()
-    }
-    return false
-  }
-  return true
-}
-
-/* 🔥 BUSCAR TOP 10 */
-async function fetchTopCantores() {
-  const q = query(collection(db, "cantores"), orderBy("downloads", "desc"), limit(10))
-  const snap = await getDocs(q)
-  topCantores.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-}
-
-/* 🎵 Buscar músicas */
-async function fetchMusicas() {
-  const snap = await getDocs(collection(db, "musicas"))
-  musicas.value = snap.docs.map(d => d.data())
-}
-
-function countMusicas(nome) {
-  return musicas.value.filter(m => m.cantor === nome).length
-}
-
-/* Clique no card (atalho: tenta baixar tudo) */
-async function handleCardTap(cantor) {
-  // você pode trocar isso por "abrir página do cantor" etc.
-  await handleDownload(cantor)
-}
-
-/* ⬇️ Download */
-async function handleDownload(cantor) {
-  if (!requireSubscription()) return
-  await downloadAll(cantor)
-}
-
-async function downloadAll(cantor) {
-  const tracks = musicas.value.filter(m => m.cantor === cantor && m.downloadUrl)
-
-  if (!tracks.length) {
-    toast.warning("Nenhuma música disponível")
-    return
-  }
-
-  const zip = new JSZip()
-  progress[cantor] = 0
-
-  for (let i = 0; i < tracks.length; i++) {
-    const res = await fetch(tracks[i].downloadUrl)
-    const blob = await res.blob()
-    zip.file(tracks[i].fileName || `musica-${i + 1}.mp3`, blob)
-    progress[cantor] = Math.round(((i + 1) / tracks.length) * 100)
-  }
-
-  const content = await zip.generateAsync({ type: "blob" })
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(content)
-  a.download = `${cantor}.zip`
-  a.click()
-  URL.revokeObjectURL(a.href)
-
-  toast.success(`Download de ${cantor} concluído`)
-  setTimeout(() => delete progress[cantor], 2000)
-}
-
-onMounted(() => {
-  fetchTopCantores()
-  fetchMusicas()
-})
+import {computed,ref,nextTick} from 'vue'
+import {useLegacyMusic} from '@/composables/useLegacyMusic'
+import {Swiper,SwiperSlide} from 'swiper/vue'
+import {Pagination,Navigation} from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/navigation'
+const {tracks,showSubModal,modalRef,ctaLink,closeSubModal,packageTracks}=useLegacyMusic()
+const progress=ref({})
+const topCantores=computed(()=>{const map=new Map();for(const t of tracks.value){const c=map.get(t.cantor)||{id:t.cantor,nome:t.cantor,coverUrl:t.coverUrl,downloads:0};c.downloads+=t.downloads || t.downloadCount || 0;map.set(t.cantor,c)}return [...map.values()].sort((a,b)=>b.downloads-a.downloads).slice(0,10)})
+function countMusicas(name){return tracks.value.filter(t=>t.cantor===name).length}
+function handleDownload(name){return packageTracks(tracks.value.filter(t=>t.cantor===name))}
+const handleCardTap=handleDownload
 </script>
 
 <style scoped>

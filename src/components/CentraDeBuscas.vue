@@ -64,87 +64,14 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from "vue"
-import { db } from "@/firebase"
-import { collection, getDocs, doc, updateDoc, increment } from "firebase/firestore"
-import { usePlayerStore } from "@/stores/usePlayerStore"
-import { useUserStore } from "@/stores/userStore"
-import { useToast } from "vue-toast-notification"
-
-const player = usePlayerStore()
-const userStore = useUserStore()
-const toast = useToast()
-
-const isOpen = ref(false)
-const queryText = ref("")
-const musicas = ref([])
-const inputRef = ref(null)
-
-/* MODAL */
-function openModal() {
-  isOpen.value = true
-  nextTick(() => inputRef.value?.focus())
-}
-
-function closeModal() {
-  isOpen.value = false
-  queryText.value = ""
-  musicas.value = []
-}
-
-/* BUSCA DIRETA NO FIREBASE */
-async function searchMusicas() {
-  const qText = queryText.value.trim().toLowerCase()
-  if (!qText) {
-    musicas.value = []
-    return
-  }
-
-  const snap = await getDocs(collection(db, "musicas"))
-  const allMusicas = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-
-  musicas.value = allMusicas.filter(m => {
-    const title = m.title?.toLowerCase() || ""
-    const cantor = m.cantor?.toLowerCase() || ""
-    const tipo = Array.isArray(m.tipo) ? m.tipo.join(" ").toLowerCase() : ""
-    return title.includes(qText) || cantor.includes(qText) || tipo.includes(qText)
-  })
-}
-
-/* AÇÕES */
-function play(m) {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura 🎶")
-    return
-  }
-
-  player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) })
-}
-
-function addQueue(m) {
-  player.addToQueue(m, { playNow: false })
-  toast.success("Adicionada à fila")
-}
-
-async function download(m) {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Assinatura necessária")
-    return
-  }
-
-  if (!m.downloadUrl) return
-
-  const res = await fetch(m.downloadUrl)
-  const blob = await res.blob()
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(blob)
-  a.download = m.fileName || `${m.title}.mp3`
-  a.click()
-  URL.revokeObjectURL(a.href)
-
-  await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) })
-}
+import {computed,ref,nextTick} from 'vue'
+import {useLegacyMusic} from '@/composables/useLegacyMusic'
+const {tracks,play,addQueue,download}=useLegacyMusic()
+const isOpen=ref(false),queryText=ref(''),inputRef=ref(null),musicas=computed(()=>filterTracks(tracks.value,{search:queryText.value}))
+import {filterTracks} from '@/utils/catalog'
+function openModal(){isOpen.value=true;nextTick(()=>inputRef.value?.focus())}
+function closeModal(){isOpen.value=false;queryText.value=''}
+function searchMusicas(){}
 </script>
 
 <style scoped>

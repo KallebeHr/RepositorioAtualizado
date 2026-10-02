@@ -11,15 +11,18 @@ export async function execute(ctx, body) {
  await db.runTransaction(async tx => { const s = await tx.get(rateRef); const count = s.data()?.count || 0; if(count >= 120) throw new HttpError(429,'Muitas solicitações. Aguarde um minuto.'); tx.set(rateRef,{count:count+1,expiresAt:new Date(Date.now()+120000)}) })
  if (action === 'activate') {
   const key = String(body.key || '').trim(); if (key.length < 6 || key.length > 128) throw new HttpError(400,'Chave inválida')
-  const keyRef = db.collection('activationKeys').doc(hash(key)); const legacy = await db.collection('Chaves').get()
+  const keyRef = db.collection('activationKeys').doc(hash(key)); const legacy = await db.collection('Chaves').get(); const redemptionRef = keyRef.collection('redemptions').doc(uid)
   const end = await db.runTransaction(async tx => {
-   const [k,u,...old] = await Promise.all([tx.get(keyRef),tx.get(ref),...legacy.docs.map(d=>tx.get(d.ref))]); const data = k.data()
-   if (data?.usedBy || data?.revoked || (data?.expiresAt && new Date(data.expiresAt) < new Date())) throw new HttpError(409,'Chave utilizada, revogada ou expirada')
+   const [k,u,redemption,...old] = await Promise.all([tx.get(keyRef),tx.get(ref),tx.get(redemptionRef),...legacy.docs.map(d=>tx.get(d.ref))]); const data = k.data()
+   const maxUses = data?.maxUses ?? (data?.usedBy !== undefined ? 1 : 0); const useCount = data?.useCount ?? (data?.usedBy ? 1 : 0)
+   if (data?.revoked || (data?.expiresAt && new Date(data.expiresAt) < new Date())) throw new HttpError(409,'Chave revogada ou expirada')
+   if (maxUses > 0 && useCount >= maxUses) throw new HttpError(409,'Limite de usos da chave atingido')
+   if (redemption.exists && !data?.allowRepeat) throw new HttpError(409,'Esta conta já utilizou esta chave')
    const legacyDoc = old.find(s=>(s.data()?.Keys || []).includes(key))
    if (!k.exists && !legacyDoc) throw new HttpError(400,'Chave inválida')
    const end = renewalEnd(u.data()?.subscriptionEnd,data?.days || 30)
-   tx.set(keyRef,{days:data?.days || 30,usedBy:uid,usedAt:new Date().toISOString()},{merge:true})
-   if(legacyDoc) tx.update(legacyDoc.ref,{Keys:FieldValue.arrayRemove(key)})
+   tx.set(keyRef,{days:data?.days || 30,maxUses,useCount:useCount+1,lastUsedBy:uid,lastUsedAt:new Date().toISOString(),...(k.exists?{}:{createdAt:timestamp(),source:'legacy'})},{merge:true})
+   tx.set(redemptionRef,{uid,count:(redemption.data()?.count || 0)+1,lastUsedAt:timestamp()},{merge:true})
    tx.update(ref,{subscription:'ativa',subscriptionStart:u.data()?.subscriptionStart || new Date().toISOString(),subscriptionEnd:end})
    tx.set(db.collection('audit').doc(),{actor:uid,action:'subscription.activate',details:{keyHash:hash(key),end},at:timestamp()})
    return end
@@ -77,7 +80,7 @@ export async function execute(ctx, body) {
   await db.runTransaction(async tx=>{const duplicate=db.collection('fileHashes').doc(u.sha256);const d=await tx.get(duplicate);const completed=await tx.get(db.collection('musicas').doc(id));if(completed.exists)return;if(d.exists)throw new HttpError(409,'Arquivo duplicado');tx.set(duplicate,{musicId:id});tx.set(db.collection('musicas').doc(id),{...u.data,size:u.size,fileName:u.fileName,storageKey:u.storageKey,storageProvider:u.storageProvider,sha256:u.sha256,quality:`${u.contentType}${u.data.duration ? ' · '+Math.round(u.size*8/u.data.duration/1000)+' kbps' : ''}`,createdAt:timestamp()});tx.update(uploadRef,{completed:true});tx.set(db.collection('audit').doc(),{actor:uid,action:'music.upload',details:{id},at:timestamp()})})
   return {id}
  }
- if(action==='keys-create') {const days=Number(body.days || 30);renewalEnd(null,days);const key=randomBytes(18).toString('base64url');await db.collection('activationKeys').doc(hash(key)).set({days,createdAt:timestamp(),createdBy:uid,usedBy:null});await audit(ctx,'keys.create',{days});return {key} }
+ if(action==='keys-create') {const days=Number(body.days || 30);renewalEnd(null,days);const maxUses=Number(body.maxUses ?? 0);if(!Number.isInteger(maxUses) || maxUses<0 || maxUses>1000000)throw new HttpError(400,'Limite de usos inválido');const allowRepeat=body.allowRepeat===true;const key=randomBytes(18).toString('base64url');await db.collection('activationKeys').doc(hash(key)).set({days,maxUses,allowRepeat,useCount:0,createdAt:timestamp(),createdBy:uid});await audit(ctx,'keys.create',{days,maxUses,allowRepeat});return {key} }
  if(action==='keys-list') {const snap=await db.collection('activationKeys').orderBy('createdAt','desc').limit(100).get();return {keys:snap.docs.map(d=>({id:d.id,...d.data()}))} }
  if(action==='keys-revoke') {await db.collection('activationKeys').doc(cleanId(body.id)).update({revoked:true});await audit(ctx,'keys.revoke',{id:body.id});return {ok:true} }
  if(action==='music-edit') {const ids=uniqueIds(body.ids);const allowed={};for(const key of ['cantor','title','status','disabled','publishAt','tipo'])if(body.changes?.[key]!==undefined)allowed[key]=body.changes[key];if(!Object.keys(allowed).length)throw new HttpError(400,'Nenhuma alteração');const docs=await Promise.all(ids.map(id=>db.collection('musicas').doc(id).get()));const batch=db.batch();for(const d of docs){if(!d.exists)throw new HttpError(404,'Música não encontrada');const merged=metadata({...d.data(),...allowed});batch.update(d.ref,{...merged,...(typeof allowed.disabled==='boolean'?{disabled:allowed.disabled}:{}),updatedAt:timestamp()})}batch.set(db.collection('audit').doc(),{actor:uid,action:'music.edit',details:{ids,changes:allowed},at:timestamp()});await batch.commit();return {updated:ids.length} }

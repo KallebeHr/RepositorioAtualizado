@@ -18,7 +18,7 @@ npm run dev
 
 - Player único fora das páginas; sequência automática por gênero, fila, temporizador, Media Session e equalizador em menu próprio.
 - Catálogo com filtros combinados, páginas de cantor/gênero/mês, recomendações locais por gênero, playlists privadas e favoritos.
-- Perfil, recuperação de senha, validade e renovação; chaves únicas consumidas em transação.
+- Perfil, recuperação de senha, validade e renovação; chaves reutilizáveis com contagem e limite em transação.
 - Downloads autorizados e pacotes preparados fora do celular; histórico de solicitações.
 - Upload múltiplo diretamente ao armazenamento com progresso, tentativas individuais, hash de duplicação e confirmação no servidor.
 - Edição em lote, CSV por ID, publicação agendada, verificação de arquivos, gestão de contas, avisos e auditoria.

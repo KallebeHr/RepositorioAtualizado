@@ -46,7 +46,7 @@
           v-for="cat in categories"
           :key="cat.name"
           class="folder-card"
-          @click="openCategory(cat.name)"
+          @click="openCategory(cat.name)" role="button" tabindex="0" @keydown.enter="openCategory(cat.name)" @keydown.space.prevent="openCategory(cat.name)"
         >
           <div class="folder-icon">
             <i class="mdi mdi-folder"></i>
@@ -72,7 +72,7 @@
           v-for="art in artists"
           :key="art.name"
           class="folder-card artist-folder"
-          @click="openArtist(art.name)"
+          @click="openArtist(art.name)" role="button" tabindex="0" @keydown.enter="openArtist(art.name)" @keydown.space.prevent="openArtist(art.name)"
         >
           <div class="folder-icon artist-icon">
             <img
@@ -104,7 +104,7 @@
           v-for="(m, idx) in songs"
           :key="m.id"
           class="song-row"
-          :class="{ playing: player.currentTrack?.id === m.id }"
+          :class="{ playing: player.current?.id === m.id }"
           @dblclick="play(m)"
         >
           <span class="song-idx">{{ idx + 1 }}</span>
@@ -217,152 +217,21 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted } from "vue"
-import { db } from "@/firebase"
-import { collection, getDocs, doc, updateDoc, increment } from "firebase/firestore"
-import { usePlayerStore } from "@/stores/usePlayerStore"
-import { useUserStore } from "@/stores/userStore"
-import { useToast } from "vue-toast-notification"
-
-const player = usePlayerStore()
-const userStore = useUserStore()
-const toast = useToast()
-
-/* ─── Estado ─── */
-const loading = ref(true)
-const allMusicas = ref([])
-
-const currentCategory = ref(null)
-const currentArtist = ref(null)
-
-const isOpen = ref(false)
-const queryText = ref("")
-const inputRef = ref(null)
-
-/* ─── Carrega tudo 1x ao montar ─── */
-onMounted(async () => {
-  const snap = await getDocs(collection(db, "musicas"))
-  allMusicas.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-  loading.value = false
-})
-
-/* ─── Derivações: Categorias ─── */
-const categories = computed(() => {
-  const map = {}
-  for (const m of allMusicas.value) {
-    const tipos = Array.isArray(m.tipo) ? m.tipo : [m.tipo || "Sem estilo"]
-    for (const t of tipos) {
-      if (!map[t]) map[t] = { name: t, artists: new Set(), songCount: 0 }
-      map[t].artists.add(m.cantor)
-      map[t].songCount++
-    }
-  }
-  return Object.values(map)
-    .map(c => ({ ...c, artistCount: c.artists.size }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
-
-/* ─── Derivações: Artistas da categoria atual ─── */
-const artists = computed(() => {
-  if (!currentCategory.value) return []
-  const map = {}
-  for (const m of allMusicas.value) {
-    const tipos = Array.isArray(m.tipo) ? m.tipo : [m.tipo || "Sem estilo"]
-    if (!tipos.includes(currentCategory.value)) continue
-    const name = m.cantor || "Desconhecido"
-    if (!map[name]) map[name] = { name, songCount: 0, coverUrl: m.coverUrl || null }
-    map[name].songCount++
-  }
-  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
-})
-
-/* ─── Derivações: Músicas do artista atual ─── */
-const songs = computed(() => {
-  if (!currentArtist.value) return []
-  return allMusicas.value.filter(m => m.cantor === currentArtist.value)
-})
-
-/* ─── Busca reativa ─── */
-const searchResults = computed(() => {
-  const q = queryText.value.trim().toLowerCase()
-  if (!q) return []
-  return allMusicas.value.filter(m => {
-    const title = m.title?.toLowerCase() || ""
-    const cantor = m.cantor?.toLowerCase() || ""
-    const tipo = Array.isArray(m.tipo)
-      ? m.tipo.join(" ").toLowerCase()
-      : (m.tipo?.toLowerCase() || "")
-    return title.includes(q) || cantor.includes(q) || tipo.includes(q)
-  })
-})
-
-/* ─── Navegação ─── */
-function goRoot() {
-  currentCategory.value = null
-  currentArtist.value = null
-}
-
-function goCategory() {
-  currentArtist.value = null
-}
-
-function openCategory(name) {
-  currentCategory.value = name
-  currentArtist.value = null
-}
-
-function openArtist(name) {
-  currentArtist.value = name
-}
-
-/* ─── Modal ─── */
-function openModal() {
-  isOpen.value = true
-  nextTick(() => inputRef.value?.focus())
-}
-
-function closeModal() {
-  isOpen.value = false
-  queryText.value = ""
-}
-
-/* ─── Ações do player ─── */
-function play(m) {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura 🎶")
-    return
-  }
-  player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) })
-  closeModal()
-}
-
-function addQueue(m) {
-     if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura 🎶")
-    return
-  }
-  player.addToQueue(m, { playNow: false })
-  toast.success("Adicionada à fila ✓")
-}
-
-async function download(m) {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Assinatura necessária")
-    return
-  }
-  if (!m.downloadUrl) return
-
-  const res = await fetch(m.downloadUrl)
-  const blob = await res.blob()
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(blob)
-  a.download = m.fileName || `${m.title}.mp3`
-  a.click()
-  URL.revokeObjectURL(a.href)
-
-  await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) })
-}
+import {computed,ref,nextTick} from 'vue'
+import {useLegacyMusic} from '@/composables/useLegacyMusic'
+import {genres,filterTracks} from '@/utils/catalog'
+const {tracks:allMusicas,catalog,player,play,addQueue,download}=useLegacyMusic()
+const loading=computed(()=>catalog.loading),currentCategory=ref(null),currentArtist=ref(null),isOpen=ref(false),queryText=ref(''),inputRef=ref(null)
+const categories=computed(()=>{const map=new Map();for(const m of allMusicas.value)for(const t of genres(m)){const c=map.get(t)||{name:t,artists:new Set(),songCount:0};c.artists.add(m.cantor);c.songCount++;map.set(t,c)}return [...map.values()].map(c=>({...c,artistCount:c.artists.size})).sort((a,b)=>a.name.localeCompare(b.name))})
+const artists=computed(()=>{const map=new Map();for(const m of allMusicas.value.filter(t=>genres(t).includes(currentCategory.value))){const a=map.get(m.cantor)||{name:m.cantor,songCount:0,coverUrl:m.coverUrl};a.songCount++;map.set(m.cantor,a)}return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name))})
+const songs=computed(()=>allMusicas.value.filter(m=>m.cantor===currentArtist.value && (!currentCategory.value || genres(m).includes(currentCategory.value))))
+const searchResults=computed(()=>queryText.value.trim()?filterTracks(allMusicas.value,{search:queryText.value}):[])
+function goRoot(){currentCategory.value=null;currentArtist.value=null}
+function goCategory(){currentArtist.value=null}
+function openCategory(n){currentCategory.value=n;currentArtist.value=null}
+function openArtist(n){currentArtist.value=n}
+function openModal(){isOpen.value=true;nextTick(()=>inputRef.value?.focus())}
+function closeModal(){isOpen.value=false;queryText.value=''}
 </script>
 
 <style scoped>
