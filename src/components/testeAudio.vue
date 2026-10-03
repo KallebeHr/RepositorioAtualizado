@@ -101,7 +101,7 @@
                 <div class="eq-title-row">
                   <div class="eq-badge" :class="{ on: eqEnabled }">
                     <span class="dot"></span>
-                    <span>{{ eqEnabled ? "EQUALIZADOR ATIVO" : "EQUALIZADOR DESATIVADO" }}</span>
+                    <span>{{ eqEnabled ? "EQUALIZADOR ATIVOz" : "EQUALIZADOR DESATIVADOz" }}</span>
                   </div>
 
                   <button class="eq-close" @click="eqUIOpen = false" aria-label="Fechar">
