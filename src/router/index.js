@@ -35,7 +35,6 @@ const router = createRouter({
         '/Dezembro7',
         '/Dezembro8',
         '/Dezembro9',
-        '/Dezembro9',
       ],
     },
   ],
@@ -62,30 +61,18 @@ router.isReady().then(() => {
   localStorage.removeItem('vuetify:dynamic-reload')
 })
   
-let authReady = null
-function waitForAuth() {
-  if (!authReady) {
-    authReady = new Promise((resolve) => {
-      const unsub = onAuthStateChanged(auth, (user) => {
-        unsub()
-        resolve(user)
-      })
-    })
-  }
-  return authReady
+async function waitForAuth() {
+ await auth.authStateReady()
+ return auth.currentUser
 }
-
-router.beforeEach(async (to, from, next) => {
-  if (to.path.startsWith('/admin')) {
-    const user = await waitForAuth()
-    if (!user) return next('/')
-
-    const snap = await getDoc(doc(db, 'users', user.uid))
-    if (!snap.exists() || snap.data().role !== 'admin') {
-      return next('/')
-    }
-  }
-  next()
+router.beforeEach(async to => {
+ if (to.path.toLowerCase().startsWith('/admin')) {
+  const user = await waitForAuth()
+  if (!user) return '/RegisterAndLogin?mode=login'
+  try {
+   const snap=await getDoc(doc(db,'users',user.uid))
+   if (!snap.exists() || snap.data().role !== 'admin' || snap.data().disabled) return '/'
+  } catch { return '/' }
+ }
 })
-
 export default router

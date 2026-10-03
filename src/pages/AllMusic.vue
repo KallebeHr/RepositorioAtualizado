@@ -1,31 +1,9 @@
-<template>
-  <div class='container'>
-    <CentraDeBuscas />
-    <Autoscroll />
-    <MusicasAleatorias />
-    <!-- <MusicList style="background-color: 121212;" /> -->
-    <TopMusicas />
-    <Autoscroll />
-    <TopCantores />
-  </div>
-</template>
-
+<template><div class='legacy-music-home'><CentraDeBuscas/><Autoscroll/><MusicasAleatorias/><TopMusicas/><Autoscroll/><TopCantores/></div></template>
 <script setup>
-import Autoscroll from '@/components/autoscroll.vue';
-import MusicList from '@/components/MusicList.vue';
-
+import CentraDeBuscas from '@/components/CentraDeBuscas.vue'
+import Autoscroll from '@/components/autoscroll.vue'
+import MusicasAleatorias from '@/components/MusicasAleatorias.vue'
+import TopMusicas from '@/components/TopMusicas.vue'
+import TopCantores from '@/components/TopCantores.vue'
 </script>
-
-<style scoped>
-
-.container{
-    display:flex;
-    align-items: center;
-    flex-direction: column;
-  background: #111;
-
-    min-height: 100vh;
-    height: auto;  
-  }
-    
-</style>
+<style scoped>.legacy-music-home{display:flex;align-items:center;flex-direction:column;background:#111;min-height:100vh}.legacy-music-home>:deep(*){max-width:100%}</style>

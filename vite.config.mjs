@@ -1,7 +1,6 @@
 // Plugins
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
-import Fonts from 'unplugin-fonts/vite'
 import Layouts from 'vite-plugin-vue-layouts-next'
 import Vue from '@vitejs/plugin-vue'
 import VueRouter from 'unplugin-vue-router/vite'
@@ -28,14 +27,6 @@ export default defineConfig({
       },
     }),
     Components(),
-    Fonts({
-      google: {
-        families: [{
-          name: 'Roboto',
-          styles: 'wght@100;300;400;500;700;900',
-        }],
-      },
-    }),
     AutoImport({
       imports: [
         'vue',
@@ -76,6 +67,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    proxy: { '/api': 'http://127.0.0.1:3001' },
   },
   css: {
     preprocessorOptions: {

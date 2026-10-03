@@ -22,3 +22,11 @@ pnpm-debug.log*
 *.sw?
 
 .vercel
+
+.env
+.env.server
+b2-backend/.env
+*.credentials.json
+playwright-report/
+test-results/
+backups-local/

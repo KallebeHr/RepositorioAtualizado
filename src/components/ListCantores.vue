@@ -53,113 +53,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue"
-import { db } from "@/firebase"
-import { collection, query, orderBy, getDocs } from "firebase/firestore"
-import JSZip from "jszip"
-import { saveAs } from "file-saver"
-import { useToast } from "vue-toast-notification";
-const toast = useToast();
-
-const musicas = ref([])
-const loading = ref(true)
-const error = ref("")
-const cantorSelecionado = ref(null)
-
-const progress = ref({ show: false, percent: 0 })
-
-// Agrupa músicas por cantor
-const artistas = computed(() => {
-  const grupos = {}
-  musicas.value.forEach(m => {
-    if (!m.cantor) return
-    if (!grupos[m.cantor]) grupos[m.cantor] = []
-    grupos[m.cantor].push(m)
-  })
-  return Object.keys(grupos).map(nome => ({
-    nome,
-    musicas: grupos[nome]
-  }))
-})
-
-async function fetchMusicas() {
-  try {
-    loading.value = true
-    const q = query(collection(db, "musicas"), orderBy("createdAt", "desc"))
-    const qs = await getDocs(q)
-    musicas.value = qs.docs.map(d => ({ id: d.id, ...d.data() }))
-  } catch (err) {
-    console.error("[Cantores] erro ao buscar:", err)
-    error.value = "Erro ao buscar músicas."
-  } finally {
-    loading.value = false
-  }
-}
-
-function selecionarCantor(artista) {
-  cantorSelecionado.value = artista
-}
-
-async function download(m) {
-   toast.warning("Desativa por enquanto 🎶");
-
-  // if (!m.downloadUrl) return
-  // try {
-  //   const response = await fetch(m.downloadUrl)
-  //   if (!response.ok) throw new Error("Falha ao baixar arquivo")
-
-  //   const blob = await response.blob()
-  //   const url = window.URL.createObjectURL(blob)
-
-  //   const a = document.createElement("a")
-  //   a.href = url
-  //   a.download = m.fileName || `${m.title || "musica"}.mp3`
-  //   document.body.appendChild(a)
-  //   a.click()
-  //   a.remove()
-
-  //   window.URL.revokeObjectURL(url)
-  // } catch (err) {
-  //   console.error("[Cantores] erro no download:", err)
-  // }
-}
-
-async function baixarTodas(artista) {
-   toast.warning("Desativa por enquanto 🎶");
-  // if (!artista.musicas.length) return
-
-  // const zip = new JSZip()
-  // progress.value = { show: true, percent: 0 }
-
-  // let count = 0
-  // for (const m of artista.musicas) {
-  //   try {
-  //     const response = await fetch(m.downloadUrl)
-  //     const blob = await response.blob()
-  //     const nomeArquivo = m.fileName || `${m.title || "musica"}.mp3`
-  //     zip.file(nomeArquivo, blob)
-
-  //     count++
-  //     progress.value.percent = Math.round((count / artista.musicas.length) * 100)
-  //   } catch (err) {
-  //     console.error(`[Cantores] erro baixando ${m.title}:`, err)
-  //   }
-  // }
-
-  // // Gera o ZIP
-  // const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
-  //   progress.value.percent = Math.round(metadata.percent)
-  // })
-
-  // saveAs(content, `${artista.nome}-musicas.zip`)
-
-  // // Reset progress
-  // setTimeout(() => {
-  //   progress.value = { show: false, percent: 0 }
-  // }, 1500)
-}
-
-onMounted(fetchMusicas)
+import {computed,ref,nextTick} from 'vue'
+import {useLegacyMusic} from '@/composables/useLegacyMusic'
+const {tracks:musicas,catalog,download,packageTracks}=useLegacyMusic()
+const loading=computed(()=>catalog.loading),error=computed(()=>catalog.error),cantorSelecionado=ref(null),progress=ref({show:false,percent:0})
+const artistas=computed(()=>{const map=new Map();for(const t of musicas.value){if(!map.has(t.cantor))map.set(t.cantor,[]);map.get(t.cantor).push(t)}return [...map].sort((a,b)=>a[0].localeCompare(b[0])).map(([nome,musicas])=>({nome,musicas}))})
+function selecionarCantor(a){cantorSelecionado.value=a}
+function baixarTodas(a){return packageTracks(a.musicas)}
 </script>
 
 <style scoped>

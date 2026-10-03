@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="current"
-    class="player-container"
+    class="player-container persistent-player" aria-label="Reprodutor de músicas"
     :class="{ expanded: isExpanded }"
     @click="!isExpanded && handleExpandClick()"
   >
@@ -10,8 +10,8 @@
         <i class="mdi mdi-chevron-down"></i>
       </button>
       <span class="mobile-header-title">Tocando agora</span>
-      <button class="btn-icon">
-        <i class="mdi mdi-dots-vertical"></i>
+      <button class="btn-icon" @click.stop="settings=true" aria-label="Abrir equalizador, fila e temporizador">
+        <i class="mdi mdi-tune"></i>
       </button>
     </div>
 
@@ -20,7 +20,7 @@
         <img src="/LogoMusic.jpg" class="cover" alt="Capa" />
       </div>
       <div class="track-info">
-        <div class="title">{{ current.title }}</div>
+        <div class="title">{{ current.title }}<small v-if="player.error" role="alert">{{player.error}}</small></div>
         <div class="artist">{{ current.cantor }}</div>
       </div>
       
@@ -44,7 +44,7 @@
           <i class="mdi mdi-skip-previous"></i>
         </button>
 
-        <button class="btn-play" @click.stop="toggle" title="Play/Pause">
+        <button class="btn-play" @click.stop="toggle" :aria-label="player.isPlaying?'Pausar':'Reproduzir'">
           <i v-if="player.isPlaying" class="mdi mdi-pause"></i>
           <i v-else class="mdi mdi-play"></i>
         </button>
@@ -74,7 +74,7 @@
       </div>
     </div>
 
-    <div class="right-section" @click.stop>
+    <div class="right-section" @click.stop><button class="btn-icon" @click.stop="settings=true" aria-label="Abrir equalizador, fila e temporizador"><i class="mdi mdi-tune"></i></button>
       <button class="btn-icon" @click.stop="toggleQueue" title="Fila de Reprodução">
         <i class="mdi mdi-playlist-play"></i>
         <span v-if="player.queue.length" class="badge">
@@ -165,166 +165,47 @@
       
     </div>
   </div>
+ <v-dialog v-model="settings" max-width="620" aria-label="Controles de reprodução">
+  <v-card class="player-settings"><v-card-title class="dialog-title">Controles de reprodução <v-btn icon="mdi-close" variant="text" @click="settings=false" aria-label="Fechar controles"/></v-card-title><v-card-text>
+   <label class="check"><input type="checkbox" v-model="player.autoContinue"> Continuar com músicas do mesmo gênero</label>
+   <label>Encerrar reprodução<select @change="player.setSleep(Number($event.target.value))"><option value="0">Sem temporizador</option><option v-for="minutes in [15,30,45,60,90]" :value="minutes" :key="minutes">Em {{minutes}} minutos</option></select></label>
+   <p v-if="player.sleepAt">Encerra às {{new Date(player.sleepAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}}</p>
+   <label>Volume<input aria-label="Volume" type="range" min="0" max="1" step="0.01" :value="player.volume" @input="player.setVolume($event.target.value)"></label>
+   <h3>Equalizador</h3><label class="check"><input type="checkbox" :checked="player.eq.enabled" @change="player.eqSetEnabled($event.target.checked)"> Ativar equalizador</label>
+   <div class="eq-bands"><label v-for="b in player.eq.bands" :key="b.key">{{b.key}} Hz<input type="range" min="-12" max="12" :value="b.gain" :aria-label="`Ganho em ${b.key} Hz`" @input="player.eqSetBandGain(b.key,$event.target.value)"><small>{{b.gain}} dB</small></label></div><button class="secondary" @click="player.eqReset()">Restaurar bandas</button>
+   <h3>Fila · {{player.queue.length}} músicas</h3><div class="queue-row" v-for="(track,index) in player.queue" :key="index"><button @click="player.play(index)" :aria-current="index===player.currentIndex?'true':undefined">{{track.title}} <small>{{track.cantor}}</small></button><button class="icon-button" @click="player.removeFromQueue(index)" :aria-label="`Remover ${track.title} da fila`"><i class="mdi mdi-close"></i></button></div>
+   <div class="actions"><button class="secondary" @click="player.clearQueue()">Limpar fila</button><button class="primary" @click="handlePackage">Solicitar pacote da fila</button></div><p role="status">{{message}}</p>
+   <p class="muted">O áudio pode continuar com a tela bloqueada nos dispositivos compatíveis. Fechar o navegador encerra a reprodução.</p>
+  </v-card-text></v-card>
+ </v-dialog>
+
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue"
-import { usePlayerStore } from "@/stores/usePlayerStore"
-import { useUserStore } from "@/stores/userStore"
-import { useToast } from "vue-toast-notification"
-import JSZip from "jszip"
-import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"
-import { db } from "@/firebase"
+import {ref,computed,onMounted,onBeforeUnmount,watch} from 'vue'
+import {usePlayerStore} from '@/stores/usePlayerStore'
+import {useUserStore} from '@/stores/userStore'
+import {downloadTrack,downloadPackage} from '@/services/api'
+const player=usePlayerStore(),user=useUserStore(),settings=ref(false),message=ref(''),position=ref(0),duration=ref(0)
+let interval
+function time(v){return `${Math.floor(v/60)}:${String(Math.floor(v%60)).padStart(2,'0')}`}
+async function handleDownload(){try{await downloadTrack(player.current)}catch(e){player.error=e.message}}
+async function handlePackage(){try{const r=await downloadPackage(player.queue.map(t=>t.id));message.value=r.status==='ready'?'Download autorizado.':'Pedido registrado. Consulte o andamento em Minha conta.'}catch(e){message.value=e.message}}
+watch(()=>user.hasActiveSubscription,value=>{if(!value)player.stop()})
+function openSettings(){settings.value=true}
+onMounted(()=>{window.addEventListener('repertorio:player-settings',openSettings);interval=setInterval(()=>{position.value=Number(player.sound?.seek() || 0);duration.value=player.sound?.duration() || 0;if('mediaSession' in navigator && duration.value>0)try{navigator.mediaSession.setPositionState({duration:duration.value,playbackRate:1,position:Math.min(position.value,duration.value)})}catch{}},1000)})
+onBeforeUnmount(()=>{clearInterval(interval);window.removeEventListener('repertorio:player-settings',openSettings)})
 
-const player = usePlayerStore()
-const userStore = useUserStore()
-const toast = useToast()
-
-const showQueue = ref(false)
-const isExpanded = ref(false)
-const current = computed(() => player.current)
-
-const duration = ref(0)
-const position = ref(0)
-let raf = null
-
-const durationText = computed(() => toTime(duration.value))
-const currentTimeText = computed(() => toTime(position.value))
-
-// Quando o Howler (player.sound) for criado/trocado, registra o evento "end"
-// para fazer loop automático ao chegar na última música da fila
-watch(
-  () => player.sound,
-  (sound) => {
-    if (!sound) return
-    sound.on("end", () => {
-      if (player.currentIndex >= player.queue.length - 1) {
-        player.play(0)
-      }
-    })
-  }
-)
-
-function loop() {
-  if (player.sound) {
-    try {
-      duration.value = Math.floor(player.sound.duration() || 0)
-      position.value = Math.floor(player.sound.seek() || 0)
-    } catch {}
-  }
-  raf = requestAnimationFrame(loop)
-}
-
-function toTime(s) {
-  const m = Math.floor(s / 60)
-  const ss = String(s % 60).padStart(2, "0")
-  return `${m}:${ss}`
-}
-
-function toggle() {
-  if (!userStore.hasActiveSubscription)
-    return toast.warning("Ative sua assinatura 🎶")
-  player.togglePlay()
-}
-function prev() {
-  userStore.hasActiveSubscription
-    ? player.prev()
-    : toast.warning("Ative sua assinatura 🎶")
-}
-function next() {
-  userStore.hasActiveSubscription
-    ? player.next()
-    : toast.warning("Ative sua assinatura 🎶")
-}
-
-function onSeek(e) {
-  player.seekTo(Number(e.target.value))
-}
-function onVol(e) {
-  player.setVolume(Number(e.target.value))
-}
-
-function toggleQueue() {
-  showQueue.value = !showQueue.value
-}
-
-function playAt(i) {
-  if (!userStore.hasActiveSubscription)
-    return toast.warning("Ative sua assinatura 🎶")
-  player.play(i)
-}
-function remove(i) {
-  player.removeFromQueue(i)
-}
-function clearQueue() {
-  player.clearQueue()
-}
-
-async function download(m) {
-  if (!userStore.hasActiveSubscription)
-    return toast.warning("Assinatura necessária")
-  if (!m?.downloadUrl) return
-
-  try {
-    const res = await fetch(m.downloadUrl)
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = m.fileName || "musica.mp3"
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch {
-    toast.error("Erro ao baixar")
-  }
-}
-
-async function downloadAllZip() {
-  const zip = new JSZip()
-  const seen = new Set()
-
-  for (const m of player.queue) {
-    if (seen.has(m.fileId) || !m.downloadUrl) continue
-    seen.add(m.fileId)
-    const res = await fetch(m.downloadUrl)
-    zip.file(m.fileName || "musica.mp3", await res.blob())
-  }
-
-  const content = await zip.generateAsync({ type: "blob" })
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(content)
-  a.download = "FilaMusicas.zip"
-  a.click()
-}
-
-function isFavorite(id) {
-  return userStore.user?.favorites?.includes(id)
-}
-
-async function toggleFavorite(m) {
-  if (!userStore.user)
-    return toast.warning("Faça login para favoritar ⭐")
-
-  const refUser = doc(db, "users", userStore.user.uid)
-
-  if (isFavorite(m.id)) {
-    await updateDoc(refUser, { favorites: arrayRemove(m.id) })
-    userStore.user.favorites =
-      userStore.user.favorites.filter(f => f !== m.id)
-  } else {
-    await updateDoc(refUser, { favorites: arrayUnion(m.id) })
-    userStore.user.favorites.push(m.id)
-  }
-}
-
-function handleExpandClick() {
-  if (window.innerWidth <= 768) {
-    isExpanded.value = !isExpanded.value
-  }
-}
-
-onMounted(() => (raf = requestAnimationFrame(loop)))
-onBeforeUnmount(() => raf && cancelAnimationFrame(raf))
+import {doc,updateDoc,arrayUnion,arrayRemove} from 'firebase/firestore'
+import {db} from '@/firebase'
+const current=computed(()=>player.current),showQueue=ref(false),isExpanded=ref(false)
+const durationText=computed(()=>time(duration.value)),currentTimeText=computed(()=>time(position.value))
+const toggle=()=>player.togglePlay(),prev=()=>player.prev(),next=()=>player.next(),onSeek=e=>player.seekTo(Number(e.target.value)),onVol=e=>player.setVolume(Number(e.target.value))
+const toggleQueue=()=>showQueue.value=!showQueue.value,playAt=i=>player.play(i),remove=i=>player.removeFromQueue(i),clearQueue=()=>player.clearQueue(),downloadAllZip=handlePackage
+function handleExpandClick(){if(innerWidth<769)isExpanded.value=!isExpanded.value}
+async function download(t){try{await downloadTrack(t)}catch(e){player.error=e.message}}
+function isFavorite(id){return user.user?.favorites?.includes(id)}
+async function toggleFavorite(t){if(!user.user)return;try{await updateDoc(doc(db,'users',user.user.uid),{favorites:isFavorite(t.id)?arrayRemove(t.id):arrayUnion(t.id)})}catch{player.error='Não foi possível salvar favorito'}}
 </script>
 
 <style scoped>
