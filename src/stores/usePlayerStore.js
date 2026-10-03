@@ -1,6 +1,10 @@
 // src/stores/usePlayerStore.js
 import { defineStore } from "pinia"
 import { Howl } from "howler"
+import { markRaw } from "vue"
+
+// HTML5 elements can be reused by Howler; each element accepts one source only.
+const mediaSources = new WeakMap()
 
 export const usePlayerStore = defineStore("player", {
   state: () => ({
@@ -70,7 +74,8 @@ export const usePlayerStore = defineStore("player", {
     ========================================================= */
     _eqEnsureContext() {
       if (this._eqCtx) return
-      this._eqCtx = new (window.AudioContext || window.webkitAudioContext)()
+      this._eqCtx = markRaw(new (window.AudioContext || window.webkitAudioContext)())
+      this._eqPreamp = markRaw(this._eqCtx.createGain())
     },
 
     async _eqResume() {
@@ -86,8 +91,8 @@ export const usePlayerStore = defineStore("player", {
       const ctx = this._eqCtx
       if (!ctx) return
 
-      this._eqInput = ctx.createGain()
-      this._eqOutput = ctx.createGain()
+      this._eqInput = markRaw(ctx.createGain())
+      this._eqOutput = markRaw(ctx.createGain())
 
       this._eqFilters = this.eq.bands.map(b => {
         const f = ctx.createBiquadFilter()
@@ -95,7 +100,7 @@ export const usePlayerStore = defineStore("player", {
         f.frequency.value = b.freq
         f.Q.value = 1.0
         f.gain.value = b.gain
-        return f
+        return markRaw(f)
       })
 
       // input -> filters -> output -> destination
@@ -109,6 +114,7 @@ export const usePlayerStore = defineStore("player", {
 
     _eqDisconnectAll() {
       try { this._eqSource?.disconnect() } catch {}
+      try { this._eqPreamp?.disconnect() } catch {}
       try { this._eqInput?.disconnect() } catch {}
       try { this._eqOutput?.disconnect() } catch {}
       try { this._eqFilters?.forEach(f => f.disconnect()) } catch {}
@@ -118,32 +124,23 @@ export const usePlayerStore = defineStore("player", {
       const el = this.howlerAudioEl
       if (!el) return false
 
-      // ajuda em CORS quando o servidor permitir
-      try {
-        el.crossOrigin = "anonymous"
-      } catch {}
-
-      // evita refazer se já está no mesmo elemento
-      if (this._eqMediaEl === el && this._eqSource && this._eqCtx) return true
-
       this._eqEnsureContext()
-      this._eqDisconnectAll()
+      if (this._eqMediaEl === el && this._eqSource) return true
 
-      this._eqMediaEl = el
-
-      try {
-        // createMediaElementSource só pode ser 1x por elemento
-        this._eqSource = this._eqCtx.createMediaElementSource(el)
-      } catch (err) {
-        console.error("[EQ] Falha ao capturar áudio do Howler:", err)
-        this.eq.ready = false
-        return false
+      // Create the source before disconnecting the current playback graph.
+      let source = mediaSources.get(el)
+      if (!source) {
+        try {
+          source = markRaw(this._eqCtx.createMediaElementSource(el))
+          mediaSources.set(el, source)
+        } catch (err) {
+          console.error("[EQ] Falha ao capturar áudio do Howler:", err)
+          return false
+        }
       }
-
-      this._eqBuildGraph()
-
-      // source -> input (começa com EQ ligado; se desligar, fazemos bypass)
-      this._eqSource.connect(this._eqInput)
+      this._eqDisconnectAll()
+      this._eqMediaEl = markRaw(el)
+      this._eqSource = source
 
       this.eq.ready = true
       this._eqApplyEnabled()
@@ -154,7 +151,8 @@ export const usePlayerStore = defineStore("player", {
       if (!this._eqCtx || !this._eqSource) return
       this._eqDisconnectAll()
       try {
-        this._eqSource.connect(this._eqCtx.destination)
+        this._eqSource.connect(this._eqPreamp)
+        this._eqPreamp.connect(this._eqCtx.destination)
       } catch {}
     },
 
@@ -163,7 +161,8 @@ export const usePlayerStore = defineStore("player", {
       this._eqDisconnectAll()
       this._eqBuildGraph()
       try {
-        this._eqSource.connect(this._eqInput)
+        this._eqSource.connect(this._eqPreamp)
+        this._eqPreamp.connect(this._eqInput)
       } catch {}
     },
 
@@ -246,6 +245,12 @@ export const usePlayerStore = defineStore("player", {
         }
       })
 
+      const el = sound._sounds?.[0]?._node
+      if (el) {
+        el.crossOrigin = "anonymous"
+        // Howler has already assigned src; restart loading with CORS enabled.
+        try { el.load() } catch {}
+      }
       return sound
     },
 
@@ -261,7 +266,8 @@ export const usePlayerStore = defineStore("player", {
       }
 
       this.currentIndex = index
-      this.sound = this._createHowlForCurrent()
+      const sound = this._createHowlForCurrent()
+      this.sound = sound ? markRaw(sound) : null
       if (!this.sound) return
 
       try {

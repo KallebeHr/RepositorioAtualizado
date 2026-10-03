@@ -101,7 +101,7 @@
                 <div class="eq-title-row">
                   <div class="eq-badge" :class="{ on: eqEnabled }">
                     <span class="dot"></span>
-                    <span>{{ eqEnabled ? "EQUALIZADOR ATIVOz" : "EQUALIZADOR DESATIVADOz" }}</span>
+                    <span>{{ eqEnabled ? "EQUALIZADOR ATIVO" : "EQUALIZADOR DESATIVADO" }}</span>
                   </div>
 
                   <button class="eq-close" @click="eqUIOpen = false" aria-label="Fechar">
@@ -506,37 +506,29 @@ async function toggleFavorite(m) {
 ========================================================= */
 const eqUIOpen = ref(false)
 const eqPanelRef = ref(null)
-const eqEnabled = ref(true)
+const eqEnabled = computed({
+  get: () => player.eq.enabled,
+  set: value => { player.eq.enabled = !!value }
+})
 
 /* Bandas */
-const bands = ref([
-  { key: "60", label: "Grave", freq: 60, gain: 0 },
-  { key: "170", label: "Médio-grave", freq: 170, gain: 0 },
-  { key: "350", label: "Médio", freq: 350, gain: 0 },
-  { key: "1k", label: "Voz", freq: 1000, gain: 0 },
-  { key: "3.5k", label: "Voz-agudo", freq: 3500, gain: 0 },
-  { key: "10k", label: "Agudo", freq: 10000, gain: 0 }
-])
+const bandLabels = ["Grave", "Médio-grave", "Médio", "Voz", "Voz-agudo", "Agudo"]
+player.eq.bands.forEach((band, index) => { band.label = bandLabels[index] })
+const bands = computed(() => player.eq.bands)
 
 /* =========================================================
    WEB AUDIO API — EQ + PREAMP (mais estável)
    - sourceNode -> preampNode -> (EQ ou bypass)
    - visualizer lê do preampNode (sem duplicar áudio)
 ========================================================= */
+// Playback nodes belong to the global store, independently of this page.
 let audioCtx = null
-let mediaEl = null
-let sourceNode = null
-
 let preampNode = null
-let inputNode = null
-let outputNode = null
-let eqNodes = []
+let disposed = false
 
 function toggleEqUI() {
   eqUIOpen.value = !eqUIOpen.value
   if (eqUIOpen.value) nextTick(() => eqPanelRef.value?.focus?.())
-
-  // gesto do usuário -> bom momento pra liberar AudioContext
   ensureEqConnection()
   refreshVisualizer()
 }
@@ -546,140 +538,46 @@ function formatDb(v) {
   return `${n > 0 ? "+" : ""}${n.toFixed(1)}`
 }
 
-function createContextIfNeeded() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {})
-}
-
-function findAudioElement() {
-  const howl = player?.sound
-  const node = howl?._sounds?.[0]?._node
-
-  if (node && typeof node.play === "function") {
-    try { node.crossOrigin = "anonymous" } catch {}
-    return node
-  }
-
-  return document.querySelector("audio") || null
-}
-
-function buildEqGraph() {
-  if (!audioCtx) return
-
-  // preamp (evita clip e vira ponto único de visualização)
-  preampNode = audioCtx.createGain()
-  preampNode.gain.value = 1
-
-  eqNodes = bands.value.map(b => {
-    const f = audioCtx.createBiquadFilter()
-    f.type = "peaking"
-    f.frequency.value = b.freq
-    f.Q.value = 1.0
-    f.gain.value = b.gain
-    return f
-  })
-
-  inputNode = audioCtx.createGain()
-  outputNode = audioCtx.createGain()
-
-  // cadeia EQ
-  inputNode.connect(eqNodes[0])
-  for (let i = 0; i < eqNodes.length - 1; i++) {
-    eqNodes[i].connect(eqNodes[i + 1])
-  }
-  eqNodes[eqNodes.length - 1].connect(outputNode)
-}
-
-function disconnectAll() {
-  try { sourceNode?.disconnect() } catch {}
-  try { preampNode?.disconnect() } catch {}
-  try { inputNode?.disconnect() } catch {}
-  try { outputNode?.disconnect() } catch {}
-  try { eqNodes?.forEach(n => n.disconnect()) } catch {}
-}
-
-function connectMediaElement(el) {
-  if (!el) return false
-  if (mediaEl === el && sourceNode && audioCtx) return true
-
-  createContextIfNeeded()
-
-  // derruba tudo e o visualizador (troca de música muda o nó do howler)
-  disconnectAll()
-  destroyAudioMotion()
-
-  mediaEl = el
-
+function ensureEqConnection() {
+  if (disposed || !player.howlerAudioEl) return false
   try {
-    sourceNode = audioCtx.createMediaElementSource(mediaEl)
+    player._eqEnsureContext()
+    player._eqResume()
+    const connected = player._eqConnectFromHowler()
+    audioCtx = player._eqCtx
+    preampNode = player._eqPreamp
+    return connected
   } catch (err) {
-    console.error("[EQ] Falha ao capturar áudio do Howler:", err)
+    console.error("[EQ] Falha ao conectar:", err)
     return false
   }
-
-  buildEqGraph()
-  applyEqEnabled() // conecta para o destino conforme ON/OFF
-
-  // visual quando tiver modal
-  refreshVisualizer()
-  return true
 }
 
 function applyEqEnabled() {
+  destroyAudioMotion()
   ensureEqConnection()
-  if (!audioCtx || !sourceNode || !preampNode) return
-
-  disconnectAll()
-  // reconstrói o grafo (garante tudo conectado corretamente)
-  buildEqGraph()
-
-  if (eqEnabled.value) {
-    // source -> preamp -> input -> filtros -> output -> destination
-    sourceNode.connect(preampNode)
-    preampNode.connect(inputNode)
-    outputNode.connect(audioCtx.destination)
-  } else {
-    // bypass: source -> preamp -> destination
-    sourceNode.connect(preampNode)
-    preampNode.connect(audioCtx.destination)
-  }
-
-  // atualiza o visual (ele lê do preampNode)
+  player._eqApplyEnabled()
   refreshVisualizer()
 }
 
 function onBandChange() {
-  if (!audioCtx || !eqNodes.length) ensureEqConnection()
-  for (let i = 0; i < bands.value.length; i++) {
-    const g = Number(bands.value[i].gain || 0)
-    if (eqNodes[i]) eqNodes[i].gain.value = g
-  }
+  for (const band of bands.value) player.eqSetBandGain(band.key, band.gain)
 }
 
 function resetEq() {
-  bands.value.forEach(b => (b.gain = 0))
-  onBandChange()
+  player.eqReset()
 }
 
 function applyPreset(name) {
-  const set = vals => {
-    const keys = ["60", "170", "350", "1k", "3.5k", "10k"]
-    keys.forEach((k, idx) => {
-      const band = bands.value.find(b => b.key === k)
-      if (band) band.gain = vals[idx]
-    })
-    onBandChange()
+  const presets = {
+    bass: [6, 4, 1, -1, -1, 0],
+    vocal: [-2, -1, 2, 4, 3, 1],
+    bright: [0, -1, -1, 1, 3, 5]
   }
-
-  if (name === "bass") set([6, 4, 1, -1, -1, 0])
-  else if (name === "vocal") set([-2, -1, 2, 4, 3, 1])
-  else if (name === "bright") set([0, -1, -1, 1, 3, 5])
-}
-
-function ensureEqConnection() {
-  const el = findAudioElement()
-  if (!el) return false
-  return connectMediaElement(el)
+  const values = presets[name]
+  if (values) player.eq.bands.forEach((band, index) => {
+    player.eqSetBandGain(band.key, values[index])
+  })
 }
 
 /* =========================================================
@@ -691,7 +589,7 @@ let resizeTimer = null
 
 function initAudioMotion() {
   // só cria se: modal aberto + container montado + grafo pronto
-  if (!eqUIOpen.value) return false
+  if (disposed || !eqUIOpen.value) return false
   if (!amEl.value || !audioCtx || !preampNode) return false
   if (audioMotion) return true
 
@@ -796,7 +694,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onResize)
   destroyAudioMotion()
-  disconnectAll()
+  disposed = true
+  clearTimeout(resizeTimer)
 })
 </script>
 <style scoped>

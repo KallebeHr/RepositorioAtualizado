@@ -22,7 +22,7 @@
           <v-list-subheader class="drawer-subtitle">MENU</v-list-subheader>
           <v-list-item v-for="item in menuItems" :key="item.title" class="drawer-item">
             <v-list-item-title>
-              <a :href="item.href">{{ item.title }}</a>
+              <RouterLink :to="item.href" @click="drawer = false">{{ item.title }}</RouterLink>
             </v-list-item-title>
           </v-list-item>
         </v-list>
@@ -32,7 +32,7 @@
           <v-list-subheader class="drawer-subtitle">LIVRARIA</v-list-subheader>
           <v-list-item v-for="item in libraryItems" :key="item.title" class="drawer-item">
             <v-list-item-title>
-              <a :href="item.href">{{ item.title }}</a>
+              <RouterLink :to="item.href" @click="drawer = false">{{ item.title }}</RouterLink>
             </v-list-item-title>
           </v-list-item>
         </v-list>
@@ -78,8 +78,8 @@
       <!-- Main Menu -->
       <nav class="main-menu" v-if="!isMobile">
         <ul>
-          <li><a href="/AllMusic">MÚSICAS</a></li>
-          <li><a href="/Repertorios">REPERTÓRIOS</a></li>
+          <li><RouterLink to="/AllMusic">MÚSICAS</RouterLink></li>
+          <li><RouterLink to="/Repertorios">REPERTÓRIOS</RouterLink></li>
         </ul>
       </nav>
     </div>
@@ -98,7 +98,7 @@
           <div v-if="dropdownOpen" class="dropdown">
             <ul>
               <li v-if="userStore.user?.role === 'admin'">
-                <a href="/admin"> ⚙ Administração</a>
+                <RouterLink to="/admin"> ⚙ Administração</RouterLink>
               </li>
 
               <li>

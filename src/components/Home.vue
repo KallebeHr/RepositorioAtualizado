@@ -42,20 +42,20 @@
           Assinatura Ativa!
         </a>
 
-        <a href="/AllMusic" class="btn btn-secondary">
+        <RouterLink to="/AllMusic" class="btn btn-secondary">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           Ouvir Agora
-        </a>
+        </RouterLink>
 
-        <a href="/Repertorios" class="btn btn-outline">
+        <RouterLink to="/Repertorios" class="btn btn-outline">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Baixar Repertório
-        </a>
+        </RouterLink>
 
-        <a href="/Pastas" class="btn btn-outline">
+        <RouterLink to="/Pastas" class="btn btn-outline">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
           Ver Pastas
-        </a>
+        </RouterLink>
       </div>
 
       <Autoscroll />

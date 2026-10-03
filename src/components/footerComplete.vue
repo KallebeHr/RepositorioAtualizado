@@ -10,18 +10,18 @@
       </div>
 
       <nav class="footer-links">
-        <a href="/repertorios">
+        <RouterLink to="/repertorios">
           <i class="mdi mdi-playlist-music"></i>
           Entre no grupo PRIVADO
-        </a>
-        <a href="/repertorios">
+        </RouterLink>
+        <RouterLink to="/repertorios">
           <i class="mdi mdi-playlist-music"></i>
           Repertório
-        </a>
-        <a href="/tutoriais">
+        </RouterLink>
+        <RouterLink to="/tutoriais">
           <i class="mdi mdi-information-outline"></i>
           Tutoriais
-        </a>
+        </RouterLink>
         <a href="#">
           <i class="mdi mdi-crown"></i>
           Baixar por cantores
