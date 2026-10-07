@@ -1,0 +1,6 @@
+b2-backend
+tests
+.env*
+node_modules
+
+scripts/library-*

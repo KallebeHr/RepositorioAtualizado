@@ -219,7 +219,7 @@
 
                   <div class="eq-note">
                     <span class="mdi mdi-information-outline"></span>
-                    <MusicPlayer />
+                    
                   </div>
                 </section>
 
@@ -494,11 +494,9 @@ async function toggleFavorite(m) {
 
   if (isFavorite(m.id)) {
     await updateDoc(refUser, { favorites: arrayRemove(m.id) })
-    userStore.user.favorites = userStore.user.favorites.filter(x => x !== m.id)
-  } else {
+} else {
     await updateDoc(refUser, { favorites: arrayUnion(m.id) })
-    userStore.user.favorites.push(m.id)
-  }
+}
 }
 
 /* =========================================================
@@ -544,8 +542,8 @@ function ensureEqConnection() {
     player._eqEnsureContext()
     player._eqResume()
     const connected = player._eqConnectFromHowler()
-    audioCtx = player._eqCtx
-    preampNode = player._eqPreamp
+    audioCtx = player.audioContext
+    preampNode = player.audioOutput
     return connected
   } catch (err) {
     console.error("[EQ] Falha ao conectar:", err)
@@ -595,7 +593,8 @@ function initAudioMotion() {
 
   try {
     audioMotion = new AudioMotionAnalyzer(amEl.value, {
-      source: preampNode,        // lê do preamp (sempre existe, ON ou OFF)
+      audioCtx: player.audioContext,
+      source: player.audioOutput,        // lê do preamp (sempre existe, ON ou OFF)
       connectSpeakers: false,    // não duplica áudio
       start: true,
 

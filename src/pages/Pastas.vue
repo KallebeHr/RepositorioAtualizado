@@ -104,7 +104,7 @@
           v-for="(m, idx) in songs"
           :key="m.id"
           class="song-row"
-          :class="{ playing: player.currentTrack?.id === m.id }"
+          :class="{ playing: player.current?.id === m.id }"
           @dblclick="play(m)"
         >
           <span class="song-idx">{{ idx + 1 }}</span>
@@ -145,6 +145,7 @@
               <i class="mdi mdi-playlist-plus"></i>
             </button>
 
+            <button class="action-btn offline-action" @click.stop="saveLocal(m)" title="Salvar offline" :aria-label="'Salvar offline '+m.title"><i class="mdi mdi-cloud-download-outline"/><span>Salvar offline</span></button>
             <button
               class="action-btn"
               @click.stop="download(m)"
@@ -213,168 +214,11 @@
         <p v-else class="empty-hint">Digite para buscar na biblioteca completa</p>
       </div>
     </div>
-    <!-- BOTÃO FLUTUANTE (EQUALIZADOR) -->
-    <button
-      class="eq-fab"
-      :class="{ on: eqEnabled }"
-      @click="toggleEqUI"
-      aria-label="Abrir equalizador"
-      title="Equalizador"
-    >
-      <span class="mdi mdi-tune-vertical"></span>
-    </button>
-
-    <!-- UI DO EQUALIZADOR -->
-    <Teleport to="body">
-      <transition name="fade">
-        <div
-          v-if="eqUIOpen"
-          class="eq-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Equalizador"
-          @click.self="eqUIOpen = false"
-        >
-          <transition name="pop">
-            <div class="eq-panel" tabindex="-1" ref="eqPanelRef" @keydown.esc="eqUIOpen = false">
-              <!-- HEADER FIXO (sempre visível) -->
-              <header class="eq-header">
-                <div class="eq-title-row">
-                  <div class="eq-badge" :class="{ on: eqEnabled }">
-                    <span class="dot"></span>
-                    <span>{{ eqEnabled ? "EQUALIZADOR ATIVO" : "EQUALIZADOR DESATIVADO" }}</span>
-                  </div>
-
-                  <button class="eq-close" @click="eqUIOpen = false" aria-label="Fechar">
-                    <span class="mdi mdi-close"></span>
-                  </button>
-                </div>
-
-                <p class="eq-sub">
-                  Um equalizador futurista, em tempo real. Ajuste as bandas e veja o espectro circular reagindo ao som.
-                </p>
-              </header>
-
-              <!-- ÁREA SCROLL (quando o conteúdo for grande) -->
-              <div class="eq-scroll">
-                <!-- HERO: VISUAL + CONTROLES PRINCIPAIS -->
-                <section class="eq-hero">
-                  <!-- VISUALIZER CIRCULAR -->
-                  <div class="am-card">
-                    <div class="am-ring">
-                      <div class="am-canvas" ref="amEl"></div>
-
-                      <!-- Centro (informações) -->
-                      <div class="am-center">
-                        <div class="am-center-dot" :class="{ on: eqEnabled }"></div>
-                        <p class="am-center-title">SPECTRUM</p>
-                        <p class="am-center-sub">{{ eqEnabled ? "PROCESSANDO" : "BYPASS" }}</p>
-                      </div>
-                    </div>
-
-                    <div class="am-hint">
-                      <span class="mdi mdi-gesture-tap"></span>
-                      <p>
-                        Se o círculo não reagir, dê play e toque em qualquer botão/slider (alguns browsers exigem interação).
-                      </p>
-                    </div>
-                  </div>
-
-                  <!-- CONTROLES DIDÁTICOS -->
-                  <div class="eq-control-card">
-                    <div class="eq-control-top">
-                      <div class="eq-control-title">
-                        <p class="t">Controle Rápido</p>
-                        <p class="d">Liga/desliga e presets prontos.</p>
-                      </div>
-
-                      <label class="switch">
-                        <input type="checkbox" v-model="eqEnabled" @change="applyEqEnabled" />
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-
-                    <div class="eq-presets">
-                      <button class="pill" @click="resetEq" type="button">
-                        <span class="mdi mdi-refresh"></span> Reset
-                      </button>
-
-                      <button class="pill primary" @click="applyPreset('bass')" type="button">
-                        <span class="mdi mdi-waveform"></span> Grave+
-                      </button>
-
-                      <button class="pill primary" @click="applyPreset('vocal')" type="button">
-                        <span class="mdi mdi-microphone"></span> Voz
-                      </button>
-
-                      <button class="pill primary" @click="applyPreset('bright')" type="button">
-                        <span class="mdi mdi-brightness-5"></span> Brilho
-                      </button>
-                    </div>
-
-                    <div class="eq-mini-note">
-                      <span class="mdi mdi-shield-check-outline"></span>
-                      <p>Não quebra o áudio: quando OFF, o som passa direto (bypass).</p>
-                    </div>
-                  </div>
-                </section>
-
-                <!-- BANDS: SLIDERS -->
-                <section class="eq-bands">
-                  <div class="eq-bands-head">
-                    <div>
-                      <h3 class="eq-h3">Bandas do Equalizador</h3>
-                      <p class="eq-p">
-                        Dica: Grave mexe no “peso”, Voz clareia o vocal e Agudo dá brilho.
-                      </p>
-                    </div>
-                    <div class="eq-chip">
-                      <span class="mdi mdi-tune-vertical"></span>
-                      <span>Range -12dB a +12dB</span>
-                    </div>
-                  </div>
-
-                  <div class="eq-sliders">
-                    <div class="band" v-for="b in bands" :key="b.key">
-                      <div class="band-top">
-                        <p class="hz">{{ b.label }}</p>
-                        <p class="db">{{ formatDb(b.gain) }} dB</p>
-                      </div>
-
-                      <div class="range-wrap">
-                        <input
-                          class="range"
-                          type="range"
-                          :min="-12"
-                          :max="12"
-                          :step="0.5"
-                          v-model.number="b.gain"
-                          @input="onBandChange"
-                        />
-                        <div class="range-glow" :style="{ '--p': (b.gain + 12) / 24 }"></div>
-                      </div>
-
-                      <p class="band-hint">{{ b.freq }} Hz</p>
-                    </div>
-                  </div>
-
-                  <div class="eq-note">
-                    <span class="mdi mdi-information-outline"></span>
-                    <MusicPlayer />
-                  </div>
-                </section>
-
-                <div class="eq-footer-space"></div>
-              </div>
-            </div>
-          </transition>
-        </div>
-      </transition>
-    </Teleport>
   </div>
 </template>
 
 <script setup>
+import { saveTrackOffline } from "@/services/downloads"
 import { ref, computed, nextTick, onMounted } from "vue"
 import { db } from "@/firebase"
 import { collection, getDocs, doc, updateDoc, increment } from "firebase/firestore"
@@ -437,7 +281,7 @@ const artists = computed(() => {
 /* ─── Derivações: Músicas do artista atual ─── */
 const songs = computed(() => {
   if (!currentArtist.value) return []
-  return allMusicas.value.filter(m => m.cantor === currentArtist.value)
+  return allMusicas.value.filter(m => m.cantor === currentArtist.value && (Array.isArray(m.tipo) ? m.tipo : [m.tipo || "Sem estilo"]).includes(currentCategory.value))
 })
 
 /* ─── Busca reativa ─── */
@@ -490,8 +334,9 @@ function play(m) {
     toast.warning("Ative sua assinatura 🎶")
     return
   }
+  player.setFullList(songs.value)
   player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) })
+  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) }).catch(() => {})
   closeModal()
 }
 
@@ -521,6 +366,7 @@ async function download(m) {
 
   await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) })
 }
+async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await saveTrackOffline(userStore.user.uid,m);toast.success('Música salva offline.')}catch(e){toast.error(e.message)}}
 </script>
 
 <style scoped>
@@ -1782,4 +1628,5 @@ async function download(m) {
     padding: 24px 32px;
   }
 }
+.song-actions .offline-action{gap:6px;width:auto;min-height:44px;color:#a8edc5}.offline-action span{font-size:11px;white-space:nowrap}@media(max-width:600px){.song-row{grid-template-columns:44px minmax(0,1fr)}.song-actions{grid-column:1/-1;justify-content:flex-end;margin-top:4px}.song-actions .action-btn{min-width:44px;min-height:44px;justify-content:center}.song-title{animation:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}.song-tipo{display:none}}
 </style>

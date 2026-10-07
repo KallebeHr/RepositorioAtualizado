@@ -1,44 +1,17 @@
 <template>
-  <v-app>
-    <transition name="fade" mode="out-in">
-      <div v-if="!isLoaded" key="preloader">
-        <Preloader />
-      </div>
-      <div v-else key="content">
-        <buttonW />
-        <MusicPlayer />
-        <HeaderNav />
-        <router-view />
-      </div>
-    </transition>
-     <FooterComplete />
-
-  </v-app>
+ <v-app class="repertorio-app">
+  <HeaderNav />
+  <AppInstall />
+  <div class="app-content"><router-view /></div>
+  <buttonW />
+  <FooterComplete />
+  <MusicPlayer />
+  <GlobalEqualizer />
+ </v-app>
 </template>
-
 <script setup>
-import { ref, onMounted } from "vue";
-
-const isLoaded = ref(false);
-
-onMounted(() => {
-  document.onreadystatechange = () => {
-    if (document.readyState === "complete") {
-      setTimeout(() => {
-        isLoaded.value = true;
-      }, 1000); // tempo do preloader
-    }
-  };
-});
+import MusicPlayer from '@/components/MusicPlayer.vue'
+import GlobalEqualizer from '@/components/GlobalEqualizer.vue'
+import AppInstall from '@/components/AppInstall.vue'
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.6s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
+<style>html,body,#app{background:#101010}.repertorio-app{background:#101010!important}.app-content{min-height:60vh;padding-bottom:100px}button:focus-visible,a:focus-visible{outline:2px solid #5ee4a0;outline-offset:3px}</style>

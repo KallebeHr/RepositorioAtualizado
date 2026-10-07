@@ -2,13 +2,13 @@
   <header class="header-container" ref="headerRef">
     <div class="header-esquerda">
       <!-- Logo e Drawer -->
-      <div class="logo" @click="drawer = !drawer">
+      <button class="logo" @click="drawer = !drawer" :aria-label="drawer ? 'Fechar menu' : 'Abrir menu'" :aria-expanded="drawer">
         <div class="checkboxtoggler" :class="{ open: drawer }">
           <div class="line-1"></div>
           <div class="line-2"></div>
           <div class="line-3"></div>
         </div>
-      </div>
+      </button>
 
       <!-- Navigation Drawer -->
       <v-navigation-drawer
@@ -38,6 +38,7 @@
         </v-list>
 
         <!-- EXTRAS -->
+        <v-list-item class="drawer-item"><v-list-item-title><button class="drawer-install" @click="drawer=false;installDialogOpen=true">Instalar aplicativo</button></v-list-item-title></v-list-item>
         <v-list>
           <v-list-subheader class="drawer-subtitle">EXTRAS</v-list-subheader>
 
@@ -79,6 +80,7 @@
       <nav class="main-menu" v-if="!isMobile">
         <ul>
           <li><RouterLink to="/AllMusic">MÚSICAS</RouterLink></li>
+          <li><RouterLink to="/MusicasV2">MÚSICAS V2</RouterLink></li>
           <li><RouterLink to="/Repertorios">REPERTÓRIOS</RouterLink></li>
         </ul>
       </nav>
@@ -207,7 +209,7 @@
             </transition>
 
             <div class="premium-actions">
-              <v-btn class="premium-buy"  @click="ativarAssinatura">
+              <v-btn class="premium-buy" :loading="activating" :disabled="activating" @click="ativarAssinatura">
                 <v-icon start>mdi-cash</v-icon>
                 Confirmar chave de acesso
               </v-btn>
@@ -251,13 +253,16 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
+import { installDialogOpen } from '@/services/pwa'
 import { useUserStore } from "@/stores/userStore";
 import { useRouter, useRoute } from "vue-router";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/firebase";
-import { doc, getDocs, setDoc, collection, query, where, limit } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import "vue-toast-notification/dist/theme-sugar.css";
 import { useToast } from "vue-toast-notification";
+
+import { redeemAccessKey } from '@/services/access-keys'
 
 const dropdownOpen = ref(false);
 const hasNotification = ref(true);
@@ -290,12 +295,13 @@ const loadingMessages = ref(false);
 const menuItems = [
   { title: "INICIO", href: "/" },
   { title: "MÚSICAS", href: "/AllMusic" },
+  { title: "MÚSICAS V2", href: "/MusicasV2" },
   { title: "VER PASTAS", href: "/Pastas" },
   { title: "COMO ATIVAR OU BAIXAR", href: "/Tutoriais" },
   { title: "REPERTÓRIOS", href: "/Repertorios" },
   { title: "BAIXAR POR CANTORES", href: "/Cantores" },
 ];
-const libraryItems = [{ title: "FAVORITOS ", href: "/favoritos" }];
+const libraryItems = [{ title: "FAVORITOS", href: "/favoritos" }, { title: "OFFLINE", href: "/Offline" }];
 
 function comprarAssinatura() {
   window.open("https://wa.me/5586995102595?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20repertorio.", "_blank");
@@ -306,62 +312,10 @@ function comprarAssinatura() {
  * ✅ SE NÃO ESTIVER ATIVA: ABRE O MODAL (ao logar / refresh / troca de rota)
  */
 async function verificarAssinatura({ forceOpenModal = true } = {}) {
-  try {
-    const user = auth.currentUser;
-
-    if (!user) {
-      assinaturaAtiva.value = false;
-      // sem login: não força abrir
-      if (forceOpenModal) assinaturaModal.value = false;
-      return;
-    }
-
-    const email = (user.email || "").toLowerCase();
-
-    const q = query(collection(db, "users"), where("email", "==", email), limit(1));
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-      assinaturaAtiva.value = false;
-      if (forceOpenModal) assinaturaModal.value = true;
-      return;
-    }
-
-    const userDocSnap = snap.docs[0];
-    const data = userDocSnap.data();
-
-    const endRaw = data.subscriptionEnd;
-    const endDate = endRaw ? new Date(endRaw) : null;
-    const now = new Date();
-
-    const aindaValida =
-      data.subscription === "ativa" &&
-      endDate instanceof Date &&
-      !isNaN(endDate) &&
-      endDate > now;
-
-    assinaturaAtiva.value = !!aindaValida;
-
-    // expirou -> marca inativa
-    if (!aindaValida && data.subscription === "ativa" && endDate && endDate <= now) {
-      await setDoc(doc(db, "users", userDocSnap.id), { subscription: "inativa" }, { merge: true });
-      assinaturaAtiva.value = false;
-    }
-
-    if (forceOpenModal) {
-      if (!assinaturaAtiva.value) {
-        assinaturaModal.value = true;
-        chaveAssinatura.value = "";
-      } else {
-        assinaturaModal.value = false;
-      }
-    }
-  } catch (err) {
-    console.error("Erro ao verificar assinatura:", err);
-    assinaturaAtiva.value = false;
-    if (forceOpenModal && auth.currentUser) assinaturaModal.value = true;
-  }
+ assinaturaAtiva.value = userStore.hasActiveSubscription
+ if (forceOpenModal && !userStore.loadingUser) assinaturaModal.value = !!userStore.user && !assinaturaAtiva.value && navigator.onLine
 }
+watch(() => [userStore.hasActiveSubscription, userStore.loadingUser], () => verificarAssinatura())
 
 function openAssinaturaModal() {
   if (assinaturaAtiva.value) {
@@ -372,62 +326,13 @@ function openAssinaturaModal() {
   chaveAssinatura.value = "";
 }
 
+const activating = ref(false)
 async function ativarAssinatura() {
-  try {
-    const user = auth.currentUser;
-    if (!user) return $toast.error("Usuário não autenticado");
-
-    const email = (user.email || "").toLowerCase();
-
-    const qUser = query(collection(db, "users"), where("email", "==", email), limit(1));
-    const usersSnapshot = await getDocs(qUser);
-    if (usersSnapshot.empty) return $toast.error("Usuário não encontrado");
-
-    const userDoc = usersSnapshot.docs[0];
-    const userData = userDoc.data();
-    const userId = userDoc.id;
-
-    if (userData.subscription === "ativa") {
-      assinaturaAtiva.value = true;
-      assinaturaModal.value = false;
-      return $toast.info("Já possui assinatura");
-    }
-
-    const keysSnap = await getDocs(collection(db, "Chaves"));
-    if (keysSnap.empty) return $toast.error("Nenhuma chave encontrada!");
-
-    const chaveDoc = keysSnap.docs[0];
-    const keys = chaveDoc.data().Keys || [];
-
-    const chave = (chaveAssinatura.value || "").trim();
-    if (!keys.includes(chave)) return $toast.error("Chave inválida!");
-
-    const start = new Date();
-    const end = new Date();
-    end.setDate(start.getDate() + 30);
-
-    await setDoc(
-      doc(db, "users", userId),
-      {
-        subscription: "ativa",
-        subscriptionStart: start.toISOString(),
-        subscriptionEnd: end.toISOString(),
-      },
-      { merge: true }
-    );
-
-    $toast.success("Ativada com sucesso!", { position: "top" });
-    window.location.reload();
-
-    assinaturaAtiva.value = true;
-    assinaturaModal.value = false;
-
-    // revalida
-    await verificarAssinatura({ forceOpenModal: false });
-  } catch (err) {
-    console.error(err);
-    $toast.error("Erro ao ativar assinatura!");
-  }
+ if (activating.value) return
+ activating.value = true
+ try { await redeemAccessKey(chaveAssinatura.value); await userStore.refresh(); assinaturaAtiva.value = true; assinaturaModal.value = false; $toast.success('Acesso ativado!') }
+ catch (err) { $toast.error(err.message || 'Não foi possível ativar a chave.') }
+ finally { activating.value = false }
 }
 
 // notificações
@@ -441,18 +346,8 @@ async function openNotificationsModal() {
       return;
     }
 
-    const email = (user.email || "").toLowerCase();
-
-    const q = query(collection(db, "users"), where("email", "==", email), limit(1));
-    const usersSnapshot = await getDocs(q);
-
-    if (usersSnapshot.empty) {
-      $toast.error("Usuário não encontrado no Firestore", { position: "top" });
-      return;
-    }
-
-    const userData = usersSnapshot.docs[0].data();
-    messages.value = userData.messages || [];
+    const snapshot = await getDoc(doc(db, 'users', user.uid))
+    messages.value = snapshot.data()?.messages || []
     notificacoesModal.value = true;
   } catch (err) {
     console.error("Erro ao abrir notificações:", err);
@@ -477,7 +372,7 @@ async function logout() {
   try {
     await signOut(auth);
     userStore.clearUser();
-    window.location.href = "/";
+    router.replace("/");
   } catch (err) {
     console.error(err);
   }
@@ -997,4 +892,5 @@ watch(
   }
 }
 
+.logo,.drawer-install{background:transparent;border:0;color:inherit;cursor:pointer}.logo{min-width:44px;min-height:44px;display:grid;place-items:center}.drawer-install{min-height:44px;font:inherit;text-align:left;color:#adf1c8}
 </style>

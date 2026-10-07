@@ -106,7 +106,7 @@ const closeModal = () => {
 }
 </script>
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&display=swap');
+
 
 .footer {
   position: relative;

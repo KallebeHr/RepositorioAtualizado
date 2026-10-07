@@ -1,0 +1,11 @@
+name = "repertorio-musicas"
+main = "worker.js"
+compatibility_date = "2026-10-03"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "MUSIC_BUCKET"
+bucket_name = "repertorio-atualizado-audios"
+
+[vars]
+ALLOWED_ORIGINS = "*"

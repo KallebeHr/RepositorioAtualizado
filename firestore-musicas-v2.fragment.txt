@@ -1,0 +1,5 @@
+Este fragmento foi substituído pelo arquivo completo firestore.rules.
+
+Nesta atualização, não acrescente matches à regra pública allow read, write: if true.
+Importe as chaves antigas pelo admin e publique o arquivo completo firestore.rules
+no projeto repertorio-d3552, seguindo COMECE-AQUI.md.

@@ -271,7 +271,7 @@ function redirect(url) {
     counter--
     if (counter < 0) {
       clearInterval(interval)
-      window.location.href = url
+      window.open(url, "_blank", "noopener")
     }
   }, 1000)
 }
@@ -299,7 +299,7 @@ onMounted(() => fetchMusicas())
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
 
 /* ── Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

@@ -1,0 +1,45 @@
+<template>
+ <nav class="app-tools" aria-label="Aplicativo e áudio">
+  <div class="app-tools-intro"><strong>Seu repertório, sempre com você</strong><span :class="{disconnected:!online}"><i class="mdi" :class="online?'mdi-wifi':'mdi-wifi-off'" aria-hidden="true"/> {{ online?'Conectado':'Sem internet' }}</span></div>
+  <div class="app-tool-actions">
+   <button class="install-action" @click="installDialogOpen=true"><i class="mdi mdi-cellphone-arrow-down" aria-hidden="true"/><span>{{ appInstalled?'App instalado':'Instalar app' }}</span></button>
+   <router-link to="/Offline" title="Biblioteca offline"><i class="mdi mdi-cloud-download-outline" aria-hidden="true"/><span>Ouvir offline</span></router-link>
+   <button @click="player.eqOpen=true" aria-label="Abrir equalizador pela barra"><i class="mdi mdi-tune-vertical" aria-hidden="true"/><span>Equalizador</span></button>
+   <button v-if="updateAvailable" class="update-action" :disabled="player.isPlaying" @click="applyUpdate">{{ player.isPlaying?'Pause para atualizar':'Atualizar app' }}</button>
+  </div>
+ </nav>
+ <v-dialog v-model="installDialogOpen" max-width="560" :z-index="15000" aria-labelledby="install-title">
+  <section class="install-dialog">
+   <div class="install-heading"><img src="/icons/icon-192.png" alt=""/><div><span>REPERTÓRIO ATUALIZADO</span><h2 id="install-title">{{ appInstalled?'Seu aplicativo está instalado':'Instale o aplicativo' }}</h2></div><button class="close-install" @click="installDialogOpen=false" aria-label="Fechar instalação"><i class="mdi mdi-close"/></button></div>
+   <p>Abra pelo ícone do seu aparelho e leve suas músicas com você. Salve os áudios antes de ficar sem internet.</p>
+   <button v-if="installPrompt && !appInstalled" class="install-now" @click="installApp" :disabled="installBusy">{{ installBusy?'Abrindo instalação…':'Instalar agora' }}</button>
+   <p v-if="installMessage" role="status" class="install-status">{{ installMessage }}</p>
+   <div v-if="!appInstalled" class="install-instructions">
+    <template v-if="ios"><h3>No iPhone ou iPad</h3><ol><li>Abra este site no Safari.</li><li>Toque em Compartilhar.</li><li>Escolha <strong>Adicionar à Tela de Início</strong> e confirme.</li></ol></template>
+    <template v-else><h3>No celular ou computador</h3><ol><li>Abra no Chrome, Edge ou no navegador do aparelho.</li><li>Use <strong>Instalar agora</strong>, quando disponível, ou abra o menu do navegador.</li><li>Escolha <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.</li></ol></template>
+    <p>Se estiver no navegador do WhatsApp ou Instagram, abra o site no navegador do aparelho.</p>
+   </div>
+   <p v-if="development" class="install-notice">A instalação e a reabertura sem internet precisam da versão preparada para instalação. Consulte o guia do projeto para testá-la no computador.</p>
+   <p v-else-if="pwaError" class="install-notice" role="alert">{{ pwaError }}</p>
+   <p v-else class="install-status">{{ pwaReady?'Aplicativo preparado para abrir offline.':'Preparando o aplicativo. Mantenha a conexão por alguns instantes.' }}</p>
+   <router-link class="open-offline" to="/Offline" @click="installDialogOpen=false"><i class="mdi mdi-cloud-download-outline"/> Abrir biblioteca offline</router-link>
+  </section>
+ </v-dialog>
+</template>
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { appInstalled, updateAvailable, installPrompt, installDialogOpen, installBusy, installMessage, pwaReady, pwaError, installApp, applyUpdate } from '@/services/pwa'
+import { usePlayerStore } from '@/stores/usePlayerStore'
+const player = usePlayerStore(), online = ref(navigator.onLine), development = import.meta.env.DEV
+const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+function connection(){online.value=navigator.onLine}
+onMounted(()=>{window.addEventListener('online',connection);window.addEventListener('offline',connection)})
+onBeforeUnmount(()=>{window.removeEventListener('online',connection);window.removeEventListener('offline',connection)})
+</script>
+<style scoped>
+.app-tools{position:sticky;top:0;z-index:900;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 22px;background:#12221bd9;backdrop-filter:blur(16px);border-bottom:1px solid #345443;color:#e8f9ee}
+.app-tools-intro{display:flex;flex-direction:column;gap:3px}.app-tools-intro strong{font-size:14px}.app-tools-intro>span{font-size:11px;color:#9ddbb6}.app-tools-intro .disconnected{color:#ffc47e}.app-tool-actions{display:flex;gap:9px;align-items:stretch}
+.app-tool-actions button,.app-tool-actions a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 14px;background:#233b2e;color:#e8f9ee;border:1px solid #466952;border-radius:12px;font-size:13px;font-weight:650;text-decoration:none;cursor:pointer;white-space:nowrap}.app-tool-actions .install-action{background:#66e5a1;color:#092016;border-color:#66e5a1}.mdi{font-size:21px}.app-tool-actions button:disabled{opacity:.55;cursor:default}
+.install-dialog{padding:26px;background:#122019;color:#e8f9ee;border:1px solid #42694f;border-radius:20px;max-height:85dvh;overflow:auto}.install-heading{display:flex;gap:12px;align-items:center}.install-heading img{width:58px;height:58px;border-radius:14px}.install-heading>div{flex:1;min-width:0}.install-heading span{font-size:10px;color:#83d9a6;letter-spacing:.1em}.install-heading h2{font-size:23px;line-height:1.2;margin-top:5px}.close-install{min-width:44px;min-height:44px;background:#22372b;border-radius:12px;color:#e8f9ee}.install-dialog p{font-size:14px;line-height:1.6;margin:18px 0;color:#c1d7c9}.install-instructions{padding:16px;background:#1c3124;border-radius:14px}.install-instructions h3{font-size:15px}.install-instructions ol{padding-left:20px;margin-top:10px;font-size:14px;line-height:1.6}.install-instructions li+li{margin-top:6px}.install-instructions p{font-size:12px;margin-bottom:0}.install-now,.open-offline{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:46px;background:#66e5a1;color:#092016;border-radius:12px;font-weight:700;text-decoration:none;padding:12px;cursor:pointer}.install-now:disabled{opacity:.6}.install-dialog .install-notice{padding:12px;border:1px solid #836735;border-radius:12px;color:#ffdb98}.install-dialog .install-status{color:#9be8ba}
+@media(max-width:700px){.app-tools{padding:10px 12px;display:block}.app-tools-intro{flex-direction:row;justify-content:space-between;gap:8px;margin-bottom:9px}.app-tools-intro strong{font-size:11px}.app-tool-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.app-tool-actions button,.app-tool-actions a{padding:8px 4px;font-size:11px;gap:4px;flex-direction:column;white-space:normal;min-height:57px}.app-tool-actions .update-action{grid-column:1/-1;min-height:44px}.install-dialog{padding:18px}.install-heading h2{font-size:20px}}
+</style>

@@ -1,365 +1,221 @@
-// src/stores/usePlayerStore.js
-import { defineStore } from "pinia"
-import { Howl } from "howler"
-import { markRaw } from "vue"
+import { defineStore } from 'pinia'
+import { markRaw } from 'vue'
+import { useUserStore } from './userStore.js'
+import { getPlaybackSource } from '../services/offline.js'
+import { normalizeTrack, trackKey } from '../utils/media.js'
 
-// HTML5 elements can be reused by Howler; each element accepts one source only.
-const mediaSources = new WeakMap()
+// Um único elemento de áudio e um único grafo, independente da rota.
+let audio, context, source, input, output, filters = [], currentBlobUrl
+let generation = 0
 
-export const usePlayerStore = defineStore("player", {
+export const usePlayerStore = defineStore('player', {
   state: () => ({
-    queue: [],
-    currentIndex: -1,
-    sound: null,
-    isPlaying: false,
-    volume: 1.0,
-    fullList: [],
-
-    // ✅ EQUALIZADOR (Web Audio API)
-    eq: {
-      enabled: true,
-      ready: false,
-      bands: [
-        { key: "60", freq: 60, gain: 0 },
-        { key: "170", freq: 170, gain: 0 },
-        { key: "350", freq: 350, gain: 0 },
-        { key: "1k", freq: 1000, gain: 0 },
-        { key: "3.5k", freq: 3500, gain: 0 },
-        { key: "10k", freq: 10000, gain: 0 }
-      ]
-    }
+    queue: [], currentIndex: -1, sound: null, isPlaying: false, volume: 1,
+    fullList: [], eqOpen: false, loading: false, error: '', sleepAt: null,
+    eq: { enabled: true, ready: false, bands: [
+      { key: '60', label: 'Grave', freq: 60, gain: 0 }, { key: '170', label: 'Médio-grave', freq: 170, gain: 0 },
+      { key: '350', label: 'Médio', freq: 350, gain: 0 }, { key: '1k', label: 'Voz', freq: 1000, gain: 0 },
+      { key: '3.5k', label: 'Voz-agudo', freq: 3500, gain: 0 }, { key: '10k', label: 'Agudo', freq: 10000, gain: 0 },
+    ] },
   }),
-
   getters: {
-    current(state) {
-      return state.queue[state.currentIndex] || null
-    },
-
-    // ✅ expõe o <audio> interno do Howler (html5: true)
-    howlerAudioEl(state) {
-      try {
-        return state.sound?._sounds?.[0]?._node || null
-      } catch {
-        return null
-      }
-    }
+    current: state => state.queue[state.currentIndex] || null,
+    currentTrack: state => state.queue[state.currentIndex] || null,
+    howlerAudioEl: () => audio || null,
+    audioOutput: () => output || null,
+    audioContext: () => context || null,
   },
-
   actions: {
-    setFullList(list) {
-      this.fullList = list || []
+    setFullList(list) { if (list?.length) this.fullList = list.map(normalizeTrack) },
+    persist() {
+      const uid = useUserStore().user?.uid
+      if (!uid) return
+      try { localStorage.setItem('repertorio:player:' + uid, JSON.stringify({ queue: this.queue.slice(0,500), currentIndex: this.currentIndex, volume: this.volume, eq: { enabled: this.eq.enabled, gains: this.eq.bands.map(b => b.gain) } })) } catch {}
     },
-
+    restore(uid) {
+      this.stop(); this.queue = []
+      if (!uid) return
+      try {
+        const saved = JSON.parse(localStorage.getItem('repertorio:player:' + uid) || 'null')
+        if (!saved) return
+        this.queue = (saved.queue || []).filter(track => track?.downloadUrl).slice(0,500).map(normalizeTrack)
+        this.currentIndex = this.queue.length ? Math.max(0, Math.min(this.queue.length-1, saved.currentIndex || 0)) : -1
+        this.volume = Math.max(0, Math.min(1, Number(saved.volume) || 0))
+        this.eq.enabled = saved.eq?.enabled !== false
+        this.eq.bands.forEach((b,i) => { b.gain = Math.max(-12,Math.min(12,Number(saved.eq?.gains?.[i]) || 0)); if(filters[i])filters[i].gain.value=b.gain })
+        this._applyEq()
+      } catch {}
+    },
+    replaceQueue(list) {
+      if (!useUserStore().hasActiveSubscription) { this.error = 'Ative sua assinatura para ouvir músicas.'; return }
+      this.queue = list.filter(track => track?.downloadUrl).map(normalizeTrack)
+      this.fullList = [...this.queue]
+      if (this.queue.length) this.play(0); else this.stop()
+      this.persist()
+    },
     addToQueue(track, { playNow = false } = {}) {
       if (!track?.downloadUrl) return
-
-      this.queue.push(track)
-
-      if (this.currentIndex === -1) {
-        this.play(0)
-        return
-      }
-
-      if (playNow) {
-        const idx = this.queue.length - 1
-        this.play(idx)
-      }
+      if (!useUserStore().hasActiveSubscription) { this.error = 'Ative sua assinatura para ouvir músicas.'; return }
+      const normalized = normalizeTrack(track)
+      const existing = this.queue.findIndex(item => trackKey(item) === trackKey(normalized))
+      const index = existing >= 0 ? existing : this.queue.push(normalized) - 1
+      if (playNow || this.currentIndex === -1) this.play(index)
+      this.persist()
     },
-
-    /* =========================================================
-       ✅ WEB AUDIO API — EQUALIZADOR (no STORE)
-       - Conecta no HTMLAudioElement interno do Howler
-       - Funciona com html5:true
-       - Reconecta automaticamente a cada play (novo Howl)
-    ========================================================= */
-    _eqEnsureContext() {
-      if (this._eqCtx) return
-      this._eqCtx = markRaw(new (window.AudioContext || window.webkitAudioContext)())
-      this._eqPreamp = markRaw(this._eqCtx.createGain())
-    },
-
-    async _eqResume() {
-      if (!this._eqCtx) return
-      if (this._eqCtx.state === "suspended") {
-        try {
-          await this._eqCtx.resume()
-        } catch {}
+    _ensureAudio() {
+      if (!audio) {
+        audio = new Audio()
+        audio.crossOrigin = 'anonymous'
+        audio.preload = 'metadata'
+        audio.addEventListener('play', () => { this.isPlaying = true; this._updateMediaSession() })
+        audio.addEventListener('pause', () => { this.isPlaying = false; this._updateMediaSession() })
+        audio.addEventListener('ended', () => this.next())
+        audio.addEventListener('error', () => { this.loading = false; this.isPlaying = false; this.error = 'Não foi possível carregar o áudio. Confira a conexão, o formato e o CORS do B2/R2 para este endereço do site.' })
+        audio.addEventListener('timeupdate', () => {
+          if (this.sleepAt && Date.now() >= this.sleepAt) { audio.pause(); this.sleepAt = null }
+          this._updatePosition()
+        })
       }
-    },
-
-    _eqBuildGraph() {
-      const ctx = this._eqCtx
-      if (!ctx) return
-
-      this._eqInput = markRaw(ctx.createGain())
-      this._eqOutput = markRaw(ctx.createGain())
-
-      this._eqFilters = this.eq.bands.map(b => {
-        const f = ctx.createBiquadFilter()
-        f.type = "peaking"
-        f.frequency.value = b.freq
-        f.Q.value = 1.0
-        f.gain.value = b.gain
-        return markRaw(f)
+      if (!this.sound) this.sound = markRaw({
+        _sounds: [{ _node: audio }],
+        duration: () => Number.isFinite(audio.duration) ? audio.duration : 0,
+        seek: seconds => { if (typeof seconds === 'number') audio.currentTime = seconds; return audio.currentTime },
+        pause: () => audio.pause(),
+        play: () => audio.play(),
+        stop: () => { audio.pause(); audio.currentTime = 0 },
+        volume: value => { audio.volume = value },
       })
-
-      // input -> filters -> output -> destination
-      this._eqInput.connect(this._eqFilters[0])
-      for (let i = 0; i < this._eqFilters.length - 1; i++) {
-        this._eqFilters[i].connect(this._eqFilters[i + 1])
-      }
-      this._eqFilters[this._eqFilters.length - 1].connect(this._eqOutput)
-      this._eqOutput.connect(ctx.destination)
+      return audio
     },
-
-    _eqDisconnectAll() {
-      try { this._eqSource?.disconnect() } catch {}
-      try { this._eqPreamp?.disconnect() } catch {}
-      try { this._eqInput?.disconnect() } catch {}
-      try { this._eqOutput?.disconnect() } catch {}
-      try { this._eqFilters?.forEach(f => f.disconnect()) } catch {}
-    },
-
-    _eqConnectFromHowler() {
-      const el = this.howlerAudioEl
-      if (!el) return false
-
-      this._eqEnsureContext()
-      if (this._eqMediaEl === el && this._eqSource) return true
-
-      // Create the source before disconnecting the current playback graph.
-      let source = mediaSources.get(el)
-      if (!source) {
-        try {
-          source = markRaw(this._eqCtx.createMediaElementSource(el))
-          mediaSources.set(el, source)
-        } catch (err) {
-          console.error("[EQ] Falha ao capturar áudio do Howler:", err)
-          return false
+    async play(index = this.currentIndex) {
+      if (index < 0 || index >= this.queue.length) return
+      if (!useUserStore().hasActiveSubscription) { this.error = 'Ative sua assinatura para ouvir músicas.'; return }
+      const request = ++generation
+      this.currentIndex = index
+      this.persist()
+      this.loading = true
+      this.error = ''
+      const element = this._ensureAudio()
+      // Libera Web Audio durante o gesto de toque, antes da consulta local.
+      await this.eqInitOrReconnect().catch(() => {})
+      try {
+        const playback = await getPlaybackSource(useUserStore().user?.uid, this.current)
+        if (request !== generation) { if (playback.local) URL.revokeObjectURL(playback.url); return }
+        element.pause()
+        if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl)
+        currentBlobUrl = playback.local ? playback.url : null
+        element.src = playback.url
+        element.volume = this.volume
+        element.load()
+        this._updateMediaSession()
+        await element.play()
+      } catch (error) {
+        if (request === generation) {
+          this.isPlaying = false
+          this.error = error?.name === 'NotAllowedError' ? 'Toque em reproduzir para iniciar a música.' : element.error ? 'Não foi possível carregar o áudio. Confira a conexão, o formato e o CORS do B2/R2 para este endereço do site.' : error.message || 'Erro ao reproduzir.'
         }
+      } finally { if (request === generation) this.loading = false }
+    },
+    async togglePlay() {
+      if (!audio?.src) { if (this.queue.length) await this.play(Math.max(0, this.currentIndex)); return }
+      if (!useUserStore().hasActiveSubscription) { this.error = 'Ative sua assinatura para ouvir músicas.'; return }
+      if (audio.paused) {
+        await this.eqInitOrReconnect().catch(() => {})
+        await audio.play().catch(() => { this.error = 'Toque novamente para reproduzir.' })
+      } else audio.pause()
+    },
+    next() {
+      if (this.currentIndex < this.queue.length - 1) return this.play(this.currentIndex + 1)
+      const genres = this.current?.estilos || []
+      const candidates = this.fullList.filter(track => !genres.length || (track.estilos || []).some(genre => genres.includes(genre)))
+      const position = candidates.findIndex(track => trackKey(track) === trackKey(this.current))
+      const next = candidates[position + 1] || candidates[0]
+      if (next) return this.addToQueue(next, { playNow: true })
+      if (this.queue.length) return this.play(0)
+      this.stop()
+    },
+    prev() { if (audio?.currentTime > 3) this.seekTo(0); else this.play(Math.max(0, this.currentIndex - 1)) },
+    seekTo(seconds) { if (audio && Number.isFinite(Number(seconds))) audio.currentTime = Math.max(0, Number(seconds)) },
+    setVolume(value) { this.volume = Math.max(0, Math.min(1, Number(value))); if (audio) audio.volume = this.volume; this.persist() },
+    setSleepTimer(minutes) { this.sleepAt = minutes > 0 ? Date.now() + minutes * 60000 : null },
+    stop() {
+      generation++
+      if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load() }
+      if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl)
+      currentBlobUrl = null
+      this.isPlaying = false; this.loading = false; this.currentIndex = -1
+    },
+    removeFromQueue(index) {
+      const current = index === this.currentIndex
+      this.queue.splice(index, 1)
+      if (!this.queue.length) this.stop()
+      else if (current) this.play(Math.min(index, this.queue.length - 1))
+      else if (index < this.currentIndex) this.currentIndex--
+      this.persist()
+    },
+    clearQueue() { this.stop(); this.queue = []; this.persist() },
+    async eqInitOrReconnect() {
+      this._ensureAudio()
+      if (!context) {
+        context = new (window.AudioContext || window.webkitAudioContext)()
+        source = context.createMediaElementSource(audio)
+        input = context.createGain(); output = context.createGain()
+        // Headroom para evitar distorção nos presets com ganho positivo.
+        output.gain.value = 0.75
+        filters = this.eq.bands.map(band => {
+          const filter = context.createBiquadFilter()
+          filter.type = 'peaking'; filter.frequency.value = band.freq; filter.Q.value = 1; filter.gain.value = band.gain
+          return filter
+        })
+        input.connect(filters[0])
+        filters.forEach((filter, index) => filter.connect(filters[index + 1] || output))
+        output.connect(context.destination)
+        this._applyEq()
       }
-      this._eqDisconnectAll()
-      this._eqMediaEl = markRaw(el)
-      this._eqSource = source
-
+      if (context.state === 'suspended') await context.resume()
       this.eq.ready = true
-      this._eqApplyEnabled()
       return true
     },
-
-    _eqBypass() {
-      if (!this._eqCtx || !this._eqSource) return
-      this._eqDisconnectAll()
+    _eqEnsureContext() { return this.eqInitOrReconnect() },
+    _eqResume() { return this.eqInitOrReconnect() },
+    _eqConnectFromHowler() { return this.eqInitOrReconnect() },
+    _eqApplyEnabled() { return this.eqSetEnabled(this.eq.enabled) },
+    _applyEq() {
+      if (!source) return
+      source.disconnect()
+      source.connect(this.eq.enabled ? input : output)
+    },
+    async eqSetEnabled(enabled) { this.eq.enabled = !!enabled; await this.eqInitOrReconnect(); this._applyEq(); this.persist() },
+    eqSetBandGain(key, value) {
+      const index = this.eq.bands.findIndex(band => band.key === key)
+      if (index < 0) return
+      const gain = Math.max(-12, Math.min(12, Number(value) || 0))
+      this.eq.bands[index].gain = gain
+      if (filters[index]) filters[index].gain.value = gain
+      this.persist()
+    },
+    eqReset() { this.eq.bands.forEach(band => this.eqSetBandGain(band.key, 0)) },
+    _updateMediaSession() {
+      if (!('mediaSession' in navigator) || !this.current) return
       try {
-        this._eqSource.connect(this._eqPreamp)
-        this._eqPreamp.connect(this._eqCtx.destination)
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: this.current.title || 'Música', artist: this.current.cantor || '', album: 'Repertório Atualizado',
+          artwork: [{ src: new URL('/icons/icon-512.png', location.origin).href, sizes: '512x512', type: 'image/png' }],
+        })
+        navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused'
+        const handlers = {
+          play: () => { if (!this.isPlaying) this.togglePlay() }, pause: () => audio?.pause(),
+          previoustrack: () => this.prev(), nexttrack: () => this.next(),
+          seekto: details => this.seekTo(details.seekTime),
+          seekbackward: details => this.seekTo((audio?.currentTime || 0) - (details.seekOffset || 10)),
+          seekforward: details => this.seekTo((audio?.currentTime || 0) + (details.seekOffset || 10)),
+        }
+        Object.entries(handlers).forEach(([action, handler]) => { try { navigator.mediaSession.setActionHandler(action, handler) } catch {} })
       } catch {}
     },
-
-    _eqEnable() {
-      if (!this._eqCtx || !this._eqSource) return
-      this._eqDisconnectAll()
-      this._eqBuildGraph()
-      try {
-        this._eqSource.connect(this._eqPreamp)
-        this._eqPreamp.connect(this._eqInput)
-      } catch {}
+    _updatePosition() {
+      if (!navigator.mediaSession?.setPositionState || !Number.isFinite(audio?.duration) || !audio.duration) return
+      try { navigator.mediaSession.setPositionState({ duration: audio.duration, position: Math.min(audio.currentTime, audio.duration), playbackRate: audio.playbackRate }) } catch {}
     },
-
-    _eqApplyEnabled() {
-      if (!this.eq.ready) return
-      if (this.eq.enabled) this._eqEnable()
-      else this._eqBypass()
-    },
-
-    // ✅ API pública pro seu componente (se quiser usar)
-    async eqInitOrReconnect() {
-      this._eqEnsureContext()
-      await this._eqResume()
-      return this._eqConnectFromHowler()
-    },
-
-    async eqSetEnabled(v) {
-      this.eq.enabled = !!v
-      await this.eqInitOrReconnect()
-      this._eqApplyEnabled()
-    },
-
-    async eqSetBandGain(key, gain) {
-      const b = this.eq.bands.find(x => x.key === key)
-      if (!b) return
-      b.gain = Number(gain || 0)
-
-      // aplica ao vivo
-      if (this._eqFilters?.length) {
-        const idx = this.eq.bands.findIndex(x => x.key === key)
-        if (idx >= 0 && this._eqFilters[idx]) {
-          this._eqFilters[idx].gain.value = b.gain
-        }
-      }
-    },
-
-    async eqReset() {
-      for (const b of this.eq.bands) b.gain = 0
-      if (this._eqFilters?.length) {
-        for (let i = 0; i < this._eqFilters.length; i++) {
-          this._eqFilters[i].gain.value = 0
-        }
-      }
-    },
-
-    /* =========================================================
-       PLAYER (SEU CÓDIGO ORIGINAL + HOOK DO EQ)
-    ========================================================= */
-    _createHowlForCurrent() {
-      if (!this.current) return null
-
-      const sound = new Howl({
-        src: [this.current.downloadUrl],
-        html5: true,
-        volume: this.volume,
-        preload: true,
-
-        onplay: async () => {
-          this.isPlaying = true
-          // ✅ tenta conectar EQ assim que começar a tocar (melhor timing)
-          try {
-            await this.eqInitOrReconnect()
-          } catch {}
-        },
-        onpause: () => {
-          this.isPlaying = false
-        },
-        onstop: () => {
-          this.isPlaying = false
-        },
-        onend: () => {
-          this.next()
-        },
-        onloaderror: (id, err) => console.error("[player] onloaderror", err),
-        onplayerror: (id, err) => {
-          console.error("[player] onplayerror", err)
-          try {
-            sound.once("unlock", () => sound.play())
-          } catch {}
-        }
-      })
-
-      const el = sound._sounds?.[0]?._node
-      if (el) {
-        el.crossOrigin = "anonymous"
-        // Howler has already assigned src; restart loading with CORS enabled.
-        try { el.load() } catch {}
-      }
-      return sound
-    },
-
-    play(index = this.currentIndex) {
-      if (index < 0 || index >= this.queue.length) return
-
-      if (this.sound) {
-        try {
-          this.sound.stop()
-          this.sound.unload()
-        } catch {}
-        this.sound = null
-      }
-
-      this.currentIndex = index
-      const sound = this._createHowlForCurrent()
-      this.sound = sound ? markRaw(sound) : null
-      if (!this.sound) return
-
-      try {
-        this.sound.play()
-        this.isPlaying = true
-      } catch (e) {
-        console.error("[player] erro ao dar play:", e)
-      }
-    },
-
-    togglePlay() {
-      if (!this.sound) {
-        if (this.currentIndex === -1 && this.queue.length > 0) {
-          this.play(0)
-        }
-        return
-      }
-      if (this.isPlaying) {
-        this.sound.pause()
-        this.isPlaying = false
-      } else {
-        this.sound.play()
-        this.isPlaying = true
-      }
-    },
-
-    next() {
-      if (this.currentIndex < this.queue.length - 1) {
-        this.play(this.currentIndex + 1)
-      } else {
-        if (this.current && this.fullList.length) {
-          const indexInList = this.fullList.findIndex(m => m.id === this.current.id)
-          const proxima = this.fullList[indexInList + 1] || this.fullList[0]
-          if (proxima) this.addToQueue(proxima, { playNow: true })
-        } else {
-          console.log("[player] next: fim da fila e sem fullList")
-          this.stop()
-        }
-      }
-    },
-
-    prev() {
-      if (this.currentIndex > 0) {
-        this.play(this.currentIndex - 1)
-      } else {
-        console.log("[player] prev: já é a primeira")
-        if (this.sound) this.sound.seek(0)
-      }
-    },
-
-    seekTo(seconds) {
-      if (!this.sound) return
-      this.sound.seek(seconds)
-    },
-
-    setVolume(v) {
-      this.volume = v
-      if (this.sound) this.sound.volume(v)
-    },
-
-    stop() {
-      if (this.sound) {
-        try {
-          this.sound.stop()
-          this.sound.unload()
-        } catch {}
-      }
-      this.sound = null
-      this.isPlaying = false
-      this.currentIndex = -1
-    },
-
-    removeFromQueue(index) {
-      const removingCurrent = index === this.currentIndex
-      this.queue.splice(index, 1)
-
-      if (!this.queue.length) {
-        this.stop()
-        return
-      }
-
-      if (removingCurrent) {
-        const nextIndex = Math.min(index, this.queue.length - 1)
-        this.play(nextIndex)
-      } else if (index < this.currentIndex) {
-        this.currentIndex -= 1
-      }
-    },
-
-    clearQueue() {
-      this.stop()
-      this.queue = []
-    }
-  }
+  },
 })

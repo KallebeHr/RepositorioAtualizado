@@ -145,6 +145,7 @@
               <i class="mdi mdi-playlist-plus"></i>
             </button>
 
+            <button class="action-btn offline-action" @click.stop="saveLocal(m)" title="Salvar offline" :aria-label="'Salvar offline '+m.title"><i class="mdi mdi-cloud-download-outline"/><span>Salvar offline</span></button>
             <button
               class="action-btn"
               @click.stop="download(m)"
@@ -217,6 +218,7 @@
 </template>
 
 <script setup>
+import { saveTrackOffline } from "@/services/downloads"
 import { ref, computed, nextTick, onMounted } from "vue"
 import { db } from "@/firebase"
 import { collection, getDocs, doc, updateDoc, increment } from "firebase/firestore"
@@ -363,6 +365,7 @@ async function download(m) {
 
   await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) })
 }
+async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await saveTrackOffline(userStore.user.uid,m);toast.success('Música salva offline.')}catch(e){toast.error(e.message)}}
 </script>
 
 <style scoped>
@@ -992,4 +995,5 @@ async function download(m) {
     padding: 24px 32px;
   }
 }
+.song-actions .offline-action{gap:6px;width:auto;min-height:44px;color:#a8edc5}.offline-action span{font-size:11px;white-space:nowrap}@media(max-width:600px){.song-row{grid-template-columns:44px minmax(0,1fr)}.song-actions{grid-column:1/-1;justify-content:flex-end;margin-top:4px}.song-actions .action-btn{min-width:44px;min-height:44px;justify-content:center}.song-title{animation:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}.song-tipo{display:none}}
 </style>

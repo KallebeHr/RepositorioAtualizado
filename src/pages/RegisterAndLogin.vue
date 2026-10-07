@@ -81,11 +81,11 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue"
+import { ref, watch, onMounted, onBeforeUnmount } from "vue"
 import { useRouter, useRoute } from "vue-router"
 import { auth, db } from "@/firebase"
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged } from "firebase/auth"
-import { doc, setDoc, getDoc } from "firebase/firestore"
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut } from "firebase/auth"
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"
 import { useUserStore } from "@/stores/userStore"
 
 const route = useRoute()
@@ -103,15 +103,12 @@ const confirmPassword = ref("")
 const error = ref("")
 const loading = ref(false)
 
-onMounted(() => {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const userSnap = await getDoc(doc(db, "users", user.uid))
-      if (userSnap.exists()) userStore.setUser(userSnap.data())
-      router.replace("/") // já logado, não deixa acessar register/login
-    }
-  })
-})
+let unsubAuth
+onMounted(() => { unsubAuth = onAuthStateChanged(auth, async current => {
+ if (!current || loading.value) return
+ try { const snap=await getDoc(doc(db,'users',current.uid)); if(snap.exists()){if(snap.data().disabled){await signOut(auth);error.value='Conta desativada.';return}userStore.setUser({...snap.data(),uid:current.uid});router.replace('/')} } catch { error.value='Não foi possível carregar seu perfil. Tente novamente.' }
+}) })
+onBeforeUnmount(() => unsubAuth?.())
 
 function generateRandomID() {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -133,7 +130,7 @@ async function register() {
   }
 
   try {
-    const res = await createUserWithEmailAndPassword(auth, email.value, password.value)
+    const res = await createUserWithEmailAndPassword(auth, email.value.trim().toLowerCase(), password.value)
     await updateProfile(res.user, { displayName: firstName.value })
     const customID = generateRandomID()
     // Define data atual e data de término (30 dias depois)
@@ -144,18 +141,20 @@ async function register() {
 await setDoc(doc(db, "users", res.user.uid), {
   firstName: firstName.value,
   lastName: lastName.value,      
-  email: email.value,
+  email: res.user.email,
   numero: numero.value,
-  createdAt: new Date(),
+  createdAt: serverTimestamp(),
   customID,
-  subscription: "false",
+  subscription: "inativa",
+  role: "user",
+  favorites: [],
   // subscription: "ativa",
-  password: password.value,
   // subscriptionStart: start.toISOString(),
   // subscriptionEnd: end.toISOString(),         
 })
 
-    window.location.href = "/"
+    await userStore.refresh()
+    await router.replace("/")
 } catch (err) {
   if (err.code === "auth/email-already-in-use") {
     error.value = "Este email já está cadastrado. Faça login ou use outro email."
@@ -175,7 +174,7 @@ async function login() {
   loading.value = true
   error.value = ""
   try {
-    const res = await signInWithEmailAndPassword(auth, email.value, password.value)
+    const res = await signInWithEmailAndPassword(auth, email.value.trim().toLowerCase(), password.value)
     const snap = await getDoc(doc(db, "users", res.user.uid))
     if (snap.exists() && snap.data().disabled) {
       await signOut(auth)
@@ -183,7 +182,8 @@ async function login() {
       loading.value = false
       return
     }
-    window.location.href = "/"
+    await userStore.refresh()
+    await router.replace("/")
   } catch (err) {
     error.value = 'Senha ou Email incorretos!'
     loading.value = false

@@ -10,13 +10,15 @@
       <p class="subtitle">Gerencie contas, assinaturas e comunique-se com sua base.</p>
 
       <div class="top-buttons">
+        <button class="btn" @click="fetchUsers(); fetchTotal()" :disabled="loading">Recarregar página</button>
+        <button v-if="allUsers.some(u=>u.password)" class="btn" @click="removeLegacyPasswords" :disabled="loading">Remover senhas dos perfis desta página</button>
         <button class="btn btn-excel" @click="exportUsersToExcel">
           <span class="btn-icon">📊</span>
           <span>Gerar Excel</span>
         </button>
         <button class="btn btn-update" :class="{ loading: updatingUsers }" @click="updateExpiredUsers" :disabled="updatingUsers">
           <span class="btn-icon">{{ updatingUsers ? '⟳' : '🔄' }}</span>
-          <span>{{ updatingUsers ? 'Atualizando...' : 'Atualizar Usuários' }}</span>
+          <span>{{ updatingUsers ? 'Atualizando...' : 'Atualizar vencidas desta página' }}</span>
         </button>
         <button class="btn btn-mass" @click="openMassMessageModal">
           <span class="btn-icon">📢</span>
@@ -33,8 +35,8 @@
         @click="setFilter('todos')"
       >
         <div class="stat-inner">
-          <span class="stat-label">Total</span>
-          <span class="stat-value total-val">{{ allUsers.length }}</span>
+          <span class="stat-label">Total de contas</span>
+          <span class="stat-value total-val">{{ totalUsers ?? '—' }}</span>
         </div>
         <div class="stat-bar" style="--bar-color: #00c3ff" />
       </div>
@@ -45,7 +47,7 @@
         @click="setFilter('ativos')"
       >
         <div class="stat-inner">
-          <span class="stat-label">Ativos</span>
+          <span class="stat-label">Ativos nesta página</span>
           <span class="stat-value active-val">{{ activeUsers }}</span>
         </div>
         <div class="stat-bar" style="--bar-color: #1db954" />
@@ -57,7 +59,7 @@
         @click="setFilter('normais')"
       >
         <div class="stat-inner">
-          <span class="stat-label">Normais</span>
+          <span class="stat-label">Sem acesso nesta página</span>
           <span class="stat-value normal-val">{{ normalUsers }}</span>
         </div>
         <div class="stat-bar" style="--bar-color: #ffb84d" />
@@ -71,17 +73,20 @@
         <input
           v-model="search"
           type="text"
-          placeholder="Buscar por nome, email, ID ou data (YYYY-MM-DD)…"
+          placeholder="Filtrar esta página por nome, email, ID ou data…"
         />
         <button v-if="search" class="search-clear" @click="search = ''">✕</button>
       </div>
       <p class="results-hint">
         Exibindo <strong>{{ filteredUsers.length }}</strong>
-        <template v-if="selectedFilter === 'todos' && !search"> de {{ allUsers.length }} (100 mais recentes)</template>
+        <template v-if="selectedFilter === 'todos' && !search"> de {{ allUsers.length }} (página {{ page+1 }})</template>
         <template v-else> usuário(s)</template>
       </p>
     </div>
 
+    <div class="search-box" style="display:flex;gap:8px;flex-wrap:wrap;margin:20px 0"><select v-model="lookupKind"><option value="email">Email exato</option><option value="uid">UID exato</option><option value="customID">ID da conta</option></select><input v-model="lookup" placeholder="Buscar na base inteira" @keyup.enter="findGlobal"/><button @click="findGlobal" :disabled="loading">Buscar conta</button><button v-if="lookupMode" @click="resetPages">Voltar à lista</button></div>
+    <div style="display:flex;gap:12px;align-items:center;margin:20px 0"><button class="btn" @click="changePage(-1)" :disabled="loading || page===0">Anterior</button><span>Página {{ page+1 }} · até 25 contas</span><button class="btn" @click="changePage(1)" :disabled="loading || !hasNext">Próxima</button></div>
+    <label style="display:block;margin:20px 0">Excel e mensagens em massa: <select v-model="actionScope"><option value="page">Usuários filtrados desta página</option><option value="all">Toda a base, após confirmação</option></select></label>
     <!-- ── LOADING ── -->
     <div v-if="loading" class="loading-state">
       <div class="spinner" />
@@ -92,20 +97,19 @@
     <div v-else class="user-list">
       <TransitionGroup name="card">
         <div v-for="user in filteredUsers" :key="user.uid" class="user-card">
-          <div class="card-accent" :class="user.subscription === 'ativa' ? 'accent-active' : 'accent-normal'" />
+          <div class="card-accent" :class="isActive(user) ? 'accent-active' : 'accent-normal'" />
 
           <div class="user-info">
             <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
             <div class="info-grid">
               <span class="info-item"><em>Email</em>{{ user.email }}</span>
-              <span class="info-item"><em>Senha</em>{{ user.password }}</span>
               <span class="info-item"><em>Número</em>{{ user.numero || '—' }}</span>
               <span class="info-item"><em>ID</em>{{ user.customID || user.uid }}</span>
               <span class="info-item"><em>Inscrito</em>{{ formatDate(user.createdAt) }}</span>
             </div>
-            <div v-if="user.subscription === 'ativa'" class="subscription-badge">
+            <div v-if="isActive(user)" class="subscription-badge">
               <span class="badge-dot" />
-              Ativa · {{ formatDate(user.subscriptionStart) }} → {{ formatDate(user.subscriptionEnd) }}
+              Ativa · {{ formatDate(user.subscriptionStart) }} → {{ user.subscriptionLifetime ? 'Vitalício' : formatDate(user.subscriptionEnd) }}
             </div>
             <div v-else class="subscription-badge badge-normal">
               <span class="badge-dot badge-dot-off" />
@@ -116,11 +120,11 @@
           <div class="user-actions">
             <button
               class="btn-toggle"
-              :class="user.subscription === 'ativa' ? 'toggle-active' : 'toggle-normal'"
+              :class="isActive(user) ? 'toggle-active' : 'toggle-normal'"
               @click="toggleSubscription(user)"
             >
               <span class="toggle-dot" />
-              {{ user.subscription === 'ativa' ? '✦ Ativa' : '○ Normal' }}
+              {{ isActive(user) ? '✦ Ativa' : '○ Normal' }}
             </button>
             <button class="btn-msg" @click="openMessageModal(user)">
               ✉ Mensagem
@@ -161,7 +165,7 @@
             <button class="modal-close" @click="closeMassMessageModal">✕</button>
           </div>
           <p class="modal-hint">
-            Será enviado para <strong>{{ filteredUsers.length }}</strong> usuários filtrados.
+            <template v-if="actionScope==='page'">Será enviado para <strong>{{ filteredUsers.length }}</strong> usuários filtrados desta página.</template><template v-else>Será enviado para usuários da base inteira que atendam aos filtros, após confirmação.</template>
           </p>
           <textarea v-model="massMessageText" placeholder="Digite a mensagem para todos…" />
           <div class="modal-buttons">
@@ -182,7 +186,7 @@ import {
   getDocs,
   doc,
   updateDoc,
-  arrayUnion,
+  arrayUnion, deleteField, getCountFromServer, query, limit, startAfter, orderBy, documentId, where, getDoc,
 } from "firebase/firestore";
 import { useUserStore } from "@/stores/userStore";
 import { useRouter } from "vue-router";
@@ -194,6 +198,9 @@ const userStore = useUserStore();
 const toast     = useToast();
 
 // ── STATE ──────────────────────────────────────────────────────────────────
+const totalUsers=ref(null)
+const page = ref(0), hasNext=ref(false), lookup=ref(''), lookupKind=ref('email'), lookupMode=ref(false), actionScope=ref('page')
+let cursors=[null], lastDoc=null
 const allUsers       = ref([]);   // todos os usuários carregados
 const loading        = ref(false);
 const updatingUsers  = ref(false);
@@ -207,56 +214,25 @@ const messageText    = ref("");
 const showMassModal  = ref(false);
 const massMessageText = ref("");
 
-// ── GUARD ADMIN ────────────────────────────────────────────────────────────
-watch(
-  () => userStore.user,
-  async (val) => {
-    if (val) {
-      if (val.role !== "admin") router.replace("/");
-      else await fetchUsers();
-    }
-  },
-  { immediate: true }
-);
-
-// ── FETCH (sem expiração automática — use o botão "Atualizar Usuários") ────
-async function fetchUsers() {
-  loading.value = true;
-  try {
-    const snapshot = await getDocs(collection(db, "users"));
-    const fetched = snapshot.docs.map((d) => {
-      const data = d.data();
-      return {
-        ...data,
-        uid: d.id,
-        subscription: data.subscription || "normal",
-        subscriptionStart: toDate(data.subscriptionStart),
-        subscriptionEnd:   toDate(data.subscriptionEnd),
-      };
-    });
-
-    // Ordena do mais recente ao mais antigo
-    fetched.sort((a, b) => {
-      const tA = a.createdAt?.seconds ?? 0;
-      const tB = b.createdAt?.seconds ?? 0;
-      return tB - tA;
-    });
-
-    allUsers.value = fetched;
-  } catch (err) {
-    console.error(err);
-    toast.error("Erro ao carregar usuários!");
-  } finally {
-    loading.value = false;
-  }
-}
+watch(() => [userStore.user?.uid,userStore.user?.role], async ([uid,role]) => { if(!uid)return; if(role==='admin')await Promise.all([fetchUsers(),fetchTotal()]); },{immediate:true})
+async function fetchTotal(){try{totalUsers.value=(await getCountFromServer(collection(db,'users'))).data().count}catch{totalUsers.value=null}}
+function mapUser(d){const data=d.data();return {...data,uid:d.id,subscription:data.subscription||'normal',subscriptionStart:toDate(data.subscriptionStart),subscriptionEnd:toDate(data.subscriptionEnd)}}
+async function fetchUsers(){if(loading.value)return;loading.value=true;try{
+ if(lookupMode.value && lookupKind.value==='uid'){const snap=await getDoc(doc(db,'users',lookup.value.trim()));allUsers.value=snap.exists()?[mapUser(snap)]:[];hasNext.value=false;return}
+ const terms=[orderBy(documentId())];if(lookupMode.value)terms.push(where(lookupKind.value,'==',lookupKind.value==='email'?lookup.value.trim().toLowerCase():lookup.value.trim()));if(cursors[page.value])terms.push(startAfter(cursors[page.value]));const snapshot=await getDocs(query(collection(db,'users'),...terms,limit(26)));const docs=snapshot.docs.slice(0,25);allUsers.value=docs.map(mapUser);lastDoc=docs.at(-1);hasNext.value=snapshot.size>25
+ }catch(e){toast.error('Erro ao carregar usuários: '+e.message)}finally{loading.value=false}}
+async function changePage(direction){if(loading.value)return;if(direction>0){cursors[page.value+1]=lastDoc;page.value++}else page.value=Math.max(0,page.value-1);await fetchUsers()}
+async function findGlobal(){if(!lookup.value.trim())return;lookupMode.value=true;page.value=0;cursors=[null];await fetchUsers()}
+async function resetPages(){lookupMode.value=false;lookup.value='';page.value=0;cursors=[null];await fetchUsers()}
+async function allForAction(){if(actionScope.value==='page')return filteredUsers.value;if(!window.confirm('Consultar toda a base para esta ação? Isso consome leituras no Firebase.'))return [];const list=[];let cursor=null;do{const terms=[orderBy(documentId()),limit(100)];if(cursor)terms.push(startAfter(cursor));const snap=await getDocs(query(collection(db,'users'),...terms));list.push(...snap.docs.map(mapUser));cursor=snap.size===100?snap.docs.at(-1):null}while(cursor);const text=search.value.trim().toLowerCase();return list.filter(u=>(selectedFilter.value==='todos'||(selectedFilter.value==='ativos'?isActive(u):!isActive(u)))&&(!text||`${u.firstName} ${u.lastName} ${u.email} ${u.uid} ${u.customID}`.toLowerCase().includes(text)))}
+function isActive(u){return u.subscription==='ativa' && (u.subscriptionLifetime || (u.subscriptionEnd && u.subscriptionEnd>new Date()))}
 
 // ── STATS (sempre sobre TODOS os usuários) ─────────────────────────────────
 const activeUsers = computed(() =>
-  allUsers.value.filter((u) => u.subscription === "ativa").length
+  allUsers.value.filter((u) => isActive(u)).length
 );
 const normalUsers = computed(() =>
-  allUsers.value.filter((u) => u.subscription === "normal").length
+  allUsers.value.filter((u) => !isActive(u)).length
 );
 
 // ── FILTER + SEARCH ────────────────────────────────────────────────────────
@@ -265,13 +241,13 @@ const filteredUsers = computed(() => {
 
   // Quando há busca ativa ou filtro "ativos"/"normais" → usa TODOS os usuários
   const useAll = s.length > 0 || selectedFilter.value !== "todos";
-  let list = useAll ? [...allUsers.value] : allUsers.value.slice(0, 100);
+  let list = [...allUsers.value];
 
   // Filtro de status
   if (selectedFilter.value === "ativos") {
-    list = list.filter((u) => u.subscription === "ativa");
+    list = list.filter(isActive);
   } else if (selectedFilter.value === "normais") {
-    list = list.filter((u) => u.subscription === "normal");
+    list = list.filter(u => !isActive(u));
   }
 
   // Busca
@@ -318,16 +294,18 @@ async function updateExpiredUsers() {
   try {
     for (const user of allUsers.value) {
       const endDate = toDate(user.subscriptionEnd);
-      if (user.subscription === "ativa" && endDate && endDate < now) {
+      if (!user.subscriptionLifetime && user.subscription === "ativa" && endDate && endDate < now) {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, {
-          subscription: "normal",
+          subscriptionLifetime: false,
+        subscription: "normal",
           subscriptionStart: null,
           subscriptionEnd: null,
         });
         // Atualiza local
         user.subscription      = "normal";
-        user.subscriptionStart = null;
+        user.subscriptionLifetime = false;
+      user.subscriptionStart = null;
         user.subscriptionEnd   = null;
         updated++;
       }
@@ -348,7 +326,7 @@ async function updateExpiredUsers() {
 
 // ── TOGGLE ASSINATURA ─────────────────────────────────────────────────────
 async function toggleSubscription(user) {
-  user.subscription = user.subscription === 'ativa' ? 'normal' : 'ativa';
+  user.subscription = isActive(user) ? 'normal' : 'ativa';
   await updateSubscription(user);
 }
 
@@ -363,20 +341,24 @@ async function updateSubscription(user) {
       end.setDate(start.getDate() + 30);
 
       await updateDoc(userRef, {
+        subscriptionLifetime: false,
         subscription: "ativa",
         subscriptionStart: start,
         subscriptionEnd: end,
       });
 
+      user.subscriptionLifetime = false;
       user.subscriptionStart = start;
       user.subscriptionEnd   = end;
       toast.success(`Assinatura ativada para ${user.firstName} até ${end.toLocaleDateString("pt-BR")}`);
     } else {
       await updateDoc(userRef, {
+        subscriptionLifetime: false,
         subscription: "normal",
         subscriptionStart: null,
         subscriptionEnd: null,
       });
+      user.subscriptionLifetime = false;
       user.subscriptionStart = null;
       user.subscriptionEnd   = null;
       toast.info(`Assinatura de ${user.firstName} removida.`);
@@ -416,7 +398,7 @@ function openMassMessageModal()  { massMessageText.value = ""; showMassModal.val
 function closeMassMessageModal() { showMassModal.value = false; }
 async function sendMassMessage() {
   if (!massMessageText.value.trim()) { toast.warning("Digite a mensagem!"); return; }
-  const list = filteredUsers.value;
+  const list = await allForAction();
   if (!list.length) { toast.warning("Nenhum usuário filtrado."); return; }
   try {
     for (const user of list) {
@@ -432,9 +414,12 @@ async function sendMassMessage() {
   }
 }
 
+async function removeLegacyPasswords(){if(!window.confirm('Remover senhas antigas armazenadas nos perfis desta página? O login e as senhas no Firebase Auth continuam funcionando.'))return;loading.value=true;let count=0;try{for(const u of allUsers.value){if(!u.password)continue;await updateDoc(doc(db,'users',u.uid),{password:deleteField()});delete u.password;count++}toast.success(`${count} senhas removidas dos perfis.`)}catch(e){toast.error(e.message)}finally{loading.value=false}}
+
 // ── EXCEL ──────────────────────────────────────────────────────────────────
-function exportUsersToExcel() {
-  const data = allUsers.value.map((u) => ({
+async function exportUsersToExcel() {
+  const list = await allForAction(); if(!list.length)return;
+  const data = list.map((u) => ({
     Nome:                   `${u.firstName || ""} ${u.lastName || ""}`,
     Email:                  u.email || "—",
     Numero:                 u.numero || "—",

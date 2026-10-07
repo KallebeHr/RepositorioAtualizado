@@ -1,0 +1,13 @@
+// Dentro de match /databases/{database}/documents do arquivo REAL de regras:
+// Integre estes matches às regras existentes. Não substitua regras antigas
+// sem revisá-las. Nenhum outro match pode conceder acesso amplo a estas coleções.
+match /musicasV2/{document=**} { allow read, write: if false; }
+match /chavesV2/{document=**} { allow read, write: if false; }
+match /accessV2/{document=**} { allow read, write: if false; }
+match /redemptionsV2/{document=**} { allow read, write: if false; }
+match /keyBatchesV2/{document=**} { allow read, write: if false; }
+match /attemptsV2/{document=**} { allow read, write: if false; }
+match /auditV2/{document=**} { allow read, write: if false; }
+match /downloadsV2/{document=**} { allow read, write: if false; }
+// A API usa Firebase Admin. Leituras públicas do catálogo passam pela API;
+// operações privadas exigem token Firebase Auth e papel admin quando necessário.

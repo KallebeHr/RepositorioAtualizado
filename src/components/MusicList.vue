@@ -69,6 +69,7 @@
           <button class="icon-btn primary" @click="playNow(m)" title="Tocar agora">
             <PlayIcon class="icon" />
           </button>
+          <button class="icon-btn" @click="saveLocal(m)" title="Salvar offline"><i class="mdi mdi-cloud-download-outline"/></button>
           <button class="icon-btn" @click="download(m)" title="Baixar">
             <ArrowDownTrayIcon class="icon" />
           </button>
@@ -99,6 +100,7 @@
 </template>
 
 <script setup>
+import { saveTrackOffline } from "@/services/downloads"
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { db } from "@/firebase";
 import {
@@ -286,11 +288,11 @@ async function toggleFavorite(m) {
   try {
     if (isFavorite(m.id)) {
       await updateDoc(userRef, { favorites: arrayRemove(m.id) });
-      userStore.user.favorites = userStore.user.favorites.filter(x=>x!==m.id);
+
       toast.success(`Removida: ${m.title}`);
     } else {
       await updateDoc(userRef, { favorites: arrayUnion(m.id) });
-      userStore.user.favorites.push(m.id);
+
       toast.success(`Adicionada: ${m.title}`);
     }
   } catch (err) { console.error(err); toast.error("Erro favoritos"); }
@@ -326,6 +328,7 @@ onMounted(() => {
   window.addEventListener("scroll", handleScroll);
 });
 onBeforeUnmount(() => window.removeEventListener("scroll", handleScroll));
+async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await saveTrackOffline(userStore.user.uid,m);toast.success('Música salva offline.')}catch(e){toast.error(e.message)}}
 </script>
 
 

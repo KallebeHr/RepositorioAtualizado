@@ -24,7 +24,7 @@
 
     <!-- Lista -->
     <section v-if="!loading && filtradas.length" class="grid">
-      <div v-for="m in filtradas" :key="m.id" class="card">
+      <div v-for="m in filtradas" :key="favoriteId(m)" class="card">
         <img src="/LogoMusic.jpg" class="cover" />
         <div class="info">
           <h2 class="track-title">{{ m.title }}</h2>
@@ -58,174 +58,37 @@
       Nenhuma música favorita encontrada.
     </div>
 
-    <!-- Player visível -->
-    <div v-if="player.currentTrack" class="player">
-      <audio
-        ref="audio"
-        :src="player.currentTrack.downloadUrl"
-        autoplay
-        @ended="player.onTrackEnded"
-        controls
-      ></audio>
-      <p class="now-playing">Tocando: {{ player.currentTrack.title }} - {{ player.currentTrack.cantor }}</p>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from "vue";
-import { db } from "@/firebase";
-import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
-import { usePlayerStore } from "@/stores/usePlayerStore";
-import { useUserStore } from "@/stores/userStore";
-import { useToast } from "vue-toast-notification";
-import {
-  PlayIcon,
-  ArrowDownTrayIcon,
-  PlusCircleIcon,
-  StarIcon,
-} from "@heroicons/vue/24/solid";
-
-const loading = ref(true);
-const error = ref("");
-const favorites = ref([]);
-const filtros = ref({ busca: "" });
-
-const player = usePlayerStore();
-const userStore = useUserStore();
-const toast = useToast();
-
-const filtradas = computed(() => {
-  const busca = filtros.value.busca.toLowerCase();
-  return favorites.value.filter((m) => {
-    return (
-      !busca ||
-      m.title?.toLowerCase().includes(busca) ||
-      m.cantor?.toLowerCase().includes(busca) ||
-      m.estilos?.some((e) => e.toLowerCase().includes(busca))
-    );
-  });
-});
-
-async function loadFavorites() {
-  if (!userStore.user) return;
-  loading.value = true;
-  error.value = "";
-  favorites.value = [];
-
-  try {
-    const userRef = doc(db, "users", userStore.user.uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-      error.value = "Usuário não encontrado.";
-      return;
-    }
-
-    const favs = snap.data().favorites || [];
-    if (!favs.length) return;
-
-    const results = await Promise.all(
-      favs.map(async (f) => {
-        if (typeof f === "string") {
-          try {
-            const mSnap = await getDoc(doc(db, "musicas", f));
-            if (!mSnap.exists()) return null;
-            const d = mSnap.data();
-            return {
-              id: mSnap.id,
-              title: d.title || d.fileName || "Sem título",
-              cantor: d.cantor || "—",
-              estilos: Array.isArray(d.tipo) ? d.tipo : [],
-              downloadUrl: d.downloadUrl || "",
-              fileName: d.fileName || `${d.title || "musica"}.mp3`,
-            };
-          } catch {
-            return null;
-          }
-        } else if (typeof f === "object") {
-          return {
-            id: f.id || f.fileId || Math.random(),
-            title: f.title || f.name || "Sem título",
-            cantor: f.cantor || f.artist || "—",
-            estilos: Array.isArray(f.estilos) ? f.estilos : [],
-            downloadUrl: f.downloadUrl || "",
-            fileName: f.fileName || `${f.title || "musica"}.mp3`,
-          };
-        }
-      })
-    );
-
-    favorites.value = results.filter(Boolean);
-  } catch (err) {
-    console.error("Erro ao carregar favoritos:", err);
-    error.value = "Erro ao carregar favoritos.";
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function removeFavorite(music) {
-  if (!userStore.user) return;
-  try {
-    const userRef = doc(db, "users", userStore.user.uid);
-    await updateDoc(userRef, {
-      favorites: arrayRemove(music),
-    });
-    favorites.value = favorites.value.filter((f) => f.id !== music.id);
-    toast.success("Removido dos favoritos");
-  } catch (err) {
-    console.error("Erro ao remover favorito:", err);
-    toast.error("Erro ao remover favorito");
-  }
-}
-
-function normalizeTrack(m) {
-  return {
-    id: m.id,
-    title: m.title,
-    cantor: m.cantor,
-    estilos: m.estilos,
-    downloadUrl: m.downloadUrl,
-    fileName: m.fileName,
-  };
-}
-
-function enqueue(m) {
-  player.addToQueue(normalizeTrack(m), { playNow: false });
-  toast.success(`${m.title} adicionado à fila 🎶`);
-}
-
-function playNow(m) {
-  player.addToQueue(normalizeTrack(m), { playNow: true });
-}
-
-async function download(m) {
-  if (!m.downloadUrl) return;
-  const res = await fetch(m.downloadUrl);
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = m.fileName || "musica.mp3";
-  a.click();
-  window.URL.revokeObjectURL(url);
-}
-
-async function baixarTodas() {
-  if (!filtradas.value.length) return;
-  for (const m of filtradas.value) {
-    await download(m);
-  }
-}
-
-onMounted(loadFavorites);
-watch(
-  () => userStore.user,
-  (novoUser) => {
-    if (novoUser) loadFavorites();
-  },
-  { immediate: true }
-);
+import { ref, computed, watch } from 'vue'
+import { db } from '@/firebase'
+import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore'
+import { usePlayerStore } from '@/stores/usePlayerStore'
+import { useUserStore } from '@/stores/userStore'
+import { downloadTrack, favoriteId } from '@/services/downloads'
+import { normalizeTrack, trackKey } from '@/utils/media'
+import { useToast } from 'vue-toast-notification'
+import { PlayIcon, ArrowDownTrayIcon, PlusCircleIcon, StarIcon } from '@heroicons/vue/24/solid'
+const player=usePlayerStore(), user=useUserStore(), toast=useToast(), favorites=ref([]), loading=ref(false),error=ref(''),filtros=ref({busca:''})
+const filtradas=computed(()=>favorites.value.filter(m=>`${m.title} ${m.cantor}`.toLowerCase().includes(filtros.value.busca.toLowerCase())))
+let generation=0
+watch(()=>[user.user?.uid,user.user?.favorites],async()=>{
+ const run=++generation;loading.value=true;error.value='';if(!user.user){favorites.value=[];loading.value=false;return}
+ try{const results=await Promise.all((user.user.favorites||[]).map(async value=>{
+ if(typeof value==='object' && value?.downloadUrl)return normalizeTrack(value)
+ if(typeof value!=='string')return null
+ const v2=value.startsWith('v2:'),id=v2?value.slice(3):value;if(!id)return null
+ const snap=await getDoc(doc(db,v2?'musicasV2':'musicas',id));return snap.exists()?normalizeTrack({...snap.data(),id,collectionName:v2?'musicasV2':'musicas'}):null
+ }));if(run===generation)favorites.value=[...new Map(results.filter(Boolean).map(track=>[trackKey(track),track])).values()]}catch(e){if(run===generation)error.value=e.message}finally{if(run===generation)loading.value=false}
+},{immediate:true,deep:true})
+function permitted(){if(!user.hasActiveSubscription){toast.warning('Assinatura necessária');return false}return true}
+function enqueue(m){if(permitted())player.addToQueue(m)}
+function playNow(m){if(permitted()){player.setFullList(filtradas.value);player.addToQueue(m,{playNow:true})}}
+async function removeFavorite(m){try{const values=(user.user.favorites||[]).filter(value=>(typeof value==='object'?favoriteId(value):value)===favoriteId(m));if(values.length)await updateDoc(doc(db,'users',user.user.uid),{favorites:arrayRemove(...values)})}catch(e){toast.error(e.message)}}
+async function download(m){if(permitted())try{await downloadTrack(user.user.uid,m)}catch(e){toast.error(e.message)}}
+async function baixarTodas(){for(const track of filtradas.value)await download(track)}
 </script>
 
 

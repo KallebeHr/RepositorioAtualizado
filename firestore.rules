@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signed() { return request.auth != null; }
+  function userPath(uid) { return /databases/$(database)/documents/users/$(uid); }
+  function admin() { return signed() && exists(userPath(request.auth.uid)) && get(userPath(request.auth.uid)).data.get('role','user') == 'admin' && get(userPath(request.auth.uid)).data.get('disabled',false) == false; }
+  function enabled() { return signed() && exists(userPath(request.auth.uid)) && get(userPath(request.auth.uid)).data.get('disabled',false) == false; }
+  function keyPath(id) { return /databases/$(database)/documents/accessKeys/$(id); }
+  function receiptPath(id) { return /databases/$(database)/documents/keyRedemptions/$(id); }
+  function receiptId(keyId) { return keyId + '_' + request.auth.uid; }
+  function legacyRenewal(keyId) {
+   let k = get(keyPath(keyId)).data;
+   let u = get(userPath(request.auth.uid)).data;
+   return k.get('legacy',false) == true && k.maxActivations == null
+    && exists(receiptPath(receiptId(keyId)))
+    && (u.get('subscription','inativa') != 'ativa' || (!u.get('subscriptionLifetime',false) && u.get('subscriptionEnd',null) is timestamp && u.subscriptionEnd <= request.time));
+  }
+  function validReceipt(d) {
+   let k = get(keyPath(d.keyId)).data;
+   let nextKey = getAfter(keyPath(d.keyId)).data;
+   let u = get(userPath(request.auth.uid)).data;
+   let life = k.lifetime || (u.get('subscriptionLifetime',false) && u.get('subscription','inativa') == 'ativa');
+   return enabled() && d.keys().hasOnly(['uid','keyId','createdAt','lifetime','endAt'])
+    && d.uid == request.auth.uid && d.keyId.matches('^[a-f0-9]{64}$')
+    && d.createdAt == request.time && k.active == true
+    && k.activationCount is int && k.activationCount >= 0
+    && (k.maxActivations == null || k.activationCount < k.maxActivations)
+    && nextKey.activationCount == k.activationCount + 1
+    && d.lifetime == life
+    && ((life && d.endAt == null) || (!life && k.durationDays is int && k.durationDays >= 1 && k.durationDays <= 36500 && d.endAt is timestamp
+     && d.endAt >= request.time + duration.value(k.durationDays,'d') - duration.value(5,'m')
+     && d.endAt <= request.time + duration.value(k.durationDays,'d') + duration.value(5,'m')));
+  }
+  function subscriptionGrant(uid) {
+   let d = request.resource.data;
+   let r = getAfter(receiptPath(d.accessRedemption)).data;
+   return enabled() && uid == request.auth.uid
+    && d.diff(resource.data).affectedKeys().hasOnly(['subscription','subscriptionStart','subscriptionEnd','subscriptionLifetime','accessRedemption'])
+    && (!exists(receiptPath(d.accessRedemption)) || legacyRenewal(r.keyId))
+    && d.accessRedemption == receiptId(r.keyId) && validReceipt(r)
+    && d.subscription == 'ativa' && d.subscriptionStart == request.time
+    && d.subscriptionEnd == r.endAt && d.subscriptionLifetime == r.lifetime;
+  }
+  match /users/{uid} {
+   allow get: if signed() && (request.auth.uid == uid || admin());
+   allow list: if admin();
+   allow create: if admin() || (signed() && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['firstName','lastName','name','email','numero','createdAt','customID','subscription','role','favorites'])
+    && request.resource.data.get('role','user') == 'user'
+    && request.resource.data.get('subscription','inativa') in ['inativa','normal','false']
+    && request.resource.data.email == request.auth.token.email);
+   allow update: if admin() || (enabled() && uid == request.auth.uid
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['firstName','lastName','name','numero','favorites'])) || subscriptionGrant(uid);
+   allow delete: if admin();
+  }
+  match /accessKeys/{id} {
+   allow get: if enabled();
+   allow list, create, delete: if admin();
+   allow update: if admin() || (enabled()
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activationCount'])
+    && request.resource.data.activationCount == resource.data.activationCount + 1
+    && (!exists(receiptPath(receiptId(id))) || legacyRenewal(id))
+    && validReceipt(getAfter(receiptPath(receiptId(id))).data)
+    && getAfter(userPath(request.auth.uid)).data.accessRedemption == receiptId(id));
+  }
+  match /keyRedemptions/{id} {
+   allow get: if admin() || (enabled() && id.matches('^[a-f0-9]{64}_' + request.auth.uid + '$'));
+   allow list: if admin();
+   allow create: if enabled() && id == receiptId(request.resource.data.keyId)
+    && validReceipt(request.resource.data)
+    && getAfter(userPath(request.auth.uid)).data.accessRedemption == id;
+   allow update: if admin() || (enabled() && id == receiptId(request.resource.data.keyId)
+    && legacyRenewal(request.resource.data.keyId)
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['createdAt','endAt','lifetime'])
+    && validReceipt(request.resource.data)
+    && getAfter(userPath(request.auth.uid)).data.accessRedemption == id);
+   allow delete: if admin();
+  }
+  match /Chaves/{id} { allow read, write: if admin(); }
+  function countersOnly() {
+   let changes = request.resource.data.diff(resource.data).affectedKeys();
+   return enabled() && changes.hasOnly(['playCount','downloadCount'])
+    && request.resource.data.get('playCount',0) is int && request.resource.data.get('downloadCount',0) is int
+    && request.resource.data.get('playCount',0) >= resource.data.get('playCount',0)
+    && request.resource.data.get('playCount',0) <= resource.data.get('playCount',0)+1
+    && request.resource.data.get('downloadCount',0) >= resource.data.get('downloadCount',0)
+    && request.resource.data.get('downloadCount',0) <= resource.data.get('downloadCount',0)+1;
+  }
+  match /musicas/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || countersOnly(); }
+  match /musicasV2/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || countersOnly(); }
+  match /cantores/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || (enabled() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads']) && request.resource.data.downloads == resource.data.get('downloads',0)+1); }
+  match /estilos/{id} { allow read: if true; allow write: if admin(); }
+  match /cantoresV2/{id} { allow read: if true; allow write: if admin(); }
+  match /estilosV2/{id} { allow read: if true; allow write: if admin(); }
+  match /{document=**} { allow read,write: if false; }
+ }
+}

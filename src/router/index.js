@@ -17,6 +17,7 @@ import Home from '@/pages/index.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, from, savedPosition) { return savedPosition || { top: 0, left: 0 } },
   routes: [
     // 🔹 mantém TODAS as rotas automáticas
     ...setupLayouts(routes),
@@ -41,34 +42,17 @@ const router = createRouter({
   ],
 })
 
-/* ----------------------------------
-   Workaround dynamic import (Vite)
------------------------------------ */
-router.onError((err, to) => {
-  if (err?.message?.includes?.('Failed to fetch dynamically imported module')) {
-    if (localStorage.getItem('vuetify:dynamic-reload')) {
-      console.error('Dynamic import error, reloading page não resolveu', err)
-    } else {
-      console.log('Reloading page para corrigir dynamic import error')
-      localStorage.setItem('vuetify:dynamic-reload', 'true')
-      location.assign(to.fullPath)
-    }
-  } else {
-    console.error(err)
-  }
-})
+// Uma atualização de versão deve ser aplicada pelo botão do aplicativo.
+// A falha de uma rota mantém o áudio atual e permite tentar a navegação novamente.
+router.onError(err => { console.error('Não foi possível abrir a página. Atualize o aplicativo quando terminar de ouvir.', err) })
 
-router.isReady().then(() => {
-  localStorage.removeItem('vuetify:dynamic-reload')
-})
-  
 let authReady = null
 function waitForAuth() {
   if (!authReady) {
     authReady = new Promise((resolve) => {
       const unsub = onAuthStateChanged(auth, (user) => {
         unsub()
-        resolve(user)
+        resolve()
       })
     })
   }
@@ -77,13 +61,12 @@ function waitForAuth() {
 
 router.beforeEach(async (to, from, next) => {
   if (to.path.startsWith('/admin')) {
-    const user = await waitForAuth()
+    if (!navigator.onLine) return next('/Offline')
+    await waitForAuth()
+    const user = auth.currentUser
     if (!user) return next('/')
 
-    const snap = await getDoc(doc(db, 'users', user.uid))
-    if (!snap.exists() || snap.data().role !== 'admin') {
-      return next('/')
-    }
+    try { const snap = await getDoc(doc(db, 'users', user.uid)); if (!snap.exists() || snap.data().role !== 'admin' || snap.data().disabled) return next('/') } catch { return next('/') }
   }
   next()
 })

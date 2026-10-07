@@ -10,8 +10,8 @@
         <i class="mdi mdi-chevron-down"></i>
       </button>
       <span class="mobile-header-title">Tocando agora</span>
-      <button class="btn-icon">
-        <i class="mdi mdi-dots-vertical"></i>
+      <button class="btn-icon" @click.stop="player.eqOpen=true" aria-label="Abrir equalizador">
+        <i class="mdi mdi-tune-vertical"></i>
       </button>
     </div>
 
@@ -21,16 +21,16 @@
       </div>
       <div class="track-info">
         <div class="title">{{ current.title }}</div>
-        <div class="artist">{{ current.cantor }}</div>
+        <div class="artist">{{ current.cantor }}</div><p v-if="player.error" class="playback-error" role="alert">{{ player.error }}</p>
       </div>
       
       <button
         @click.stop="toggleFavorite(current)"
         class="btn-icon favorite"
-        :class="{ active: isFavorite(current.id) }"
+        :class="{ active: isFavorite(favoriteId(current)) }"
         title="Salvar na sua Biblioteca"
       >
-        <i :class="isFavorite(current.id) ? 'mdi mdi-heart' : 'mdi mdi-heart-outline'"></i>
+        <i :class="isFavorite(favoriteId(current)) ? 'mdi mdi-heart' : 'mdi mdi-heart-outline'"></i>
       </button>
     </div>
 
@@ -40,16 +40,18 @@
           <i class="mdi mdi-download-circle-outline"></i>
         </button>
 
-        <button class="btn-icon" @click.stop="prev" title="Anterior">
+        <button class="btn-icon save-offline-control" @click.stop="saveCurrent" :disabled="savingOffline" :title="savedCurrent?'Salva neste aparelho':'Salvar offline'" aria-label="Salvar música offline"><i :class="savedCurrent?'mdi mdi-check-circle':'mdi mdi-cloud-download-outline'"/><span>{{ savingOffline?'Salvando…':savedCurrent?'Salva offline':'Salvar offline' }}</span></button>
+        <button class="btn-icon" @click.stop="player.eqOpen=true" title="Equalizador" aria-label="Abrir equalizador"><i class="mdi mdi-tune-vertical"/></button>
+        <button class="btn-icon" @click.stop="prev" title="Anterior" aria-label="Música anterior">
           <i class="mdi mdi-skip-previous"></i>
         </button>
 
-        <button class="btn-play" @click.stop="toggle" title="Play/Pause">
+        <button class="btn-play" @click.stop="toggle" :aria-label="player.isPlaying ? 'Pausar música' : 'Reproduzir música'" title="Play/Pause">
           <i v-if="player.isPlaying" class="mdi mdi-pause"></i>
           <i v-else class="mdi mdi-play"></i>
         </button>
 
-        <button class="btn-icon" @click.stop="next" title="Próxima">
+        <button class="btn-icon" @click.stop="next" title="Próxima" aria-label="Próxima música">
           <i class="mdi mdi-skip-next"></i>
         </button>
 
@@ -67,6 +69,7 @@
             :max="duration"
             :value="position"
             @input="onSeek"
+            aria-label="Progresso da música"
             class="styled-slider"
           />
         </div>
@@ -91,6 +94,7 @@
           step="0.01"
           :value="player.volume"
           @input="onVol"
+          aria-label="Volume do player"
           class="styled-slider vol-slider"
         />
       </div>
@@ -102,7 +106,7 @@
       
       <div class="modal-head">
         <div class="head-left">
-          <button class="btn-icon close-queue-btn" @click="toggleQueue" title="Fechar Fila">
+          <button class="btn-icon close-queue-btn" @click="toggleQueue" title="Fechar Fila" aria-label="Fechar Fila">
             <i class="mdi mdi-close"></i>
           </button>
           <h3>Fila de Reprodução</h3>
@@ -144,10 +148,10 @@
             <button
               @click="toggleFavorite(q)"
               class="favorite"
-              :class="{ active: isFavorite(q.id) }"
+              :class="{ active: isFavorite(favoriteId(q)) }"
               title="Favoritar"
             >
-              <i :class="isFavorite(q.id) ? 'mdi mdi-heart' : 'mdi mdi-heart-outline'"></i>
+              <i :class="isFavorite(favoriteId(q)) ? 'mdi mdi-heart' : 'mdi mdi-heart-outline'"></i>
             </button>
             <button @click="remove(i)" title="Remover da Fila">
               <i class="mdi mdi-close"></i>
@@ -176,6 +180,10 @@ import JSZip from "jszip"
 import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/firebase"
 
+import { saveTrackOffline, downloadTrack, downloadBlob, favoriteId } from '@/services/downloads'
+import { getTrackBlob, OFFLINE_EVENT, listOffline } from '@/services/offline'
+import { trackKey } from '@/utils/media'
+
 const player = usePlayerStore()
 const userStore = useUserStore()
 const toast = useToast()
@@ -190,20 +198,6 @@ let raf = null
 
 const durationText = computed(() => toTime(duration.value))
 const currentTimeText = computed(() => toTime(position.value))
-
-// Quando o Howler (player.sound) for criado/trocado, registra o evento "end"
-// para fazer loop automático ao chegar na última música da fila
-watch(
-  () => player.sound,
-  (sound) => {
-    if (!sound) return
-    sound.on("end", () => {
-      if (player.currentIndex >= player.queue.length - 1) {
-        player.play(0)
-      }
-    })
-  }
-)
 
 function loop() {
   if (player.sound) {
@@ -260,45 +254,17 @@ function clearQueue() {
   player.clearQueue()
 }
 
-async function download(m) {
-  if (!userStore.hasActiveSubscription)
-    return toast.warning("Assinatura necessária")
-  if (!m?.downloadUrl) return
-
-  try {
-    const res = await fetch(m.downloadUrl)
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = m.fileName || "musica.mp3"
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch {
-    toast.error("Erro ao baixar")
-  }
-}
-
-async function downloadAllZip() {
-  const zip = new JSZip()
-  const seen = new Set()
-
-  for (const m of player.queue) {
-    if (seen.has(m.fileId) || !m.downloadUrl) continue
-    seen.add(m.fileId)
-    const res = await fetch(m.downloadUrl)
-    zip.file(m.fileName || "musica.mp3", await res.blob())
-  }
-
-  const content = await zip.generateAsync({ type: "blob" })
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(content)
-  a.download = "FilaMusicas.zip"
-  a.click()
-}
+const savingOffline=ref(false), offlineKeys=ref(new Set())
+const savedCurrent=computed(()=>current.value && offlineKeys.value.has(trackKey(current.value)))
+async function refreshOffline(){const uid=userStore.user?.uid;const records=await listOffline(uid).catch(()=>[]);if(uid===userStore.user?.uid)offlineKeys.value=new Set(records.map(r=>trackKey(r.track)))}
+async function saveCurrent(){if(!userStore.hasActiveSubscription)return toast.warning('Ative sua assinatura');if(!current.value || savingOffline.value)return;savingOffline.value=true;try{await saveTrackOffline(userStore.user.uid,current.value);toast.success('Música salva neste aparelho. Abra Offline para ouvir sem internet.')}catch(e){toast.error(e.message)}finally{savingOffline.value=false}}
+async function download(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await downloadTrack(userStore.user?.uid,m)}catch(e){toast.error(e.message)}}
+async function downloadAllZip(){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');const zip=new JSZip(),seen=new Set();try{let index=0;for(const m of player.queue){const key=trackKey(m);if(seen.has(key))continue;seen.add(key);zip.file(`${++index}-${m.fileName || m.title+'.mp3'}`,await getTrackBlob(userStore.user?.uid,m))}downloadBlob(await zip.generateAsync({type:'blob'}),'FilaMusicas.zip')}catch(e){toast.error(e.message)}}
+watch(()=>userStore.user?.uid,(uid,previous)=>{if(uid!==previous){player.restore(uid);refreshOffline()}},{immediate:true})
+watch(()=>userStore.hasActiveSubscription,active=>{if(!active && player.isPlaying)player.sound?.pause()})
 
 function isFavorite(id) {
-  return userStore.user?.favorites?.includes(id)
+  return userStore.user?.favorites?.some(value => (typeof value === 'object' ? favoriteId(value) : value) === id)
 }
 
 async function toggleFavorite(m) {
@@ -306,15 +272,15 @@ async function toggleFavorite(m) {
     return toast.warning("Faça login para favoritar ⭐")
 
   const refUser = doc(db, "users", userStore.user.uid)
+  const id = favoriteId(m)
+  if (!Array.isArray(userStore.user.favorites)) userStore.user.favorites = []
 
-  if (isFavorite(m.id)) {
-    await updateDoc(refUser, { favorites: arrayRemove(m.id) })
-    userStore.user.favorites =
-      userStore.user.favorites.filter(f => f !== m.id)
-  } else {
-    await updateDoc(refUser, { favorites: arrayUnion(m.id) })
-    userStore.user.favorites.push(m.id)
-  }
+  if (isFavorite(id)) {
+    const saved = userStore.user.favorites.find(value => (typeof value === "object" ? favoriteId(value) : value) === id)
+    await updateDoc(refUser, { favorites: arrayRemove(saved) })
+} else {
+    await updateDoc(refUser, { favorites: arrayUnion(id) })
+}
 }
 
 function handleExpandClick() {
@@ -323,11 +289,12 @@ function handleExpandClick() {
   }
 }
 
-onMounted(() => (raf = requestAnimationFrame(loop)))
-onBeforeUnmount(() => raf && cancelAnimationFrame(raf))
+onMounted(() => { raf = requestAnimationFrame(loop); window.addEventListener(OFFLINE_EVENT,refreshOffline) })
+onBeforeUnmount(() => { if(raf)cancelAnimationFrame(raf);window.removeEventListener(OFFLINE_EVENT,refreshOffline) })
 </script>
 
 <style scoped>
+.playback-error{color:#ffaaaa;font-size:11px;max-width:250px;white-space:normal}.controls{gap:12px!important}.btn-icon:disabled{opacity:.5}
 /* =========================================
    VARIÁVEIS E BASE
 ========================================= */
@@ -786,4 +753,5 @@ onBeforeUnmount(() => raf && cancelAnimationFrame(raf))
 .empty-content { text-align: center; color: #b3b3b3; }
 .empty-content i { font-size: 56px; margin-bottom: 16px; opacity: 0.5; display: block;}
 .empty-content p { font-size: 16px; font-weight: 600; }
+.save-offline-control{display:flex;flex-direction:column;justify-content:center;min-width:60px;min-height:44px;gap:2px}.save-offline-control span{font-size:9px;line-height:1.2;color:#b7eccb;white-space:nowrap}@media(max-width:768px){.player-container:not(.expanded) .save-offline-control{display:none}.player-container.expanded .controls{flex-wrap:wrap;justify-content:center!important;gap:12px!important}}
 </style>

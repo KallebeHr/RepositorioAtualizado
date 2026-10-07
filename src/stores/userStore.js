@@ -1,130 +1,48 @@
-// src/stores/userStore.js
-import { defineStore } from "pinia"
-import { ref, computed } from "vue"
-import { onAuthStateChanged, signOut } from "firebase/auth"
-import { auth, db } from "@/firebase"
-import { doc, getDoc, updateDoc } from "firebase/firestore"
-
-export const useUserStore = defineStore("user", () => {
-  const user = ref(null)
-  const loadingUser = ref(true)
-
-  function setUser(data) {
-    user.value = data
-  }
-
-  function clearUser() {
-    user.value = null
-  }
-
-  // 🔑 Computed para saber se o user já tem assinatura ativa
-const hasActiveSubscription = computed(() => {
-  if (!user.value) return false
-
-  if (user.value.subscription !== "ativa") return false
-
-  if (!user.value.subscriptionEnd) return false
-
-  const end = user.value.subscriptionEnd.toDate
-    ? user.value.subscriptionEnd.toDate()
-    : new Date(user.value.subscriptionEnd)
-
-  return end > new Date()
-})
-
-
-
-  // 🔑 Função para ativar assinatura
-  async function ativarAssinatura(router) {
-    if (!user.value) {
-      throw new Error("Usuário não autenticado")
-    }
-
-    if (hasActiveSubscription.value) {
-      throw new Error("Sua conta já está ativa, aproveite os benefícios 🎉")
-    }
-
-    try {
-      const userRef = doc(db, "users", user.value.uid)
-      await updateDoc(userRef, {
-        hasSubscription: true,
-      })
-
-      // Atualiza localmente
-      user.value.hasSubscription = true
-
-      // 🔑 Força reatividade
-      user.value = { ...user.value }
-
-      // Redireciona apenas se não estiver em /AllMusic
-      if (router && router.currentRoute.value.path !== "/AllMusic") {
-        router.push("/AllMusic")
-      }
-
-      return "Assinatura ativada com sucesso! 🎉"
-    } catch (err) {
-      console.error("Erro ao ativar assinatura:", err)
-      throw new Error("Erro ao ativar assinatura")
-    }
-  }
-
-  onAuthStateChanged(auth, async (firebaseUser) => {
-    loadingUser.value = true
-    if (firebaseUser) {
-      try {
-        const snap = await getDoc(doc(db, "users", firebaseUser.uid))
-
-        let data = {
-          uid: firebaseUser.uid,
-          name: null,
-          email: firebaseUser.email,
-          role: "user",
-        }
-
-        if (snap.exists()) {
-          const docData = snap.data()
-          data = {
-            ...data,
-            ...docData,
-          }
-
-          if (docData.firstName || docData.lastName) {
-            data.name = `${docData.firstName || ""} ${docData.lastName || ""}`.trim()
-          }
-        }
-
-        if (!data.name) {
-          data.name = firebaseUser.displayName || firebaseUser.email
-        }
-
-        user.value = data
-      } catch (err) {
-        console.error("Erro ao buscar dados do Firestore:", err)
-        user.value = {
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || firebaseUser.email,
-          email: firebaseUser.email,
-          role: "user",
-        }
-      }
-    } else {
-      clearUser()
-    }
-    loadingUser.value = false
-  })
-
-  async function logout() {
-    await signOut(auth)
-    clearUser()
-  }
-
-  return { 
-    user, 
-    loadingUser, 
-    setUser, 
-    logout, 
-    clearUser,
-    hasActiveSubscription, // 🔑 já pode usar em qualquer componente
-    ativarAssinatura // 🔑 chama direto no botão de ativar, receber router como argumento
-  }
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth, db } from '@/firebase'
+import { doc, getDoc, onSnapshot } from 'firebase/firestore'
+import { readLocalData, writeLocalData } from '@/services/offline'
+import { subscriptionActive } from '@/utils/access-policy.mjs'
+export const useUserStore = defineStore('user', () => {
+ const user = ref(null), loadingUser = ref(true), clock = ref(Date.now())
+ let unsubscribeProfile, generation = 0
+ setInterval(() => { clock.value = Date.now() }, 30000)
+ const hasActiveSubscription = computed(() => subscriptionActive(user.value, clock.value))
+ function setUser(data) { user.value = data ? { ...data, uid: data.uid || auth.currentUser?.uid, favorites: data.favorites || [] } : null }
+ function clearUser() { user.value = null }
+ function profile(firebaseUser, data) {
+  return { ...data, uid: firebaseUser.uid, email: firebaseUser.email, name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || firebaseUser.displayName || firebaseUser.email, favorites: data.favorites || [], role: data.role || 'user' }
+ }
+ async function cache(data) {
+  // A senha é exclusiva do Firebase Auth, nunca do perfil ou cache.
+  const { password, ...safe } = data
+  await writeLocalData('profile:' + data.uid, safe).catch(() => {})
+ }
+ async function refresh() {
+  const current = auth.currentUser
+  if (!current) return clearUser()
+  const snap = await getDoc(doc(db, 'users', current.uid))
+  if (auth.currentUser?.uid !== current.uid) return
+  setUser(profile(current, snap.exists() ? snap.data() : {})); await cache(user.value)
+ }
+ onAuthStateChanged(auth, async current => {
+  const run = ++generation; unsubscribeProfile?.(); loadingUser.value = true; clearUser()
+  if (!current) { loadingUser.value = false; return }
+  const saved = await readLocalData('profile:' + current.uid).catch(() => null)
+  if (run !== generation) return
+  if (saved) setUser(profile(current, { ...saved, role: 'user' }))
+  unsubscribeProfile = onSnapshot(doc(db, 'users', current.uid), snap => {
+   if (run !== generation) return
+   if (snap.metadata.fromCache && !snap.exists() && saved) { loadingUser.value = false; return }
+   const data = snap.exists() ? snap.data() : {}
+   setUser(profile(current, navigator.onLine ? data : { ...data, role: 'user' })); cache(user.value); loadingUser.value = false
+  }, () => { loadingUser.value = false })
+  // O perfil salvo permite abrir a biblioteca mesmo sem internet.
+  if (saved && !navigator.onLine) loadingUser.value = false
+ })
+ async function logout() { await signOut(auth); clearUser() }
+ async function ativarAssinatura() { throw new Error('Use uma chave de acesso para ativar sua assinatura.') }
+ return { user, loadingUser, hasActiveSubscription, setUser, clearUser, refresh, logout, ativarAssinatura }
 })

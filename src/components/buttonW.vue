@@ -1,7 +1,7 @@
 <template>
   <div class="support-buttons">
     <!-- WhatsApp -->
-    <button class="Btn" @click="openWhatsApp">
+    <button class="Btn" @click="openWhatsApp" aria-label="Falar com suporte pelo WhatsApp">
       <div class="sign">
         <svg class="socialSvg whatsappSvg" viewBox="0 0 16 16">
           <path
@@ -97,4 +97,5 @@ const openWhatsApp = () => {
 .Btn:active {
   transform: translate(2px, 2px);
 }
+.support-buttons{position:static;align-items:center;margin:22px auto;z-index:auto}.Btn,.Btn:hover{width:170px;min-height:46px;border-radius:12px;justify-content:flex-start;gap:4px}.text,.Btn:hover .text{position:static;opacity:1;width:auto;padding:0;text-align:left;font-size:15px}
 </style>

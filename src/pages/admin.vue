@@ -1,22 +1,8 @@
-<template>
-  <div class='container'>
-    <AddMusicListAdmin />
-    <Chaves/>
-    <usersAdmin />
-  </div>
-</template>
-
+<template><main class="admin-shell"><header><span>REPERTÓRIO ATUALIZADO</span><h1>Central de administração</h1><p>Seu catálogo e seus acessos, no mesmo Firebase.</p></header><nav aria-label="Seções do administrador"><button v-for="item in sections" :key="item.id" :class="{active:tab===item.id}" @click="tab=item.id">{{ item.label }}</button></nav><KeepAlive><component :is="component"/></KeepAlive></main></template>
 <script setup>
+import { ref, computed, defineAsyncComponent } from 'vue'
+const sections=[{id:'v2',label:'Músicas V2'},{id:'normal',label:'Envio normal'},{id:'keys',label:'Chaves'},{id:'users',label:'Usuários'}]
+const modules={v2:defineAsyncComponent(()=>import('@/components/AddMusicListV2Admin.vue')),normal:defineAsyncComponent(()=>import('@/components/AddMusicListAdmin.vue')),keys:defineAsyncComponent(()=>import('@/components/chaves.vue')),users:defineAsyncComponent(()=>import('@/components/usersAdmin.vue'))}
+const tab=ref('v2'),component=computed(()=>modules[tab.value])
 </script>
-
-<style scoped>
-.container
-{
-    display:flex;
-    align-items: center;
-    justify-self: center;
-    height: auto;
-    flex-direction: column;
-    background-color: #121212;
-}
-</style>
+<style scoped>.admin-shell{background:#101614;color:white;min-height:100vh;padding:24px 12px 160px;display:flex;align-items:center;flex-direction:column;width:100%}header{width:min(100%,1100px);margin:15px 0 25px}header>span{font-size:11px;letter-spacing:2px;color:#67dfa1}h1{font-size:clamp(25px,5vw,36px);margin:12px 0}p{color:#a9bfb2}nav{display:flex;gap:8px;flex-wrap:wrap;width:min(100%,1100px);margin-bottom:22px}nav button{padding:12px 18px;border-radius:24px;background:#1c2821;color:#b5c9bd;border:1px solid #34533f;cursor:pointer}nav button.active{background:#5adc97;color:#0e2417;font-weight:700}</style>
