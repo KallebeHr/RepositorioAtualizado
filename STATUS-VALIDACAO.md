@@ -2,7 +2,7 @@
 
 ## Resultado
 
-55 testes e fluxos locais aprovados nesta revisão: 35 testes unitários/de integração e 20 fluxos no Chromium. Os 10 testes de regras aprovados na revisão anterior continuam aplicáveis; o arquivo de regras não foi alterado. Os 19 primeiros fluxos de navegador passaram na execução completa, e o fluxo de volume/offline foi concluído em uma execução isolada. O build de produção foi gerado. O build informa avisos de tamanho de bundles, sem impedir a geração. As instalações limpas do frontend e backend foram validadas na revisão anterior; as dependências não foram alteradas nesta atualização.
+58 testes e fluxos locais aprovados nesta revisão: 35 testes unitários/de integração e 23 fluxos no Chromium. Os 23 fluxos de navegador passaram juntos em uma execução completa, sem erros de JavaScript. Os 10 testes de regras aprovados na revisão anterior continuam aplicáveis; o arquivo de regras não foi alterado. O build de produção foi gerado e conferido a partir de uma pasta de saída limpa. O build informa avisos de tamanho de bundles, sem impedir a geração. As instalações limpas do frontend e backend foram validadas na revisão anterior; as dependências não foram alteradas nesta atualização.
 
 ## Cobertura
 
@@ -23,12 +23,15 @@
 - Instalação no Android: instruções do menu Chrome, endereço copiado, identificação de navegador embutido, convite tardio com a ajuda aberta, cancelamento sem reutilizar o evento e convite capturado antes do carregamento do Vue.
 - iPhone/iPad: Safari, Compartilhar, Adicionar à Tela de Início, Editar Ações e Abrir como App Web quando disponível. Identificação de iPad que usa agente de Mac também coberta.
 - Volume: controle visível no player expandido, ganho na saída com volume HTML mantido em 1, redução medida do sinal de áudio, silêncio com equalizador desligado, restauração depois de recarregar e reprodução offline normal/V2 com uma única fonte. A restrição do iOS foi simulada no Chromium; não foi usado um aparelho iOS real.
+- Novo visual: barra flutuante no computador e player expandido no celular. Oito dimensões verificadas — 1280×850, 1920×1080, 1024×768, 900×1100, 768×1024, 390×844, 360×640 e 320×568 — com controles dentro da tela, pontos de toque desobstruídos, títulos longos e reprodução contínua durante o redimensionamento.
+- Celular na horizontal em 844×390: capa e controles lado a lado; botões, progresso e volume acessíveis. Preferência de movimento reduzido desativa as animações e a transformação da capa.
+- Interação: abrir pelo teclado, recolher com Escape e devolver o foco; silenciar e restaurar o último volume; abrir e fechar a fila sem pausar. O temporizador de 15 minutos pausou o áudio real após avanço simulado do relógio, mantendo uma única fonte Web Audio.
 
-As APIs locais normal e V2 iniciaram com as configurações fornecidas. A API normal respondeu HTTP 200 e `/health` da V2 respondeu HTTP 200, `storage: R2`, `testMode: false` e prefixo `musicas-v2`. Health confirma configuração local, não a permissão do token no bucket.
+Na revisão anterior, as APIs locais normal e V2 iniciaram com as configurações fornecidas. A API normal respondeu HTTP 200 e `/health` da V2 respondeu HTTP 200, `storage: R2`, `testMode: false` e prefixo `musicas-v2`. Health confirma configuração local, não a permissão do token no bucket. Os servidores e suas configurações não foram alterados nesta atualização do visual.
 
 ## Compatibilidade preservada
 
-O bloco de configuração de produção continua idêntico ao projeto original: **repertorio-d3552**. O componente de envio normal, servidor B2, servidor/uploader R2 e arquivos privados de configuração dos backends foram comparados com a base e permaneceram idênticos. O comando `npm run api` foi ajustado para carregar a configuração no diretório correto do backend.
+O bloco de configuração de produção continua idêntico ao projeto original: **repertorio-d3552**. O componente de envio normal, servidor B2, servidor/uploader R2, store do player e arquivos privados de configuração dos backends foram comparados com a base e permaneceram idênticos. O comando `npm run api` já contém o ajuste da revisão anterior para carregar a configuração no diretório correto do backend. A alteração de produção desta revisão está em `src/components/MusicPlayer.vue`; testes, capturas e guias acompanham a entrega.
 
 O build público foi verificado: sem credenciais privadas B2/R2 e sem configuração dos emuladores. Todos os 67 arquivos do precache existem. Os arquivos de configuração privados permanecem somente no backend e estão excluídos da publicação Vercel.
 

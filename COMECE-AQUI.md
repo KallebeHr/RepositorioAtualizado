@@ -2,6 +2,8 @@
 
 Esta versão usa o **mesmo Firebase `repertorio-d3552`**. Login e contas existentes continuam nele. Não configure `repertorio-cd75a`, não crie outra conta e não instale Firebase Admin para os envios.
 
+O novo visual do player está explicado em **`PLAYER-NOVO.md`**. Para aplicá-lo separadamente, substitua `src/components/MusicPlayer.vue`.
+
 ## O que mudou
 
 - Um player e uma mesa de som globais: a música continua ao navegar pelo menu, inclusive nas pastas, V2, favoritos e administração.

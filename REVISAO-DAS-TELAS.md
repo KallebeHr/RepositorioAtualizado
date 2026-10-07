@@ -62,6 +62,24 @@ O volume fica abaixo dos controles, com porcentagem. A captura mostra 20%. O tes
 
 ![Volume no player com identificação iOS simulada](tests/ui-volume-ios.png)
 
+## 11. Novo visual do player global
+
+A barra do computador usa controles identificados e progresso preenchido. No celular, a tela expandida agrupa a capa, a identificação, o transporte e as ações; volume e temporizador ficam visíveis. A disposição na horizontal coloca a capa ao lado dos controles. As capturas usam dados fictícios no Chromium.
+
+![Barra do player no computador](tests/player-design-desktop.png)
+
+![Player expandido no celular](tests/player-design-mobile.png)
+
+![Celular com largura de 320 pixels](tests/player-design-small.png)
+
+![Celular na horizontal](tests/player-design-landscape.png)
+
+![Título longo com controles preservados](tests/player-design-long-title.png)
+
+![Fila de reprodução](tests/player-design-queue.png)
+
+![Temporizador](tests/player-design-timer.png)
+
 ## Limites da conferência
 
 Capturas e testes de interação não comprovam conformidade completa de acessibilidade. Foram conferidos os controles principais, nomes acessíveis, visibilidade e áreas de toque. Safari real, Android/iOS em aparelho, instalação no sistema, tela bloqueada e política de suspensão do áudio dependem da validação nos dispositivos.
