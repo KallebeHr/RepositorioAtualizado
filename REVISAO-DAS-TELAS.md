@@ -16,7 +16,7 @@ Os três controles aparecem por escrito em uma linha de botões. A validação c
 
 ## 3. Instalação — fluxo da interface aprovado
 
-O botão abre uma tela com instruções e o convite nativo quando o navegador o oferece. O código foi validado com eventos de instalação simulados, inclusive o evento de conclusão durante o convite. A instalação real no sistema do aparelho depende do navegador e precisa ser conferida no dispositivo.
+O botão abre uma tela com instruções e aciona o convite nativo no primeiro toque quando o navegador o oferece. A oferta também é conservada quando chega antes do carregamento do aplicativo. O código foi validado com eventos de instalação simulados, inclusive o evento de conclusão durante o convite. A instalação real no sistema do aparelho depende do navegador e precisa ser conferida no dispositivo.
 
 ![Tela de instalação no celular](tests/ui-install-mobile.png)
 
@@ -40,7 +40,7 @@ A biblioteca vazia explica como preparar os áudios e oferece acesso aos dois ca
 
 ## 7. Player no celular — aprovado
 
-Ao expandir o player, a ação offline tem legenda e o equalizador continua acessível. Fechar o player volta à navegação sem parar a música.
+Ao expandir o player, a ação offline tem legenda, o equalizador continua acessível e o controle de volume aparece com porcentagem. Fechar o player volta à navegação sem parar a música.
 
 ![Player expandido no celular](tests/ui-player-mobile.png)
 
@@ -49,6 +49,18 @@ Ao expandir o player, a ação offline tem legenda e o equalizador continua aces
 A mesa abre acima do player expandido e mantém os ajustes ao trocar de rota. A validação conferiu uma única fonte Web Audio durante todos esses caminhos. Os controles também funcionam com as cópias salvas offline.
 
 ![Equalizador no celular](tests/ui-equalizer-mobile.png)
+
+## 9. Android — instruções aprovadas
+
+O Chrome tem um caminho pelo menu quando o convite nativo não aparece. O endereço pode ser copiado para sair de navegadores internos de outros aplicativos. A interface foi testada com identificação Android simulada no Chromium.
+
+![Instruções para Android](tests/ui-install-android.png)
+
+## 10. Volume no player do celular — aprovado em simulação
+
+O volume fica abaixo dos controles, com porcentagem. A captura mostra 20%. O teste manteve a propriedade HTML de volume em 1 e mediu a redução do sinal na saída Web Audio; também verificou silêncio com EQ desligado e restauração offline. Safari/iOS real ainda depende de conferência no aparelho.
+
+![Volume no player com identificação iOS simulada](tests/ui-volume-ios.png)
 
 ## Limites da conferência
 

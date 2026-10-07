@@ -1,8 +1,8 @@
-# Validação — 6 de outubro de 2026
+# Validação — 7 de outubro de 2026
 
 ## Resultado
 
-54 testes e fluxos locais aprovados: 27 testes unitários/de integração, 10 testes de regras no emulador Firestore e 17 fluxos no Chromium. Após o relato de CORS e dos botões difíceis de encontrar, os 27 testes e os 17 fluxos foram executados novamente com as correções; as regras não foram alteradas desde a execução aprovada dos 10 testes. Instalações limpas do frontend e backend por `npm ci` e build de produção aprovados. O build informa avisos de tamanho de bundles, sem impedir a geração.
+55 testes e fluxos locais aprovados nesta revisão: 35 testes unitários/de integração e 20 fluxos no Chromium. Os 10 testes de regras aprovados na revisão anterior continuam aplicáveis; o arquivo de regras não foi alterado. Os 19 primeiros fluxos de navegador passaram na execução completa, e o fluxo de volume/offline foi concluído em uma execução isolada. O build de produção foi gerado. O build informa avisos de tamanho de bundles, sem impedir a geração. As instalações limpas do frontend e backend foram validadas na revisão anterior; as dependências não foram alteradas nesta atualização.
 
 ## Cobertura
 
@@ -20,6 +20,9 @@
 - Configuração B2: consulta sem escrita, preservação das regras existentes, aplicação somente de CORS com backup/revisão e bloqueio de permissão insuficiente/conflito.
 - Barra com Instalar app, Ouvir offline e Equalizador: visibilidade, área de toque e acesso no computador e no celular. Tela de instalação, evento de convite nativo simulado e instruções de Safari com identificação iOS simulada no Chromium.
 - Player expandido no celular: Salvar offline identificado, equalizador acima do player, fechar ambos e continuar reproduzindo com a mesma fonte de áudio. Capturas conferidas em `REVISAO-DAS-TELAS.md`.
+- Instalação no Android: instruções do menu Chrome, endereço copiado, identificação de navegador embutido, convite tardio com a ajuda aberta, cancelamento sem reutilizar o evento e convite capturado antes do carregamento do Vue.
+- iPhone/iPad: Safari, Compartilhar, Adicionar à Tela de Início, Editar Ações e Abrir como App Web quando disponível. Identificação de iPad que usa agente de Mac também coberta.
+- Volume: controle visível no player expandido, ganho na saída com volume HTML mantido em 1, redução medida do sinal de áudio, silêncio com equalizador desligado, restauração depois de recarregar e reprodução offline normal/V2 com uma única fonte. A restrição do iOS foi simulada no Chromium; não foi usado um aparelho iOS real.
 
 As APIs locais normal e V2 iniciaram com as configurações fornecidas. A API normal respondeu HTTP 200 e `/health` da V2 respondeu HTTP 200, `storage: R2`, `testMode: false` e prefixo `musicas-v2`. Health confirma configuração local, não a permissão do token no bucket.
 
@@ -27,7 +30,7 @@ As APIs locais normal e V2 iniciaram com as configurações fornecidas. A API no
 
 O bloco de configuração de produção continua idêntico ao projeto original: **repertorio-d3552**. O componente de envio normal, servidor B2, servidor/uploader R2 e arquivos privados de configuração dos backends foram comparados com a base e permaneceram idênticos. O comando `npm run api` foi ajustado para carregar a configuração no diretório correto do backend.
 
-O build público foi verificado: sem credenciais privadas B2/R2 e sem configuração dos emuladores. Todos os 66 arquivos do precache existem. Os arquivos de configuração privados permanecem somente no backend e estão excluídos da publicação Vercel.
+O build público foi verificado: sem credenciais privadas B2/R2 e sem configuração dos emuladores. Todos os 67 arquivos do precache existem. Os arquivos de configuração privados permanecem somente no backend e estão excluídos da publicação Vercel.
 
 ## Validação que depende dos serviços e do aparelho
 
@@ -35,7 +38,7 @@ Nenhum upload foi feito nos buckets reais, nenhuma conta/documento foi alterado 
 
 Na investigação do erro informado, o MP3 real do B2 respondeu HTTP 206 com `Content-Type: audio/mpeg`, mas sem `Access-Control-Allow-Origin` para localhost. A consulta autenticada da configuração B2 retornou HTTP 502; nenhuma configuração remota foi alterada. Use os comandos de `CORRIGIR-PLAYER-CORS.md` no computador com acesso ao serviço. O arquivo do player no ZIP foi conferido: não instancia Howler e contém apenas uma criação de MediaElementSource.
 
-Os testes de navegador usaram Chromium em Linux, com tamanhos de computador/celular. O convite nativo de instalação e o evento de conclusão foram simulados para validar o código; a tela iOS usou identificação de navegador simulada, sem Safari real. Instalação no sistema do aparelho, tela bloqueada e execução em segundo plano precisam ser conferidas nos celulares usados pelo público. Navegação interna preserva a reprodução; fechar/recarregar o app ou o sistema encerrar o processo pode interrompê-la.
+Os testes de navegador usaram Chromium em Linux, com tamanhos de computador/celular. O convite nativo de instalação e o evento de conclusão foram simulados para validar o código; as telas Android/iOS usaram identificação de navegador simulada, sem celulares reais. O teste de volume também simulou o volume HTML imutável do iOS e mediu a saída Web Audio no Chromium. Instalação no sistema do aparelho, tela bloqueada e execução em segundo plano precisam ser conferidas nos celulares usados pelo público. Navegação interna preserva a reprodução; fechar/recarregar o app ou o sistema encerrar o processo pode interrompê-la.
 
 Para aplicar as regras, entre como admin na versão atualizada, importe as chaves antigas e publique o arquivo completo `firestore.rules` no mesmo Firebase, conforme `COMECE-AQUI.md`. A regra antiga que permite tudo não foi mantida como recomendação.
 

@@ -97,6 +97,7 @@
           aria-label="Volume do player"
           class="styled-slider vol-slider"
         />
+        <span class="volume-value" aria-hidden="true">{{ Math.round(player.volume * 100) }}%</span>
       </div>
     </div>
   </div>
@@ -493,6 +494,7 @@ onBeforeUnmount(() => { if(raf)cancelAnimationFrame(raf);window.removeEventListe
 
 .icon-vol { font-size: 18px; color: #b3b3b3; }
 .vol-slider { width: 100%; }
+.volume-value { display: none; }
 
 .badge {
   position: absolute;
@@ -620,6 +622,21 @@ onBeforeUnmount(() => { if(raf)cancelAnimationFrame(raf);window.removeEventListe
 
   .player-container.expanded .btn-play { width: 64px; height: 64px; background: #fff; color: #000; }
   .player-container.expanded .btn-play i { font-size: 32px; }
+
+  .player-container.expanded .right-section {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin-top: 10px;
+  }
+  .player-container.expanded .right-section > .btn-icon { display: none; }
+  .player-container.expanded .volume-control { width: 100%; gap: 12px; }
+  .player-container.expanded .vol-slider { height: 28px; background: transparent; }
+  .player-container.expanded .vol-slider::-webkit-slider-runnable-track { height: 4px; background: #737373; border-radius: 4px; }
+  .player-container.expanded .vol-slider::-webkit-slider-thumb { margin-top: -5px; }
+  .player-container.expanded .vol-slider::-moz-range-track { height: 4px; background: #737373; border-radius: 4px; }
+  .player-container.expanded .volume-value { display: inline; min-width: 34px; font-size: 12px; color: #ddd; text-align: right; }
 }
 
 

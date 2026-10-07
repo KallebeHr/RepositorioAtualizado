@@ -82,6 +82,8 @@ Para testar com seus serviços, publique uma música pequena em cada formulário
 
 ## 4. Instalar e ouvir offline
 
+A correção de instalação para Android/iPhone e de volume no iOS está explicada em **`CORRIGIR-INSTALACAO-E-VOLUME.md`**. O player expandido agora mostra o controle de volume no celular. No Android, o botão aproveita o convite nativo quando disponível; no iPhone, a instalação usa o menu Compartilhar do Safari.
+
 No site público em **HTTPS**, toque em **Instalar app**. No iPhone/iPad, use o Safari: **Compartilhar → Adicionar à Tela de Início**. Navegadores internos de WhatsApp/Instagram podem não oferecer instalação; abra no navegador do aparelho.
 
 Entre na conta com internet e acesso ativo. Escolha uma música e toque no ícone de nuvem **Salvar offline**, no catálogo, nas pastas ou no player. Aguarde a confirmação. Abra **Offline** para conferir as músicas e ouvir todas, pesquisar ou liberar espaço.

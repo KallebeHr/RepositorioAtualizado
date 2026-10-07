@@ -38,7 +38,7 @@
         </v-list>
 
         <!-- EXTRAS -->
-        <v-list-item class="drawer-item"><v-list-item-title><button class="drawer-install" @click="drawer=false;installDialogOpen=true">Instalar aplicativo</button></v-list-item-title></v-list-item>
+        <v-list-item class="drawer-item"><v-list-item-title><button class="drawer-install" @click="drawer=false;requestInstallation()">Instalar aplicativo</button></v-list-item-title></v-list-item>
         <v-list>
           <v-list-subheader class="drawer-subtitle">EXTRAS</v-list-subheader>
 
@@ -253,7 +253,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
-import { installDialogOpen } from '@/services/pwa'
+import { requestInstallation } from '@/services/pwa'
 import { useUserStore } from "@/stores/userStore";
 import { useRouter, useRoute } from "vue-router";
 import { signOut, onAuthStateChanged } from "firebase/auth";

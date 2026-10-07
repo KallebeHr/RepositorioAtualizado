@@ -1,6 +1,6 @@
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
-export const installPrompt = ref(null)
+export const installPrompt = shallowRef(null)
 export const appInstalled = ref(false)
 export const updateAvailable = ref(false)
 export const installDialogOpen = ref(false)
@@ -9,14 +9,26 @@ export const installMessage = ref('')
 export const pwaReady = ref(false)
 export const pwaError = ref('')
 let registration
+let initialized = false
 
 export function setupPwa() {
+  if (initialized) return
+  initialized = true
   appInstalled.value = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
+  const early = window.repertorioInstallCapture
+  if (early?.installed) appInstalled.value = true
+  if (early?.prompt && !appInstalled.value) installPrompt.value = early.prompt
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault()
     installPrompt.value = event
   })
   window.addEventListener('appinstalled', () => { appInstalled.value = true; installPrompt.value = null })
+  early?.detach()
+  delete window.repertorioInstallCapture
+  window.matchMedia('(display-mode: standalone)').addEventListener?.('change', event => {
+    appInstalled.value = event.matches || navigator.standalone === true
+    if (appInstalled.value) installPrompt.value = null
+  })
   if (!import.meta.env.PROD) return
   if (!window.isSecureContext) { pwaError.value = 'Abra o site em HTTPS para preparar a instalação e a abertura offline.'; return }
   if (!('serviceWorker' in navigator)) { pwaError.value = 'Este navegador não permite preparar a abertura offline. Abra o site em um navegador compatível.'; return }
@@ -35,6 +47,12 @@ export function setupPwa() {
   }
   if (document.readyState === 'complete') register()
   else window.addEventListener('load', register, { once: true })
+}
+
+export function requestInstallation() {
+  installDialogOpen.value = true
+  // prompt() permanece no gesto de toque, sem esperar outra ação do usuário.
+  if (installPrompt.value && !appInstalled.value) return installApp()
 }
 
 export async function installApp() {

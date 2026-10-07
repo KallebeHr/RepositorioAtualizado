@@ -33,9 +33,6 @@ b2-backend/.env.*
 tests/browser-failure.png
 b2-backend/b2-cors-backup-*.json
 
-b2-backend/firebase-service-account*.json
-
+# Credenciais e pacotes locais não acompanham os commits de publicação.
 b2-backend/firebase-service-account*.json
 b2-backend/*.zip
-b2-backend/.env
-b2-backend/.env.r2-v2

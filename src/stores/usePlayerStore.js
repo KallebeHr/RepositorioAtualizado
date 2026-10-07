@@ -3,6 +3,7 @@ import { markRaw } from 'vue'
 import { useUserStore } from './userStore.js'
 import { getPlaybackSource } from '../services/offline.js'
 import { normalizeTrack, trackKey } from '../utils/media.js'
+import { applyPlaybackVolume, normalizeVolume } from '../utils/audio-volume.mjs'
 
 // Um único elemento de áudio e um único grafo, independente da rota.
 let audio, context, source, input, output, filters = [], currentBlobUrl
@@ -40,10 +41,11 @@ export const usePlayerStore = defineStore('player', {
         if (!saved) return
         this.queue = (saved.queue || []).filter(track => track?.downloadUrl).slice(0,500).map(normalizeTrack)
         this.currentIndex = this.queue.length ? Math.max(0, Math.min(this.queue.length-1, saved.currentIndex || 0)) : -1
-        this.volume = Math.max(0, Math.min(1, Number(saved.volume) || 0))
+        this.volume = normalizeVolume(saved.volume, 1)
         this.eq.enabled = saved.eq?.enabled !== false
         this.eq.bands.forEach((b,i) => { b.gain = Math.max(-12,Math.min(12,Number(saved.eq?.gains?.[i]) || 0)); if(filters[i])filters[i].gain.value=b.gain })
         this._applyEq()
+        this._applyVolume()
       } catch {}
     },
     replaceQueue(list) {
@@ -83,7 +85,7 @@ export const usePlayerStore = defineStore('player', {
         pause: () => audio.pause(),
         play: () => audio.play(),
         stop: () => { audio.pause(); audio.currentTime = 0 },
-        volume: value => { audio.volume = value },
+        volume: value => { if (value !== undefined) this.setVolume(value); return this.volume },
       })
       return audio
     },
@@ -105,7 +107,7 @@ export const usePlayerStore = defineStore('player', {
         if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl)
         currentBlobUrl = playback.local ? playback.url : null
         element.src = playback.url
-        element.volume = this.volume
+        this._applyVolume()
         element.load()
         this._updateMediaSession()
         await element.play()
@@ -136,7 +138,8 @@ export const usePlayerStore = defineStore('player', {
     },
     prev() { if (audio?.currentTime > 3) this.seekTo(0); else this.play(Math.max(0, this.currentIndex - 1)) },
     seekTo(seconds) { if (audio && Number.isFinite(Number(seconds))) audio.currentTime = Math.max(0, Number(seconds)) },
-    setVolume(value) { this.volume = Math.max(0, Math.min(1, Number(value))); if (audio) audio.volume = this.volume; this.persist() },
+    _applyVolume() { applyPlaybackVolume(audio, output, context, this.volume) },
+    setVolume(value) { this.volume = normalizeVolume(value, this.volume); this._applyVolume(); this.persist() },
     setSleepTimer(minutes) { this.sleepAt = minutes > 0 ? Date.now() + minutes * 60000 : null },
     stop() {
       generation++
@@ -160,8 +163,6 @@ export const usePlayerStore = defineStore('player', {
         context = new (window.AudioContext || window.webkitAudioContext)()
         source = context.createMediaElementSource(audio)
         input = context.createGain(); output = context.createGain()
-        // Headroom para evitar distorção nos presets com ganho positivo.
-        output.gain.value = 0.75
         filters = this.eq.bands.map(band => {
           const filter = context.createBiquadFilter()
           filter.type = 'peaking'; filter.frequency.value = band.freq; filter.Q.value = 1; filter.gain.value = band.gain
@@ -171,8 +172,9 @@ export const usePlayerStore = defineStore('player', {
         filters.forEach((filter, index) => filter.connect(filters[index + 1] || output))
         output.connect(context.destination)
         this._applyEq()
+        this._applyVolume()
       }
-      if (context.state === 'suspended') await context.resume()
+      if (context.state === 'suspended' || context.state === 'interrupted') await context.resume()
       this.eq.ready = true
       return true
     },

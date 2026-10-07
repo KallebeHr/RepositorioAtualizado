@@ -6,6 +6,7 @@ import vm from 'node:vm'
 test('manifesto permite instalação e aponta para a biblioteca offline', async () => {
   const manifest = JSON.parse(await readFile(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'))
   assert.equal(manifest.display, 'standalone'); assert.equal(manifest.start_url, '/Offline')
+  assert.equal(manifest.prefer_related_applications, false)
   assert.deepEqual(manifest.icons.map(icon => icon.sizes), ['192x192', '512x512'])
 })
 test('worker de produção abre rotas offline sem consultar a rede e não intercepta Firebase', async () => {
@@ -19,6 +20,7 @@ test('worker de produção abre rotas offline sem consultar a rede e não interc
   const scope = { location: { origin: 'https://app.test' }, clients: { claim: async () => {} }, addEventListener: (name, handler) => { handlers[name] = handler } }
   vm.runInNewContext(script, { self: scope, URL, caches: { open: async () => cache, keys: async () => [] }, fetch: async () => { calls++; throw new Error('offline') } })
   handlers.install({ waitUntil: promise => pending.push(promise) }); await Promise.all(pending)
+  assert.ok(entries.has('/pwa-install-capture.js'), 'Captura antecipada também fica disponível offline')
   let response
   handlers.fetch({ request: { method:'GET', url:'https://app.test/Offline', mode:'navigate' }, respondWith: promise => { response = promise } })
   assert.equal(await (await response).text(), '<html>app</html>'); assert.equal(calls, 0)
