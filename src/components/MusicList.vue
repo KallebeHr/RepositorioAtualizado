@@ -100,6 +100,7 @@
 </template>
 
 <script setup>
+import { favoriteMatches } from "@/services/downloads"
 import { saveTrackOffline } from "@/services/downloads"
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { db } from "@/firebase";
@@ -161,7 +162,7 @@ watch(filtradas, (nova) => player.setFullList(nova), { immediate: true });
 // ======= Funções =======
 async function fetchEstilos() {
   try {
-    const qs = await getDocs(collection(db, "estilos"));
+    const qs = await getDocs(collection(db, "estilosV2"));
     const arr = qs.docs.map(d => (d.data().nome || d.id).toString()).filter(Boolean);
     estilosList.value = Array.from(new Set(arr)).sort((a, b) => a.localeCompare(b));
   } catch (err) {
@@ -175,7 +176,7 @@ async function fetchCantoresPorEstilos() {
   if (!filtros.value.estilos.length) return;
   try {
     const q = query(
-      collection(db, "musicas"),
+      collection(db, "musicasV2"),
       where("tipo", "array-contains-any", filtros.value.estilos.slice(0, 10)),
       fbLimit(1000)
     );
@@ -196,7 +197,7 @@ async function fetchMusicas(limitePagina = limite) {
     let q;
     if (ultimaMusicaDoc) {
       q = query(
-        collection(db, "musicas"),
+        collection(db, "musicasV2"),
         where("tipo", "array-contains-any", filtros.value.estilos.slice(0, 10)),
         orderBy("createdAt", "desc"),
         startAfter(ultimaMusicaDoc),
@@ -204,7 +205,7 @@ async function fetchMusicas(limitePagina = limite) {
       );
     } else {
       q = query(
-        collection(db, "musicas"),
+        collection(db, "musicasV2"),
         where("tipo", "array-contains-any", filtros.value.estilos.slice(0, 10)),
         orderBy("createdAt", "desc"),
         fbLimit(limitePagina)
@@ -280,14 +281,14 @@ function playNow(m) { if (!userStore.hasActiveSubscription) toast.warning("Assin
 async function download(m) { if (!userStore.hasActiveSubscription) { toast.warning("Assinatura necessária"); return; } if (!m.downloadUrl) return; try { const res = await fetch(m.downloadUrl); if(!res.ok) throw new Error(); const blob = await res.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = m.fileName || "musica.mp3"; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); } catch(e){toast.error("Erro ao baixar");} }
 
 // Favoritos
-function isFavorite(id) { return userStore.user?.favorites?.includes(id); }
+function isFavorite(id) { return userStore.user?.favorites?.some(value => favoriteMatches(value, id)); }
 
 async function toggleFavorite(m) {
   if (!userStore.user) { toast.warning("Login necessário"); return; }
   const userRef = doc(db, "users", userStore.user.uid);
   try {
     if (isFavorite(m.id)) {
-      await updateDoc(userRef, { favorites: arrayRemove(m.id) });
+      await updateDoc(userRef, { favorites: arrayRemove(...(userStore.user.favorites || []).filter(value => favoriteMatches(value, m.id))) });
 
       toast.success(`Removida: ${m.title}`);
     } else {

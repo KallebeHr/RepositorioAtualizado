@@ -36,6 +36,7 @@ self.addEventListener('fetch', event => {
     })());
     return;
   }
+  if (!PRECACHE.includes(url.pathname)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     return await cache.match(request, { ignoreSearch: true }) || fetch(request);

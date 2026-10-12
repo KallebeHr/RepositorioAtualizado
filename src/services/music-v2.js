@@ -17,6 +17,7 @@ export const publishV2 = createV2Publisher({
     // Gera o ID no navegador sem ler o Firestore. Repetir uma pendência usa o mesmo ID.
     row.documentId ||= doc(collection(db, 'musicasV2')).id
     await setDoc(doc(db, 'musicasV2', row.documentId), { ...data, createdAt: serverTimestamp() })
+    window.dispatchEvent(new Event('repertorio:catalog-change'))
     return { id: row.documentId }
   },
 })

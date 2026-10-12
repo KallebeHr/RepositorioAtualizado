@@ -100,7 +100,7 @@ async function searchMusicas() {
     return
   }
 
-  const snap = await getDocs(collection(db, "musicas"))
+  const snap = await getDocs(collection(db, "musicasV2"))
   const allMusicas = snap.docs.map(d => ({ id: d.id, ...d.data() }))
 
   musicas.value = allMusicas.filter(m => {
@@ -119,7 +119,7 @@ function play(m) {
   }
 
   player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) })
+  updateDoc(doc(db, "musicasV2", m.id), { playCount: increment(1) })
 }
 
 function addQueue(m) {
@@ -143,7 +143,7 @@ async function download(m) {
   a.click()
   URL.revokeObjectURL(a.href)
 
-  await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) })
+  await updateDoc(doc(db, "musicasV2", m.id), { downloadCount: increment(1) })
 }
 </script>
 

@@ -36,3 +36,6 @@ b2-backend/b2-cors-backup-*.json
 # Credenciais e pacotes locais não acompanham os commits de publicação.
 b2-backend/firebase-service-account*.json
 b2-backend/*.zip
+
+.secrets/
+b2-backend/migration-report.json

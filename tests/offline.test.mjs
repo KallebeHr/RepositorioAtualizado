@@ -63,11 +63,12 @@ test('informa quando o espaço no aparelho é insuficiente', async () => {
 test('coleções normal e V2 com o mesmo ID têm arquivos separados', async () => {
  navigator.onLine=true; navigator.storage.estimate=async()=>({quota:100000,usage:0})
  globalThis.fetch=async url=>new Response(new Blob([String(url)],{type:'audio/mpeg'}))
- await saveOffline('mixed',track)
+ const legacy={...track,collectionName:'musicas'}
+ await saveOffline('mixed',legacy)
  const v2={...track,collectionName:'musicasV2',storageProvider:'r2',downloadUrl:'https://media.test/v2.mp3'}
  await saveOffline('mixed',v2)
  assert.equal((await listOffline('mixed')).length,2)
- assert.equal(await (await getTrackBlob('mixed',track)).text(),track.downloadUrl)
+ assert.equal(await (await getTrackBlob('mixed',legacy)).text(),track.downloadUrl)
  assert.equal(await (await getTrackBlob('mixed',v2)).text(),v2.downloadUrl)
  globalThis.fetch=originalFetch
 })
@@ -96,4 +97,14 @@ test('falha de rede/CORS informa a causa possível e não salva áudio inválido
   await assert.rejects(getTrackBlob('cors', track), /CORS do B2\/R2/)
   assert.equal((await listOffline('cors')).length, 0)
   globalThis.fetch = originalFetch
+})
+
+test('tarefas e arquivos temporários persistem isolados por conta sem apagar áudios offline',async()=>{
+ const {storeDownloadJob,listDownloadJobs,storeDownloadBlob,readDownloadBlob,deleteDownloadJob}=await import('../src/services/offline.js')
+ const job={id:'folder-job',mode:'zip',status:'paused',tracks:[track],completedKeys:['v2:song']}
+ await storeDownloadJob('job-owner',job);await storeDownloadBlob('job-owner',job.id,'v2:song',new Blob(['complete']))
+ assert.equal((await listDownloadJobs('job-owner'))[0].status,'paused');assert.equal((await listDownloadJobs('someone-else')).length,0)
+ assert.equal(await (await readDownloadBlob('job-owner',job.id,'v2:song')).text(),'complete');assert.equal(await readDownloadBlob('someone-else',job.id,'v2:song'),undefined)
+ await deleteDownloadJob('job-owner',job);assert.equal((await listDownloadJobs('job-owner')).length,0);assert.equal(await readDownloadBlob('job-owner',job.id,'v2:song'),undefined)
+ assert.equal((await listOffline('migration')).length,1)
 })

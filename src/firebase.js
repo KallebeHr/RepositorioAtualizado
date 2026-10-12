@@ -3,14 +3,14 @@ import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator, disableNetwork, enableNetwork } from "firebase/firestore";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyALP3q8oYZkAsCwVRXmsaa7VQjcxiUCQIg",
-  authDomain: "repertorio-atualizado-2f151.firebaseapp.com",
-  projectId: "repertorio-d3552",
-  storageBucket: "repertorio-d3552.firebasestorage.app",
-  messagingSenderId: "129323465959",
-  appId: "1:129323465959:web:c47094b11b143bd8ac3642",
-  measurementId: "G-V650X867G5"
+export const firebaseConfig = {
+  apiKey: "AIzaSyBuL7SgBY9qn3TiHJPqIPGRK61IUlKrIFE",
+  authDomain: "repertorio-cd75a.firebaseapp.com",
+  projectId: "repertorio-cd75a",
+  storageBucket: "repertorio-cd75a.firebasestorage.app",
+  messagingSenderId: "221534742186",
+  appId: "1:221534742186:web:ccb5250c140fed50b192d3",
+  measurementId: "G-Q60PBJWYH1"
 };
 
 // Inicializa Firebase

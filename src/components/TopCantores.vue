@@ -211,14 +211,14 @@ function requireSubscription() {
 
 /* 🔥 BUSCAR TOP 10 */
 async function fetchTopCantores() {
-  const q = query(collection(db, "cantores"), orderBy("downloads", "desc"), limit(10))
+  const q = query(collection(db, "cantoresV2"), orderBy("downloads", "desc"), limit(10))
   const snap = await getDocs(q)
   topCantores.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
 /* 🎵 Buscar músicas */
 async function fetchMusicas() {
-  const snap = await getDocs(collection(db, "musicas"))
+  const snap = await getDocs(collection(db, "musicasV2"))
   musicas.value = snap.docs.map(d => d.data())
 }
 

@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+import { favoriteMatches } from "@/services/downloads"
 import { computed } from "vue";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useUserStore } from "@/stores/userStore";
@@ -76,7 +77,7 @@ const userStore = useUserStore();
 const toast = useToast();
 
 const isFavorite = computed(() =>
-  userStore.user?.favorites?.includes(props.music.id)
+  userStore.user?.favorites?.some(value => favoriteMatches(value, props.music.id))
 );
 
 function normalize() {
@@ -140,10 +141,10 @@ async function toggleFavorite() {
   try {
     if (isFavorite.value) {
       await updateDoc(ref, {
-        favorites: arrayRemove(props.music.id)
+        favorites: arrayRemove(...(userStore.user.favorites || []).filter(value => favoriteMatches(value, props.music.id)))
       });
       userStore.user.favorites =
-        userStore.user.favorites.filter(f => f !== props.music.id);
+        userStore.user.favorites.filter(f => !favoriteMatches(f, props.music.id));
     } else {
       await updateDoc(ref, {
         favorites: arrayUnion(props.music.id)

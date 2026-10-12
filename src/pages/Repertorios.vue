@@ -231,7 +231,7 @@ const parts = [
 async function fetchMusicas() {
   try {
     loading.value = true
-    const q = query(collection(db, "musicas"), orderBy("createdAt", "desc"))
+    const q = query(collection(db, "musicasV2"), orderBy("createdAt", "desc"))
     const qs = await getDocs(q)
     musicas.value = qs.docs.map(d => ({ id: d.id, ...d.data() }))
   } catch (err) {

@@ -18,7 +18,7 @@ export const useUserStore = defineStore('user', () => {
  async function cache(data) {
   // A senha é exclusiva do Firebase Auth, nunca do perfil ou cache.
   const { password, ...safe } = data
-  await writeLocalData('profile:' + data.uid, safe).catch(() => {})
+  await writeLocalData('profile:repertorio-cd75a:' + data.uid, safe).catch(() => {})
  }
  async function refresh() {
   const current = auth.currentUser
@@ -30,7 +30,7 @@ export const useUserStore = defineStore('user', () => {
  onAuthStateChanged(auth, async current => {
   const run = ++generation; unsubscribeProfile?.(); loadingUser.value = true; clearUser()
   if (!current) { loadingUser.value = false; return }
-  const saved = await readLocalData('profile:' + current.uid).catch(() => null)
+  const saved = await readLocalData('profile:repertorio-cd75a:' + current.uid).catch(() => null)
   if (run !== generation) return
   if (saved) setUser(profile(current, { ...saved, role: 'user' }))
   unsubscribeProfile = onSnapshot(doc(db, 'users', current.uid), snap => {

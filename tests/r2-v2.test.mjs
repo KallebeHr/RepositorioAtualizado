@@ -107,7 +107,13 @@ test('título, cantor, estilo e recibo inválidos não são cadastrados', async 
 })
 
 test('erro de cota identifica projeto compartilhado; permissão e conexão têm mensagens próprias', () => {
-  assert.match(v2Error({ code: 'resource-exhausted' }), /mesmo projeto repertorio-d3552/)
+  assert.match(v2Error({ code: 'resource-exhausted' }), /projeto repertorio-cd75a/)
   assert.match(v2Error({ code: 'permission-denied' }), /negou acesso/)
-  assert.match(v2Error({ code: 'ERR_NETWORK' }), /npm run api:v2/)
+  assert.match(v2Error({ code: 'ERR_NETWORK' }), /npm run api/)
+})
+
+test('envio de WAV calcula duração e tamanho para filtro e resumo da pasta',async t=>{
+ const base=await localApp(t),rate=8000,data=Buffer.alloc(44+rate*2);data.write('RIFF');data.writeUInt32LE(data.length-8,4);data.write('WAVEfmt ',8);data.writeUInt32LE(16,16);data.writeUInt16LE(1,20);data.writeUInt16LE(1,22);data.writeUInt32LE(rate,24);data.writeUInt32LE(rate*2,28);data.writeUInt16LE(2,32);data.writeUInt16LE(16,34);data.write('data',36);data.writeUInt32LE(data.length-44,40)
+ const body=new FormData();body.append('file',new Blob([data],{type:'audio/wav'}),'teste.wav');const response=await fetch(base+'/upload-music',{method:'POST',body,headers:{Origin:'http://localhost:3000'}});assert.equal(response.status,200);const uploaded=await response.json();assert.equal(uploaded.durationSeconds,1);assert.equal(uploaded.size,data.length);assert.ok(uploaded.bitrate>0)
+ let saved;await createV2Publisher({upload:async()=>uploaded,save:async doc=>{saved=doc;return{id:'audio'}}})({title:'Áudio',file:{}},'Cantor','Forró');assert.equal(saved.durationSeconds,1)
 })

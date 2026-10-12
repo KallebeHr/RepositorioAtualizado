@@ -309,6 +309,7 @@
   </section>
 </template>
 <script setup>
+import { favoriteMatches } from "@/services/downloads"
 import { Pagination, Navigation } from "swiper/modules"
 import "swiper/css/pagination"
 import "swiper/css/navigation"
@@ -397,7 +398,7 @@ function requireSubscription() {
           FETCH
 ====================== */
 async function fetchMusicas() {
-  const q = query(collection(db, "musicas"), orderBy("playCount", "desc"), limit(24))
+  const q = query(collection(db, "musicasV2"), orderBy("playCount", "desc"), limit(24))
   const snap = await getDocs(q)
 
   musicas.value = snap.docs.map(d => ({
@@ -441,7 +442,7 @@ function playMusic(m) {
   if (!requireSubscription()) return
 
   player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) })
+  updateDoc(doc(db, "musicasV2", m.id), { playCount: increment(1) })
 
   ensureEqConnection()
   // se modal aberto, garante visual atual
@@ -471,7 +472,7 @@ async function downloadMusic(m) {
   a.click()
   URL.revokeObjectURL(url)
 
-  await updateDoc(doc(db, "musicas", m.id), {
+  await updateDoc(doc(db, "musicasV2", m.id), {
     downloadCount: increment(1)
   })
 }
@@ -480,7 +481,7 @@ async function downloadMusic(m) {
           FAVORITOS
 ====================== */
 function isFavorite(id) {
-  return userStore.user?.favorites?.includes(id)
+  return userStore.user?.favorites?.some(value => favoriteMatches(value, id))
 }
 
 async function toggleFavorite(m) {
@@ -493,7 +494,7 @@ async function toggleFavorite(m) {
   }
 
   if (isFavorite(m.id)) {
-    await updateDoc(refUser, { favorites: arrayRemove(m.id) })
+    await updateDoc(refUser, { favorites: arrayRemove(...(userStore.user.favorites || []).filter(value => favoriteMatches(value, m.id))) })
 } else {
     await updateDoc(refUser, { favorites: arrayUnion(m.id) })
 }

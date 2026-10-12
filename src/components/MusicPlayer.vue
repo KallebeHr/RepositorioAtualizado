@@ -81,8 +81,9 @@
 
   <v-dialog v-model="showQueue" max-width="680" :z-index="11000" scrollable aria-labelledby="queue-title">
     <section class="modal queue-dialog">
-      <header class="modal-head"><div class="head-left"><span class="queue-mark"><i class="mdi mdi-playlist-music" aria-hidden="true" /></span><div><span class="section-kicker">ESCOLHA O PRÓXIMO SOM</span><h3 id="queue-title">Sua fila de reprodução</h3><p>{{ player.queue.length }} {{ player.queue.length === 1 ? 'música' : 'músicas' }} · toque para ouvir</p></div></div><button class="btn-icon close-queue-btn" @click="toggleQueue" title="Fechar Fila" aria-label="Fechar Fila"><i class="mdi mdi-close" aria-hidden="true" /></button></header>
+      <header class="modal-head"><div class="head-left"><span class="queue-mark"><i class="mdi mdi-playlist-music" aria-hidden="true" /></span><div><span class="section-kicker">ESCOLHA O PRÓXIMO SOM</span><h3 id="queue-title">Sua fila de reprodução</h3><p>{{ player.queue.length }} {{ player.queue.length === 1 ? 'música' : 'músicas' }} · toque para ouvir</p></div></div><button class="btn-icon close-queue-btn" @click="toggleQueue" title="Fechar Fila" aria-label="Fechar Fila"><i class="mdi mdi-close" aria-hidden="true" /></button></header><button class="save-playlist-button" @click="savePlaylist"><i class="mdi mdi-playlist-plus"/> Salvar fila em playlist</button>
       <div class="queue-toolbar"><span><span class="status-dot" aria-hidden="true" /> {{ player.isPlaying ? 'Sua música continua tocando' : 'Monte a sua sequência' }}</span><div class="actions"><button class="btn-clean" @click="clearQueue" :disabled="!player.queue.length" title="Limpar Fila">Limpar</button><button class="btn-pill" @click="downloadAllZip" :disabled="!player.queue.length"><i class="mdi mdi-folder-download-outline" aria-hidden="true" /> Baixar tudo</button></div></div>
+      <div class="continuation-setting"><label><input type="checkbox" :checked="player.continuousPlayback" @change="player.setContinuousPlayback($event.target.checked)"/> Continuar pela pasta ao terminar a fila</label><p v-if="player.continuationLabel">Próxima pasta: {{ player.continuationLabel }}</p><p v-if="player.continuing" role="status">Carregando a pasta…</p></div>
       <div v-if="player.queue.length" class="list">
         <div v-for="(q,i) in player.queue" :key="trackKey(q)" class="row" :class="{ active: i === player.currentIndex }">
           <button class="meta" @click="playAt(i)" :aria-label="'Ouvir ' + q.title" :aria-current="i === player.currentIndex ? 'true' : undefined"><span class="row-number">{{ String(i+1).padStart(2,'0') }}</span><span class="mini"><img src="/LogoMusic.jpg" alt="" /><span v-if="i === player.currentIndex" class="playing-overlay" aria-hidden="true"><span class="activity-bars" :class="{ paused: !player.isPlaying }"><b /><b /><b /><b /></span></span></span><span class="text"><span class="rt">{{ q.title }}</span><span class="ra">{{ q.cantor }}</span></span></button>
@@ -95,6 +96,7 @@
 </template>
 
 <script setup>
+import { useLibraryStore } from '@/stores/useLibraryStore'
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue"
 import { usePlayerStore } from "@/stores/usePlayerStore"
 import { useUserStore } from "@/stores/userStore"
@@ -103,7 +105,7 @@ import JSZip from "jszip"
 import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"
 import { db } from "@/firebase"
 
-import { saveTrackOffline, downloadTrack, downloadBlob, favoriteId } from '@/services/downloads'
+import { saveTrackOffline, downloadTrack, downloadBlob, favoriteId, favoriteMatches } from '@/services/downloads'
 import { getTrackBlob, OFFLINE_EVENT, listOffline } from '@/services/offline'
 import { trackKey } from '@/utils/media'
 
@@ -197,7 +199,7 @@ watch(()=>userStore.user?.uid,(uid,previous)=>{if(uid!==previous){player.restore
 watch(()=>userStore.hasActiveSubscription,active=>{if(!active && player.isPlaying)player.sound?.pause()})
 
 function isFavorite(id) {
-  return userStore.user?.favorites?.some(value => (typeof value === 'object' ? favoriteId(value) : value) === id)
+  return userStore.user?.favorites?.some(value => favoriteMatches(value, id))
 }
 
 async function toggleFavorite(m) {
@@ -209,8 +211,8 @@ async function toggleFavorite(m) {
   if (!Array.isArray(userStore.user.favorites)) userStore.user.favorites = []
 
   if (isFavorite(id)) {
-    const saved = userStore.user.favorites.find(value => (typeof value === "object" ? favoriteId(value) : value) === id)
-    await updateDoc(refUser, { favorites: arrayRemove(saved) })
+    const saved = userStore.user.favorites.filter(value => favoriteMatches(value, id))
+    await updateDoc(refUser, { favorites: arrayRemove(...saved) })
 } else {
     await updateDoc(refUser, { favorites: arrayUnion(id) })
 }
@@ -238,6 +240,7 @@ function setTimer(minutes) {
 
 onMounted(() => { raf = requestAnimationFrame(loop); window.addEventListener(OFFLINE_EVENT,refreshOffline); mobileQuery.addEventListener('change',viewportChange) })
 onBeforeUnmount(() => { if(raf)cancelAnimationFrame(raf);window.removeEventListener(OFFLINE_EVENT,refreshOffline);mobileQuery.removeEventListener('change',viewportChange) })
+function savePlaylist(){try{useLibraryStore().openPicker(player.queue);showQueue.value=false}catch(e){player.error=e.message}}
 </script>
 
 <style scoped>
@@ -351,4 +354,7 @@ onBeforeUnmount(() => { if(raf)cancelAnimationFrame(raf);window.removeEventListe
 }
 @media(max-width:600px) { .queue-dialog { border-radius: 20px; max-height: 88dvh; }.modal-head { padding: 20px 16px 15px; gap: 8px; }.head-left { gap: 9px; }.queue-mark { width: 37px; height: 40px; font-size: 22px; border-radius: 11px; }.section-kicker { font-size: 7px; }.head-left h3 { font-size: 17px; }.head-left p { font-size: 10px; }.queue-toolbar { margin-inline: 16px; flex-wrap: wrap; }.queue-toolbar>span { width: 100%; }.actions { width: 100%; justify-content: flex-end; }.actions button { min-height: 44px; }.list { padding: 0 8px 12px; }.row { gap: 5px; padding: 6px 4px; }.meta { gap: 8px; }.row-number { display: none; }.mini { width: 38px; height: 38px; border-radius: 10px; }.rt { font-size: 11px; }.ra { font-size: 9px; }.row-actions { gap: 0; }.row-actions button { min-width: 36px; min-height: 44px; font-size: 17px; } }
 @media(prefers-reduced-motion:reduce) { .player-container,.player-container *,.queue-dialog * { animation: none!important; transition: none!important; }.player-container.is-playing .cover { transform: none; }.player-reveal-enter-active,.player-reveal-leave-active,.track-change-enter-active,.track-change-leave-active { transition: none!important; } }
+.continuation-setting{padding:4px 8px 18px;color:#afc9ba;font-size:12px}.continuation-setting label{display:flex;align-items:center;gap:10px;min-height:44px}.continuation-setting input{width:18px;height:18px;accent-color:#83efbc}.continuation-setting p{margin:4px 0 0 28px;overflow-wrap:anywhere}
 </style>
+
+<style scoped>.save-playlist-button{margin:12px 20px;padding:10px 14px;border:1px solid #4b946c;color:#bff4d1;background:#1c3c29;border-radius:10px;min-height:44px}</style>

@@ -1,7 +1,5 @@
-# Guia atualizado
+# Catálogo unificado no R2
 
-Abra **COMECE-AQUI.md** para as instruções desta versão completa: player/equalizador globais, pastas, aplicativo instalável, offline, chaves e usuários paginados.
+A partir de 12/10/2026, o catálogo único é `musicasV2` no Firebase **repertorio-cd75a**. Todas as páginas e formulários usam essa coleção e a mesma API R2 local. O endereço `/MusicasV2` foi mantido para preservar links existentes.
 
-O Firebase continua sendo repertorio-d3552. A API local normal permanece na porta 3001 e a V2/R2 na porta 3004.
-
-As permissões desta atualização estão no arquivo completo **firestore.rules**. Importe os códigos antigos no admin antes de substituir a regra pública, conforme o guia.
+Siga **COMECE-AQUI.md** para configurar, iniciar e publicar. Para conservar dados do projeto antigo, use **MIGRACAO-FIREBASE-R2.md**. O envio administrativo usa `npm run api` na porta 3004; `npm run api:v2` abre o mesmo servidor.

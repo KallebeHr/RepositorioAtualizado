@@ -1,8 +1,8 @@
 <template>
   <div class="upload-page">
     <header class="header">
-      <h1 class="title">🚀 Upload de Músicas V2 em Lote</h1>
-      <p class="subtitle">Mesmo envio em lote: áudio no R2 e cadastro no Firebase atual.</p>
+      <h1 class="title">🚀 Upload de Músicas · R2 em Lote</h1>
+      <p class="subtitle">Mesmo envio em lote: áudio no R2 e cadastro no Firebase repertorio-cd75a.</p>
     </header>
 
     <div class="upload-card">
@@ -344,7 +344,7 @@ async function addCantor() {
   uploadError.value = ''
   try {
     const nome = novoCantor.value.trim()
-    const docRef = await addDoc(cantoresColRef, { nome })
+    const docRef = await addDoc(cantoresColRef, { nome, downloads: 0 })
     cantores.value.push({ id: docRef.id, nome })
     selectedCantor.value = nome
     novoCantor.value = ''
@@ -368,7 +368,7 @@ async function checkV2() {
   try {
     const { data } = await axios.get(V2_UPLOAD_URL + '/health', { timeout: 5000 })
     if (!data.ok || data.storage !== 'R2' || data.objectPrefix !== 'musicas-v2') throw new Error('Servidor diferente do R2 V2 esperado.')
-    uploadMessage.value = 'API local R2 configurada. O cadastro usa o Firebase atual pelo navegador.'
+    uploadMessage.value = 'API local R2 configurada. O cadastro usa o Firebase repertorio-cd75a pelo navegador.'
   } catch (err) { uploadError.value = v2Error(err) }
   finally { checking.value = false }
 }
@@ -391,7 +391,7 @@ async function uploadAll() {
         failures++
       }
     }
-    uploadMessage.value = `${successes} músicas V2 publicadas. ${failures} pendências.`
+    uploadMessage.value = `${successes} músicas publicadas. ${failures} pendências.`
   } finally { uploading.value = false }
 }
 

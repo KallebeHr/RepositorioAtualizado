@@ -1,24 +1,18 @@
-# Repertório Atualizado
+# Repertório Atualizado — Firebase único + R2
 
-Abra **COMECE-AQUI.md** para instalar e usar esta versão. Login, contas e catálogos continuam no Firebase `repertorio-d3552`. O áudio normal usa B2 e o V2 usa R2 pelas APIs locais.
+Vue 3, Vuetify, Pinia e Vite. Firebase **repertorio-cd75a** para Authentication/Firestore; R2 para os áudios. Publicação do frontend na Vercel. API de envio local na porta 3004.
 
-## Iniciar a versão instalável no computador
+- `COMECE-AQUI.md`: instalação, Firebase, administrador, R2, pastas e publicação.
+- `MIGRACAO-FIREBASE-R2.md`: ferramenta para copiar contas/perfis, chaves, catálogo e áudios antigos.
+- `PLAYER-NOVO.md`: componente visual do player global e controles.
+- `STATUS-VALIDACAO.md`: testes executados e limites da validação.
 
-Pare o servidor anterior, extraia em uma pasta nova e execute na pasta com `package.json`:
+As páginas de músicas, cantores, pastas e favoritos consultam o catálogo único `musicasV2`. Pastas permitem ouvir, adicionar à fila, baixar ZIP e salvar offline. O player continua pela pasta da última música quando a fila termina, com opção para desativar. Chaves limitadas/ilimitadas, paginação administrativa, PWA e equalizador permanecem disponíveis.
 
 ```powershell
 npm ci
 npm run api:setup
-npm run app:local
+npm run api
 ```
 
-Abra `http://localhost:3000`. Os botões **Instalar app**, **Ouvir offline** e **Equalizador** ficam na barra abaixo do menu, no computador e no celular.
-
-## Guias incluídos
-
-- **COMECE-AQUI.md**: instalação, contas, chaves, regras, envios, aplicativo e publicação.
-- **CORRIGIR-PLAYER-CORS.md**: versão do player e bloqueio do áudio B2; `npm run b2:cors:check` consulta e `npm run b2:cors` aplica a regra de download preservando as existentes.
-- **STATUS-VALIDACAO.md**: testes realizados e limites da validação.
-- **REVISAO-DAS-TELAS.md**: capturas conferidas dos controles e das telas.
-
-A reprodução continua durante a navegação interna. Instalação no aparelho, CORS dos serviços reais e execução em segundo plano precisam ser conferidos conforme os guias. As regras e o site público não foram publicados automaticamente.
+Em outro terminal: `npm run dev`. Para produção: `npm run build`. A configuração do Firebase foi alterada; a migração dos dados e a publicação remota precisam ser realizadas conforme os guias.

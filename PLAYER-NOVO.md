@@ -2,15 +2,11 @@
 
 O componente visual fica em **`src/components/MusicPlayer.vue`**. Ele é montado uma vez em `src/App.vue`; a reprodução usa `src/stores/usePlayerStore.js`.
 
-## Aplicar apenas o player
+## Aplicar esta revisão
 
-1. Guarde uma cópia do seu `src/components/MusicPlayer.vue` atual.
-2. Substitua-o pelo `MusicPlayer.vue` entregue junto desta atualização.
-3. Na pasta principal do projeto, execute `npm run build`.
-4. Publique pelo fluxo GitHub/Vercel que você já usa.
-5. Se o aplicativo instalado mostrar **Atualizar app**, pause a música e toque nesse botão.
+Nesta revisão de 12/10/2026, o player trabalha com o store e os serviços de pastas atualizados. Use o ZIP completo e siga `COMECE-AQUI.md`; trocar somente `MusicPlayer.vue` não instala a continuação por pasta nem a unificação do Firebase.
 
-Esta entrega atualiza os arquivos; a publicação no domínio depende dessa etapa. Você também pode usar o ZIP completo, que inclui o componente, testes e guias.
+O arquivo visual continua em `src/components/MusicPlayer.vue`, a lógica em `src/stores/usePlayerStore.js` e a seleção de pastas em `src/services/catalog.js` e `src/utils/folders.mjs`. A janela Fila permite ativar/desativar a continuação e mostra qual pasta vem depois.
 
 ## Usar os controles
 

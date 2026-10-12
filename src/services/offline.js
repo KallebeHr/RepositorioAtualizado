@@ -7,13 +7,15 @@ const pending = new Map()
 function openDatabase() {
   if (!('indexedDB' in globalThis)) return Promise.reject(new Error('Este navegador não permite salvar músicas offline.'))
   if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open('repertorio-offline', 2)
+    const request = indexedDB.open('repertorio-offline', 3)
     request.onupgradeneeded = event => {
       const db = request.result
       const tracks = event.oldVersion < 1 ? db.createObjectStore('tracks', { keyPath: 'key' }) : request.transaction.objectStore('tracks')
       if (event.oldVersion < 1) db.createObjectStore('data', { keyPath: 'key' })
-      tracks.createIndex('owner', 'owner')
-      const blobs = db.createObjectStore('blobs', { keyPath: 'key' })
+      if (!tracks.indexNames.contains('owner')) tracks.createIndex('owner', 'owner')
+      const blobs = db.objectStoreNames.contains('blobs') ? request.transaction.objectStore('blobs') : db.createObjectStore('blobs', { keyPath: 'key' })
+      if (!db.objectStoreNames.contains('downloadJobs')) { const jobs=db.createObjectStore('downloadJobs',{keyPath:'key'}); jobs.createIndex('owner','owner') }
+      if (!db.objectStoreNames.contains('downloadBlobs')) db.createObjectStore('downloadBlobs',{keyPath:'key'})
       // Migra arquivos anteriores sem baixar novamente.
       if (event.oldVersion === 1) {
         const cursor = tracks.openCursor()
@@ -122,11 +124,11 @@ export async function clearOffline(owner) {
   changed()
 }
 
-export async function getTrackBlob(owner, track) {
+export async function getTrackBlob(owner, track, options = {}) {
   const saved = await getOfflineRecord(owner, track).catch(() => null)
   if (saved) return saved.blob
   if (!navigator.onLine) throw new Error('Esta música não foi salva para ouvir offline.')
-  const response = await fetchAudio(resolveTrackUrl(track))
+  const response = await fetchAudio(resolveTrackUrl(track), options)
   if (!response.ok || response.status === 206) throw new Error('Não foi possível baixar a música completa.')
   const blob = await response.blob()
   if (!blob.size || /text\/html|application\/json/.test(blob.type)) throw new Error('Arquivo de áudio inválido.')
@@ -145,4 +147,13 @@ export async function readLocalData(key) {
 }
 export async function writeLocalData(key, value) {
   return operation('data', 'readwrite', store => store.put({ key, value: JSON.parse(JSON.stringify(value)) }))
+}
+
+const jobKey=(owner,id)=>`repertorio-cd75a:${owner}:${id}`
+export async function listDownloadJobs(owner){return owner ? operation('downloadJobs','readonly',s=>s.index('owner').getAll(owner)) : []}
+export async function storeDownloadJob(owner,job){return operation('downloadJobs','readwrite',s=>s.put({...JSON.parse(JSON.stringify(job)),key:jobKey(owner,job.id),owner}))}
+export async function storeDownloadBlob(owner,id,trackId,blob){return operation('downloadBlobs','readwrite',s=>s.put({key:jobKey(owner,id)+':'+trackId,blob}))}
+export async function readDownloadBlob(owner,id,trackId){return (await operation('downloadBlobs','readonly',s=>s.get(jobKey(owner,id)+':'+trackId)))?.blob}
+export async function deleteDownloadJob(owner,job){
+ const db=await openDatabase();return new Promise((resolve,reject)=>{const tx=db.transaction(['downloadJobs','downloadBlobs'],'readwrite');tx.objectStore('downloadJobs').delete(jobKey(owner,job.id));const s=tx.objectStore('downloadBlobs');for(const t of job.tracks)s.delete(jobKey(owner,job.id)+':'+trackKey(t));s.delete(jobKey(owner,job.id)+':archive');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})
 }

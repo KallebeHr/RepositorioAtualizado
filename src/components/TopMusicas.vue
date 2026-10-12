@@ -218,7 +218,7 @@ function requireSubscription() {
 
 /* 🔥 TOP 10 MÚSICAS */
 async function fetchTopMusicas() {
-  const q = query(collection(db, "musicas"), orderBy("playCount", "desc"), limit(10))
+  const q = query(collection(db, "musicasV2"), orderBy("playCount", "desc"), limit(10))
   const snap = await getDocs(q)
   topMusicas.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
@@ -252,7 +252,7 @@ async function handleDownload(music) {
 
     progress[music.id] = 100
 
-    await updateDoc(doc(db, "musicas", music.id), {
+    await updateDoc(doc(db, "musicasV2", music.id), {
       downloadCount: increment(1)
     })
 

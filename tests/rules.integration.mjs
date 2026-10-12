@@ -2,7 +2,7 @@ import { before,after,beforeEach,test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { initializeTestEnvironment,assertSucceeds,assertFails } from '@firebase/rules-unit-testing'
-import { doc,getDoc,getDocs,collection,setDoc,updateDoc,runTransaction,serverTimestamp,Timestamp,increment,query,orderBy,documentId,limit,startAfter } from 'firebase/firestore'
+import { doc,getDoc,getDocs,collection,setDoc,updateDoc,runTransaction,serverTimestamp,Timestamp,increment,writeBatch,query,orderBy,documentId,limit,startAfter } from 'firebase/firestore'
 const projectId='demo-repertorio',hash='a'.repeat(64),hash2='b'.repeat(64)
 let env
 before(async()=>{env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8088,rules:await readFile('firestore.rules','utf8')}})})
@@ -29,3 +29,18 @@ test('chaves antigas mantêm renovação após expirar, sem renovar conta ainda 
  await assertSucceeds(redeem('alice'))
  assert.equal((await getDoc(doc(db,'accessKeys',hash))).data().activationCount,2)
 })
+
+test('playlists privadas permitem ordenar e mover listas em lote e bloqueiam outra conta',async()=>{
+ const db=client('alice'),a=doc(db,'users','alice','playlists','a'),b=doc(db,'users','alice','playlists','b');const p={name:'Minha lista',trackIds:['v2:1','v2:2'],createdAt:Date.now(),updatedAt:serverTimestamp()}
+ await assertSucceeds(setDoc(a,p));await assertSucceeds(updateDoc(a,{trackIds:['v2:2','v2:1'],updatedAt:serverTimestamp()}));await assertSucceeds(setDoc(b,{...p,name:'Outra',trackIds:[]}))
+ const move=writeBatch(db);move.update(a,{trackIds:['v2:1'],updatedAt:serverTimestamp()});move.update(b,{trackIds:['v2:2'],updatedAt:serverTimestamp()});await assertSucceeds(move.commit());assert.deepEqual((await getDoc(a)).data().trackIds,['v2:1']);assert.deepEqual((await getDoc(b)).data().trackIds,['v2:2'])
+ await assertFails(getDoc(doc(client('bob'),'users','alice','playlists','a')));await assertFails(getDocs(collection(client('bob'),'users','alice','playlists')));await assertFails(setDoc(doc(client('bob'),'users','alice','playlists','hack'),p))
+ await assertFails(updateDoc(a,{trackIds:['v2:1','v2:1'],updatedAt:serverTimestamp()}));await assertFails(updateDoc(a,{name:'',updatedAt:serverTimestamp()}));await assertFails(updateDoc(a,{trackIds:Array.from({length:501},(_,i)=>String(i)),updatedAt:serverTimestamp()}));await assertFails(updateDoc(a,{createdAt:1,updatedAt:serverTimestamp()}))
+})
+test('preferências e histórico têm regras próprias e não vazam para administrador ou visitante',async()=>{
+ const db=client('alice'),prefs=doc(db,'users','alice','musicSettings','main'),history=doc(db,'users','alice','history','v2%3A1')
+ await assertSucceeds(setDoc(prefs,{following:['João'],seen:{joao:Date.now()},syncHistory:true,updatedAt:serverTimestamp()}));await assertSucceeds(setDoc(history,{key:'v2:1',track:{id:'1',title:'Teste'},positionSeconds:15,durationSeconds:60,completed:false,lastPlayedAt:Date.now(),updatedAt:serverTimestamp()}))
+ for(const uid of ['bob','admin']){await assertFails(getDoc(doc(client(uid),'users','alice','musicSettings','main')));await assertFails(getDocs(collection(client(uid),'users','alice','history')))}
+ await assertFails(updateDoc(history,{positionSeconds:-1,updatedAt:serverTimestamp()}));await assertFails(updateDoc(prefs,{following:Array.from({length:101},(_,i)=>String(i)),updatedAt:serverTimestamp()}));await assertFails(updateDoc(prefs,{syncHistory:'true',updatedAt:serverTimestamp()}))
+})
+test('perfil desativado não pode escrever biblioteca privada',async()=>{await updateDoc(doc(client('admin'),'users','bob'),{disabled:true});await assertFails(setDoc(doc(client('bob'),'users','bob','playlists','x'),{name:'Teste',trackIds:[],createdAt:Date.now(),updatedAt:serverTimestamp()}))})

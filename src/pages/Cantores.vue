@@ -2,7 +2,7 @@
   <div class="cantores-page">
     <header class="header">
       <h1 class="title">🎤 Nossos Cantores 🎤</h1>
-      <p class="subtitle">Clique no cantor para baixar todas as músicas em ZIP</p>
+      <p class="subtitle">Ouça por cantor, explore as pastas e baixe suas músicas.</p>
     </header>
 
     <section class="search">
@@ -29,7 +29,10 @@
           <h2 class="cantor-name">{{ c }}</h2>
           <p class="track-count">{{ countMusicas(c) }} músicas</p>
         </div>
+        <FolderSummary :tracks="musicas.filter(m=>m.cantor===c)"/>
         <div class="actions">
+<button @click="follow(c)">{{ followed(c)?'Seguindo':'Seguir cantor' }}</button>
+          <button @click="router.push({path:'/Pastas',query:{cantor:c}})">Ouvir e ver pastas</button>
           <button
             class="primary"
             :disabled="progress[c] && progress[c] < 100"
@@ -62,7 +65,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, reactive } from "vue"
+import {useLibraryStore} from '@/stores/useLibraryStore'
+import {useDownloadStore} from '@/stores/useDownloadStore'
+import {artistKey} from '@/utils/music-library.mjs'
+import FolderSummary from '@/components/FolderSummary.vue'
+import { ref, computed, onMounted, onBeforeUnmount } from "vue"
+import { useRouter } from "vue-router"
 import { db } from "@/firebase"
 import { useToast } from "vue-toast-notification"
 import { useUserStore } from "@/stores/userStore"
@@ -75,16 +83,20 @@ const showScrollTop = ref(false)
 const cantores = ref([])
 const musicas = ref([])
 const busca = ref("")
+const router = useRouter()
 const toast = useToast()
 const userStore = useUserStore()
 
-const progress = reactive({})
+const downloads=useDownloadStore(),library=useLibraryStore()
+const progress = computed(()=>Object.fromEntries([...downloads.jobs].reverse().filter(j=>j.mode==='zip').map(j=>[j.label.replace(/-musicas$/,''),j.status==='running'||j.status==='queued'?Math.min(99,j.progress||1):100])))
+const followed=name=>library.following.some(n=>artistKey(n)===artistKey(name))
+async function follow(name){try{await library.follow(name)}catch(e){toast.error(e.message)}}
 
 // Buscar músicas do Firestore
 async function fetchMusicas() {
   try {
     loading.value = true
-    const q = query(collection(db, "musicas"), orderBy("createdAt", "desc"))
+    const q = query(collection(db, "musicasV2"), orderBy("createdAt", "desc"))
     const qs = await getDocs(q)
     musicas.value = qs.docs.map(d => ({ id: d.id, ...d.data() }))
     cantores.value = [...new Set(musicas.value.map(m => m.cantor).filter(Boolean))]
@@ -99,7 +111,7 @@ async function incrementDownloadCantor(cantor) {
   console.log("🔥 [DOWNLOAD] Cantor recebido:", cantor)
 
   try {
-    const colRef = collection(db, "cantores")
+    const colRef = collection(db, "cantoresV2")
 
     console.log("🔎 [DOWNLOAD] Buscando cantor no Firestore...")
     const q = query(colRef, where("nome", "==", cantor))
@@ -112,8 +124,8 @@ async function incrementDownloadCantor(cantor) {
       console.log("📄 [DOWNLOAD] Documento encontrado:", docRef.id)
 
       await updateDoc(docRef, {
-        downloads: increment(1),
-        updatedAt: serverTimestamp()
+        downloads: increment(1)
+        
       })
 
       console.log("✅ [DOWNLOAD] Downloads incrementado com sucesso!")
@@ -159,33 +171,14 @@ async function downloadAll(cantor) {
       return
     }
 
-    const JSZip = (await import("jszip")).default
-    const zip = new JSZip()
-    progress[cantor] = 0
-
-    for (let i = 0; i < tracks.length; i++) {
-      const t = tracks[i]
-      const res = await fetch(t.downloadUrl)
-      const blob = await res.blob()
-      zip.file(t.fileName || `${t.title || "musica"}.mp3`, blob)
-      progress[cantor] = Math.round(((i + 1) / tracks.length) * 100)
-    }
-
-    const content = await zip.generateAsync({ type: "blob" })
-    const a = document.createElement("a")
-    a.href = URL.createObjectURL(content)
-    a.download = `${cantor}-musicas.zip`
-    a.click()
-    URL.revokeObjectURL(a.href)
+    await downloads.enqueue(tracks,'zip',cantor+'-musicas')
     await incrementDownloadCantor(cantor)
-    toast.success(`ZIP de ${cantor} baixado!`)
-    progress[cantor] = 100
-    setTimeout(() => delete progress[cantor], 2000)
+    toast.success('Pasta adicionada à central de downloads. Você pode navegar.')
   } catch (err) {
     console.error("[Cantores] erro no download:", err)
     toast.error("Falha ao baixar ZIP")
 
-    delete progress[cantor]
+
   }
 }
 

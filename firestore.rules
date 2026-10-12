@@ -53,6 +53,37 @@ service cloud.firestore {
     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['firstName','lastName','name','numero','favorites'])) || subscriptionGrant(uid);
    allow delete: if admin();
   }
+  function privateOwner(uid) { return enabled() && uid == request.auth.uid; }
+  match /users/{uid}/playlists/{id} {
+   allow read, delete: if privateOwner(uid);
+   allow create, update: if privateOwner(uid)
+    && request.resource.data.keys().hasOnly(['name','trackIds','createdAt','updatedAt'])
+    && request.resource.data.name is string && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 80
+    && request.resource.data.trackIds is list && request.resource.data.trackIds.size() <= 500
+    && request.resource.data.trackIds.toSet().size() == request.resource.data.trackIds.size()
+    && request.resource.data.createdAt is number && request.resource.data.createdAt > 0
+    && request.resource.data.updatedAt == request.time
+    && (resource == null || request.resource.data.createdAt == resource.data.createdAt);
+  }
+  match /users/{uid}/musicSettings/{id} {
+   allow read, delete: if privateOwner(uid);
+   allow create, update: if privateOwner(uid) && id == 'main'
+    && request.resource.data.keys().hasOnly(['following','seen','syncHistory','updatedAt'])
+    && request.resource.data.following is list && request.resource.data.following.size() <= 100
+    && request.resource.data.seen is map && request.resource.data.seen.size() <= 100
+    && request.resource.data.syncHistory is bool && request.resource.data.updatedAt == request.time;
+  }
+  match /users/{uid}/history/{id} {
+   allow read, delete: if privateOwner(uid);
+   allow create, update: if privateOwner(uid)
+    && request.resource.data.keys().hasOnly(['key','track','positionSeconds','durationSeconds','completed','lastPlayedAt','updatedAt'])
+    && request.resource.data.key is string && request.resource.data.key.size() <= 1500
+    && request.resource.data.track is map
+    && request.resource.data.positionSeconds is number && request.resource.data.positionSeconds >= 0
+    && request.resource.data.durationSeconds is number && request.resource.data.durationSeconds >= 0
+    && request.resource.data.completed is bool && request.resource.data.lastPlayedAt is number
+    && request.resource.data.updatedAt == request.time;
+  }
   match /accessKeys/{id} {
    allow get: if enabled();
    allow list, create, delete: if admin();
@@ -90,7 +121,7 @@ service cloud.firestore {
   match /musicasV2/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || countersOnly(); }
   match /cantores/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || (enabled() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads']) && request.resource.data.downloads == resource.data.get('downloads',0)+1); }
   match /estilos/{id} { allow read: if true; allow write: if admin(); }
-  match /cantoresV2/{id} { allow read: if true; allow write: if admin(); }
+  match /cantoresV2/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || (enabled() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads']) && request.resource.data.downloads == resource.data.get('downloads',0)+1); }
   match /estilosV2/{id} { allow read: if true; allow write: if admin(); }
   match /{document=**} { allow read,write: if false; }
  }

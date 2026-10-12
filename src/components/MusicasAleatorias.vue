@@ -246,6 +246,7 @@ Processamento de áudio e funções do catálogo permanecem iguais ao original.
   </section>
 </template>
 <script setup>
+import { favoriteMatches } from "@/services/downloads"
 import { Pagination, Navigation } from "swiper/modules"
 import "swiper/css/pagination"
 import "swiper/css/navigation"
@@ -335,12 +336,12 @@ function requireSubscription() {
           FETCH
 ====================== */
 async function fetchMusicas() {
-  const q = query(collection(db, "musicas"), orderBy("playCount", "desc"), limit(56))
+  const q = query(collection(db, "musicasV2"), orderBy("createdAt", "desc"), limit(56))
   const snap = await getDocs(q)
 
   musicas.value = snap.docs.map(d => {
     const data = d.data()
-    return { ...data, id: d.id, collectionName: 'musicas', artist: data.cantor,
+    return { ...data, id: d.id, collectionName: 'musicasV2', artist: data.cantor,
       cover: data.coverUrl, fileName: data.fileName || `${data.title}.mp3`, playCount: data.playCount || 0 }
   })
 
@@ -368,7 +369,7 @@ function playMusic(m) {
   if (!requireSubscription()) return
 
   player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) }).catch(() => {})
+  updateDoc(doc(db, "musicasV2", m.id), { playCount: increment(1) }).catch(() => {})
 }
 
 function addToQueue(m) {
@@ -384,7 +385,7 @@ async function downloadMusic(m) {
 
   try {
     await downloadTrack(userStore.user.uid, m)
-    await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) }).catch(() => {})
+    await updateDoc(doc(db, "musicasV2", m.id), { downloadCount: increment(1) }).catch(() => {})
   } catch (error) {
     toast.open({ message: error.message || 'Não foi possível baixar a música.', type: 'error', position: 'top-right', duration: 6000 })
   }
@@ -402,7 +403,7 @@ async function saveLocal(m) {
           FAVORITOS
 ====================== */
 function isFavorite(id) {
-  return userStore.user?.favorites?.includes(id)
+  return userStore.user?.favorites?.some(value => favoriteMatches(value, id))
 }
 
 async function toggleFavorite(m) {
@@ -415,7 +416,7 @@ async function toggleFavorite(m) {
   }
 
   if (isFavorite(m.id)) {
-    await updateDoc(refUser, { favorites: arrayRemove(m.id) })
+    await updateDoc(refUser, { favorites: arrayRemove(...(userStore.user.favorites || []).filter(value => favoriteMatches(value, m.id))) })
 } else {
     await updateDoc(refUser, { favorites: arrayUnion(m.id) })
 }

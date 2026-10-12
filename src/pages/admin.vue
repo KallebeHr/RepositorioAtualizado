@@ -1,7 +1,7 @@
 <template><main class="admin-shell"><header><span>REPERTÓRIO ATUALIZADO</span><h1>Central de administração</h1><p>Seu catálogo e seus acessos, no mesmo Firebase.</p></header><nav aria-label="Seções do administrador"><button v-for="item in sections" :key="item.id" :class="{active:tab===item.id}" @click="tab=item.id">{{ item.label }}</button></nav><KeepAlive><component :is="component"/></KeepAlive></main></template>
 <script setup>
 import { ref, computed, defineAsyncComponent } from 'vue'
-const sections=[{id:'v2',label:'Músicas V2'},{id:'normal',label:'Envio normal'},{id:'keys',label:'Chaves'},{id:'users',label:'Usuários'}]
+const sections=[{id:'v2',label:'Enviar músicas · R2'},{id:'keys',label:'Chaves'},{id:'users',label:'Usuários'}]
 const modules={v2:defineAsyncComponent(()=>import('@/components/AddMusicListV2Admin.vue')),normal:defineAsyncComponent(()=>import('@/components/AddMusicListAdmin.vue')),keys:defineAsyncComponent(()=>import('@/components/chaves.vue')),users:defineAsyncComponent(()=>import('@/components/usersAdmin.vue'))}
 const tab=ref('v2'),component=computed(()=>modules[tab.value])
 </script>

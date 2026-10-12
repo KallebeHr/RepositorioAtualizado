@@ -80,7 +80,7 @@
       <nav class="main-menu" v-if="!isMobile">
         <ul>
           <li><RouterLink to="/AllMusic">MÚSICAS</RouterLink></li>
-          <li><RouterLink to="/MusicasV2">MÚSICAS V2</RouterLink></li>
+          <li><RouterLink to="/MusicasV2">TODAS AS MÚSICAS</RouterLink></li>
           <li><RouterLink to="/Repertorios">REPERTÓRIOS</RouterLink></li>
         </ul>
       </nav>
@@ -295,13 +295,13 @@ const loadingMessages = ref(false);
 const menuItems = [
   { title: "INICIO", href: "/" },
   { title: "MÚSICAS", href: "/AllMusic" },
-  { title: "MÚSICAS V2", href: "/MusicasV2" },
+  { title: "TODAS AS MÚSICAS", href: "/MusicasV2" },
   { title: "VER PASTAS", href: "/Pastas" },
   { title: "COMO ATIVAR OU BAIXAR", href: "/Tutoriais" },
   { title: "REPERTÓRIOS", href: "/Repertorios" },
   { title: "BAIXAR POR CANTORES", href: "/Cantores" },
 ];
-const libraryItems = [{ title: "FAVORITOS", href: "/favoritos" }, { title: "OFFLINE", href: "/Offline" }];
+const libraryItems = [{ title: "FAVORITOS", href: "/favoritos" }, { title: "OFFLINE", href: "/Offline" }, { title: "PLAYLISTS", href: "/Playlists" }, { title: "HISTÓRICO", href: "/Historico" }, { title: "DOWNLOADS", href: "/Downloads" }, { title: "SEGUINDO", href: "/Seguindo" }];
 
 function comprarAssinatura() {
   window.open("https://wa.me/5586995102595?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20repertorio.", "_blank");

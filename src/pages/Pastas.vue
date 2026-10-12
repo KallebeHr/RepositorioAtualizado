@@ -1,375 +1,171 @@
 <template>
-  <div class="explorer-page">
+  <main class="explorer-page">
     <header class="topbar">
-      <nav class="breadcrumb">
-        <button class="crumb root" @click="goRoot">
-          <i class="mdi mdi-music-box-multiple"></i>
-          <span class="crumb-text">Biblioteca</span>
-        </button>
-
-        <template v-if="currentCategory">
-          <span class="sep"><i class="mdi mdi-chevron-right"></i></span>
-          <button class="crumb" @click="goCategory">
-            <i class="mdi mdi-folder-open"></i>
-            <span class="crumb-text">{{ currentCategory }}</span>
-          </button>
-        </template>
-
-        <template v-if="currentArtist">
-          <span class="sep"><i class="mdi mdi-chevron-right"></i></span>
-          <span class="crumb active">
-            <i class="mdi mdi-account-music"></i>
-            <span class="crumb-text">{{ currentArtist }}</span>
-          </span>
-        </template>
+      <nav class="breadcrumb" aria-label="Caminho da pasta">
+        <button class="crumb root" @click="goRoot"><i class="mdi mdi-music-box-multiple"/><span>Biblioteca</span></button>
+        <template v-if="currentCategory"><span class="sep">›</span><button class="crumb" @click="goCategory">{{ currentCategory }}</button></template>
+        <template v-if="currentArtist"><span class="sep">›</span><span class="crumb active">{{ currentArtist }}</span></template>
       </nav>
-
-      <button class="btn-search" @click="openModal">
-        <i class="mdi mdi-magnify"></i>
-        <span class="btn-text">Buscar</span>
-      </button>
+      <button class="btn-search" @click="isOpen=true" aria-label="Buscar"><i class="mdi mdi-magnify"/><span>Buscar</span></button>
     </header>
-
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Carregando biblioteca...</p>
-    </div>
-
-    <div v-else-if="!currentCategory" class="grid-view">
-      <div class="section-label">
-        <i class="mdi mdi-folder-multiple"></i>
-        Estilos musicais — {{ categories.length }} pastas
+    <section class="folder-intro">
+      <span class="eyebrow">SEU REPERTÓRIO ORGANIZADO</span>
+      <h1>{{ currentArtist || currentCategory || 'Suas pastas de músicas' }}</h1>
+      <p>Escolha um estilo e um cantor. Ouça a pasta, baixe um ZIP ou guarde as músicas para ouvir sem internet.</p>
+      <div class="folder-options">
+        <label><input v-model="offlineOnly" type="checkbox"/> Somente salvas no aparelho</label>
+        <label><input :checked="player.continuousPlayback" type="checkbox" @change="player.setContinuousPlayback($event.target.checked)"/> Continuar pela pasta ao terminar a fila</label>
+        <button class="refresh-button" @click="load(true)" :disabled="loading || busy">Atualizar biblioteca</button>
       </div>
-
+      <p v-if="!online" class="connection-note" role="status">Sem internet: mostrando as músicas salvas neste aparelho.</p>
+    </section>
+    <p v-if="error" class="folder-error" role="alert">{{ error }}</p>
+    <section v-if="currentCategory || currentArtist" class="folder-toolbar" aria-label="Ações da pasta">
+      <div><strong>{{ folderTracks.length }} músicas nesta pasta</strong><small>{{ currentArtist ? [currentCategory,currentArtist].filter(Boolean).join(' / ') : 'Todos os cantores de '+currentCategory }}</small></div>
+      <FolderSummary :tracks="folderTracks"/>
+      <div class="folder-buttons">
+        <button class="primary" @click="playFolder(folderTracks,selectedFolder)" :disabled="!folderTracks.length" aria-label="Ouvir pasta"><i class="mdi mdi-play-circle"/>Ouvir pasta</button>
+        <button @click="queueFolder(folderTracks)" :disabled="!folderTracks.length" aria-label="Adicionar pasta à fila"><i class="mdi mdi-playlist-plus"/>Adicionar pasta à fila</button>
+        <button @click="playlist(folderTracks)" :disabled="!folderTracks.length"><i class="mdi mdi-playlist-music"/>Adicionar pasta à playlist</button>
+        <button @click="runBatch(folderTracks,'zip',selectedFolder)" :disabled="!folderTracks.length" aria-label="Baixar pasta (.zip)"><i class="mdi mdi-folder-download"/>Baixar pasta (.zip)</button>
+        <button @click="runBatch(folderTracks,'offline',selectedFolder)" :disabled="!folderTracks.length" aria-label="Salvar pasta offline"><i class="mdi mdi-cloud-download-outline"/>Salvar pasta offline</button>
+      </div>
+      <p class="folder-help">Ao fim da fila, a reprodução segue pela pasta da última música. Desative a opção acima para parar no fim.</p>
+    </section>
+    <section v-if="busy || batchMessage" class="batch-status" aria-label="Progresso da pasta" aria-live="polite">
+      <div><strong>{{ batchLabel }}</strong><span>{{ batchMessage }}</span></div>
+      <progress v-if="busy" :value="batchProgress" max="100" :aria-label="'Progresso '+batchLabel"/>
+      <button v-if="busy" @click="cancelBatch">Pausar</button>
+      <p v-if="batchFailures.length">{{ batchFailures.length }} pendências. Tente novamente: as músicas já salvas offline serão reaproveitadas.</p>
+      <details v-if="batchFailures.length"><summary>Ver músicas pendentes</summary><ul><li v-for="item in batchFailures" :key="item.id">{{ item.title }} — {{ item.error }}</li></ul></details>
+    </section>
+    <div v-if="loading" class="loading-state" role="status"><div class="spinner"/><p>Carregando biblioteca…</p></div>
+    <div v-else-if="!currentCategory && !currentArtist" class="grid-view">
+      <div class="section-label"><i class="mdi mdi-folder-multiple"/>Estilos musicais — {{ categories.length }} pastas</div>
       <div class="folders-grid">
-        <div
-          v-for="cat in categories"
-          :key="cat.name"
-          class="folder-card"
-          @click="openCategory(cat.name)"
-        >
-          <div class="folder-icon">
-            <i class="mdi mdi-folder"></i>
-            <span class="folder-badge">{{ cat.artistCount }}</span>
-          </div>
-
-          <div class="folder-info">
-            <p class="folder-name">{{ cat.name }}</p>
-            <p class="folder-meta">{{ cat.songCount }} músicas</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-else-if="currentCategory && !currentArtist" class="grid-view">
-      <div class="section-label">
-        <i class="mdi mdi-account-group"></i>
-        {{ currentCategory }} — {{ artists.length }} artistas
-      </div>
-
-      <div class="folders-grid">
-        <div
-          v-for="art in artists"
-          :key="art.name"
-          class="folder-card artist-folder"
-          @click="openArtist(art.name)"
-        >
-          <div class="folder-icon artist-icon">
-            <img
-              v-if="art.coverUrl"
-              :src="art.coverUrl"
-              class="artist-thumb"
-              alt=""
-            />
-            <i v-else class="mdi mdi-account-music"></i>
-            <span class="folder-badge">{{ art.songCount }}</span>
-          </div>
-
-          <div class="folder-info">
-            <p class="folder-name">{{ art.name }}</p>
-            <p class="folder-meta">{{ art.songCount }} músicas</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-else-if="currentArtist" class="list-view">
-      <div class="section-label">
-        <i class="mdi mdi-music-note-eighth"></i>
-        {{ currentArtist }} — {{ songs.length }} músicas
-      </div>
-
-      <div class="songs-list">
-        <div
-          v-for="(m, idx) in songs"
-          :key="m.id"
-          class="song-row"
-          :class="{ playing: player.current?.id === m.id }"
-          @dblclick="play(m)"
-        >
-          <span class="song-idx">{{ idx + 1 }}</span>
-
-          <img :src="m.coverUrl || '/LogoMusic.jpg'" class="song-cover" />
-
-          <div class="song-info">
-            <div class="song-title-wrap">
-              <p class="song-title">{{ m.title }}</p>
-            </div>
-            <p class="song-artist">{{ m.cantor }}</p>
-          </div>
-
-          <div class="song-tipo hide-on-mobile">
-            <span
-              v-for="t in (Array.isArray(m.tipo) ? m.tipo : [m.tipo])"
-              :key="t"
-              class="tag"
-            >
-              {{ t }}
-            </span>
-          </div>
-
-          <div class="song-actions">
-            <button
-              class="action-btn play-btn"
-              @click.stop="play(m)"
-              title="Tocar"
-            >
-              <i class="mdi mdi-play"></i>
-            </button>
-
-            <button
-              class="action-btn"
-              @click.stop="addQueue(m)"
-              title="Adicionar à fila"
-            >
-              <i class="mdi mdi-playlist-plus"></i>
-            </button>
-
-            <button class="action-btn offline-action" @click.stop="saveLocal(m)" title="Salvar offline" :aria-label="'Salvar offline '+m.title"><i class="mdi mdi-cloud-download-outline"/><span>Salvar offline</span></button>
-            <button
-              class="action-btn"
-              @click.stop="download(m)"
-              title="Baixar"
-            >
-              <i class="mdi mdi-download"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="isOpen" class="modal-overlay" @click.self="closeModal">
-      <div class="modal">
-        <header class="modal-header">
-          <h2><i class="mdi mdi-magnify"></i> Buscar música</h2>
-          <button class="close" @click="closeModal">
-            <i class="mdi mdi-close"></i>
+        <article v-for="cat in categories" :key="cat.name" class="folder-card">
+          <button class="folder-open" @click="openCategory(cat.name)" :aria-label="'Abrir pasta '+cat.name">
+            <div class="folder-icon"><i class="mdi mdi-folder"/><span class="folder-badge">{{ cat.artistCount }}</span></div>
+            <div class="folder-info"><p class="folder-name">{{ cat.name }}</p><p class="folder-meta">{{ cat.songCount }} músicas · {{ cat.artistCount }} cantores</p></div>
           </button>
-        </header>
-
-        <input
-          ref="inputRef"
-          v-model="queryText"
-          type="text"
-          class="search-input"
-          placeholder="Estilo, cantor ou título..."
-        />
-
-        <div v-if="searchResults.length" class="results">
-          <div v-for="m in searchResults" :key="m.id" class="music-card">
-            <img :src="m.coverUrl || '/LogoMusic.jpg'" class="cover" />
-
-            <div class="info">
-              <div class="modal-title-wrap">
-                <h3 class="title">{{ m.title }}</h3>
-              </div>
-              <p class="artist">{{ m.cantor }}</p>
-
-              <div class="tags hide-on-mobile">
-                <span
-                  v-for="t in (Array.isArray(m.tipo) ? m.tipo : [m.tipo])"
-                  :key="t"
-                  class="tag"
-                >
-                  {{ t }}
-                </span>
-              </div>
-            </div>
-
-            <div class="actions">
-              <button @click="play(m)" title="Tocar">
-                <i class="mdi mdi-play"></i>
-              </button>
-              <button @click="addQueue(m)" title="Fila">
-                <i class="mdi mdi-playlist-plus"></i>
-              </button>
-              <button @click="download(m)" title="Baixar">
-                <i class="mdi mdi-download"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <p v-else-if="queryText" class="empty">Nenhuma música encontrada</p>
-        <p v-else class="empty-hint">Digite para buscar na biblioteca completa</p>
+          <FolderSummary :tracks="cat.tracks"/>
+          <div class="folder-card-actions"><button @click="playFolder(cat.tracks,{genre:cat.name,artist:null})" :aria-label="'Ouvir pasta '+cat.name"><i class="mdi mdi-play"/>Ouvir</button><button @click="runBatch(cat.tracks,'zip',{genre:cat.name,artist:null})" :aria-label="'Baixar pasta '+cat.name"><i class="mdi mdi-download"/>ZIP</button></div>
+        </article>
       </div>
+      <p v-if="!categories.length" class="empty-hint">{{ offlineOnly || !online ? 'Nenhuma música salva. Conecte-se à internet e use Salvar pasta offline.' : 'Nenhuma música cadastrada no catálogo. Use o envio R2 na administração.' }}</p>
     </div>
-  </div>
+    <div v-else-if="!currentArtist" class="grid-view">
+      <div class="section-label"><i class="mdi mdi-account-group"/>{{ currentCategory }} — {{ artists.length }} artistas</div>
+      <div class="folders-grid">
+        <article v-for="art in artists" :key="art.name" class="folder-card artist-folder">
+          <button class="folder-open" @click="openArtist(art.name)" :aria-label="'Abrir pasta '+art.name">
+            <div class="folder-icon artist-icon"><img v-if="art.coverUrl" :src="art.coverUrl" class="artist-thumb" alt=""/><i v-else class="mdi mdi-account-music"/><span class="folder-badge">{{ art.songCount }}</span></div>
+            <div class="folder-info"><p class="folder-name">{{ art.name }}</p><p class="folder-meta">{{ art.songCount }} músicas</p></div>
+          </button>
+          <FolderSummary :tracks="art.tracks"/>
+          <div class="folder-card-actions"><button @click="playFolder(art.tracks,{genre:currentCategory,artist:art.name})" :aria-label="'Ouvir pasta '+art.name"><i class="mdi mdi-play"/>Ouvir</button><button @click="runBatch(art.tracks,'zip',{genre:currentCategory,artist:art.name})" :aria-label="'Baixar pasta '+art.name"><i class="mdi mdi-download"/>ZIP</button></div>
+        </article>
+      </div>
+      <p v-if="!artists.length" class="empty-hint">Esta pasta não possui músicas com o filtro atual.</p>
+    </div>
+    <div v-else class="list-view">
+      <div class="section-label"><i class="mdi mdi-music-note"/>{{ songs.length }} músicas
+        <select v-model="sortBy" aria-label="Ordenar músicas da pasta"><option value="title">Nome da música</option><option value="newest">Mais recentes</option></select>
+      </div>
+      <div class="songs-list">
+        <article v-for="(m,idx) in songs" :key="trackKey(m)" class="song-row" :class="{ 'song-playing':trackKey(player.current)===trackKey(m) }">
+          <span class="song-idx">{{ idx+1 }}</span><img :src="m.coverUrl || '/LogoMusic.jpg'" class="song-cover" alt=""/>
+          <div class="song-info"><div class="song-title-wrap"><p class="song-title">{{ m.title }}</p></div><p class="song-artist">{{ m.cantor }} <span v-if="savedKeys.has(trackKey(m))" class="saved-badge">Salva offline</span></p></div>
+          <div class="song-tipo hide-on-mobile"><span v-for="t in genresOf(m)" :key="t" class="tag">{{ t }}</span></div>
+          <div class="song-actions">
+            <button class="action-btn play-btn" @click="play(m)" title="Tocar" :aria-label="'Ouvir '+m.title"><i class="mdi mdi-play"/></button>
+            <button class="action-btn" @click="addQueue(m)" title="Adicionar à fila" :aria-label="'Adicionar '+m.title+' à fila'"><i class="mdi mdi-playlist-plus"/></button>
+            <button class="action-btn offline-action" @click="saveLocal(m)" title="Salvar offline" :aria-label="'Salvar offline '+m.title"><i class="mdi mdi-cloud-download-outline"/><span>Salvar offline</span></button>
+            <button class="action-btn" @click="playlist([m])" :aria-label="'Adicionar '+m.title+' à playlist'"><i class="mdi mdi-playlist-music"/></button>
+            <button class="action-btn" @click="download(m)" title="Baixar" :aria-label="'Baixar '+m.title"><i class="mdi mdi-download"/></button>
+          </div>
+        </article>
+      </div>
+      <p v-if="!songs.length" class="empty-hint">Nenhuma música nesta pasta com o filtro atual.</p>
+    </div>
+    <v-dialog v-model="isOpen" max-width="720" scrollable class="folder-search-dialog">
+      <section class="folder-search-panel"><header><h2>Buscar na biblioteca</h2><button @click="isOpen=false" aria-label="Fechar busca"><i class="mdi mdi-close"/></button></header>
+        <input v-model="queryText" type="search" autofocus placeholder="Estilo, cantor ou título…" aria-label="Pesquisar na biblioteca"/>
+        <p v-if="!queryText" class="empty-hint">Pesquise com ou sem acentos. A busca percorre todas as pastas disponíveis.</p>
+        <p v-else-if="!searchResults.length" class="empty-hint">Nenhuma música encontrada.</p>
+        <div class="results"><article v-for="m in searchResults.slice(0,100)" :key="trackKey(m)" class="search-result"><div><strong>{{ m.title }}</strong><p>{{ artistOf(m) }} · {{ genresOf(m).join(', ') }}</p></div><button @click="play(m,true)" :aria-label="'Ouvir '+m.title"><i class="mdi mdi-play"/></button><button @click="openTrackFolder(m)" :aria-label="'Abrir pasta de '+m.title"><i class="mdi mdi-folder-open"/></button></article></div>
+        <p v-if="searchResults.length>100">Mostrando 100 de {{ searchResults.length }} resultados. Refine a busca.</p>
+      </section>
+    </v-dialog>
+  </main>
 </template>
-
 <script setup>
-import { saveTrackOffline } from "@/services/downloads"
-import { ref, computed, nextTick, onMounted } from "vue"
-import { db } from "@/firebase"
-import { collection, getDocs, doc, updateDoc, increment } from "firebase/firestore"
-import { usePlayerStore } from "@/stores/usePlayerStore"
-import { useUserStore } from "@/stores/userStore"
-import { useToast } from "vue-toast-notification"
-
-const player = usePlayerStore()
-const userStore = useUserStore()
-const toast = useToast()
-
-/* ─── Estado ─── */
-const loading = ref(true)
-const allMusicas = ref([])
-
-const currentCategory = ref(null)
-const currentArtist = ref(null)
-
-const isOpen = ref(false)
-const queryText = ref("")
-const inputRef = ref(null)
-
-/* ─── Carrega tudo 1x ao montar ─── */
-onMounted(async () => {
-  const snap = await getDocs(collection(db, "musicas"))
-  allMusicas.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-  loading.value = false
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { db } from '@/firebase'
+import { doc, updateDoc, increment } from 'firebase/firestore'
+import { usePlayerStore } from '@/stores/usePlayerStore'
+import { useUserStore } from '@/stores/userStore'
+import { useToast } from 'vue-toast-notification'
+import { downloadTrack, downloadBlob, saveTrackOffline } from '@/services/downloads'
+import { listOffline, getTrackBlob, OFFLINE_EVENT } from '@/services/offline'
+import { getCatalog } from '@/services/catalog'
+import FolderSummary from '@/components/FolderSummary.vue'
+import { useDownloadStore } from '@/stores/useDownloadStore'
+import { useLibraryStore } from '@/stores/useLibraryStore'
+import { createMusicSearch } from '@/services/music-search.mjs'
+import { normalizeTrack, trackKey } from '@/utils/media'
+import { genresOf, artistOf, matchesFolder, folderOf, folderLabel, foldText } from '@/utils/folders.mjs'
+const player=usePlayerStore(),user=useUserStore(),toast=useToast(),route=useRoute(),router=useRouter()
+const downloads=useDownloadStore(),library=useLibraryStore(),lastJobId=ref('')
+const loading=ref(true),error=ref(''),allMusicas=ref([]),offlineRecords=ref([]),online=ref(navigator.onLine),offlineOnly=ref(false)
+const currentCategory=ref(typeof route.query.estilo==='string'?route.query.estilo:null),currentArtist=ref(typeof route.query.cantor==='string'?route.query.cantor:null)
+const isOpen=ref(false),queryText=ref(''),sortBy=ref('title')
+let loadRun=0
+const job=computed(()=>downloads.jobs.find(j=>j.id===lastJobId.value)),busy=computed(()=>!!job.value&&['running','queued'].includes(job.value.status)),batchProgress=computed(()=>job.value?.progress||0),batchLabel=computed(()=>job.value?.label||''),batchMessage=computed(()=>job.value?.message||''),batchFailures=computed(()=>job.value?.failures||[])
+const savedKeys=computed(()=>new Set(offlineRecords.value.map(record=>trackKey(record.track))))
+const available=computed(()=>offlineOnly.value || !online.value ? offlineRecords.value.map(record=>normalizeTrack(record.track)) : allMusicas.value)
+const selectedFolder=computed(()=>({genre:currentCategory.value,artist:currentArtist.value}))
+const folderTracks=computed(()=>available.value.filter(track=>matchesFolder(track,selectedFolder.value)))
+const categories=computed(()=>{
+ const map=new Map()
+ for(const track of available.value)for(const genre of genresOf(track).length?genresOf(track):['Sem estilo']){
+  if(!map.has(genre))map.set(genre,{name:genre,tracks:[],artists:new Set()})
+  const item=map.get(genre);item.tracks.push(track);item.artists.add(artistOf(track))
+ }
+ return [...map.values()].map(item=>({...item,songCount:item.tracks.length,artistCount:item.artists.size})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))
 })
-
-/* ─── Derivações: Categorias ─── */
-const categories = computed(() => {
-  const map = {}
-  for (const m of allMusicas.value) {
-    const tipos = Array.isArray(m.tipo) ? m.tipo : [m.tipo || "Sem estilo"]
-    for (const t of tipos) {
-      if (!map[t]) map[t] = { name: t, artists: new Set(), songCount: 0 }
-      map[t].artists.add(m.cantor)
-      map[t].songCount++
-    }
-  }
-  return Object.values(map)
-    .map(c => ({ ...c, artistCount: c.artists.size }))
-    .sort((a, b) => a.name.localeCompare(b.name))
+const artists=computed(()=>{
+ const map=new Map()
+ for(const track of available.value.filter(track=>matchesFolder(track,{genre:currentCategory.value}))){const name=artistOf(track);if(!map.has(name))map.set(name,{name,tracks:[],coverUrl:track.coverUrl});map.get(name).tracks.push(track)}
+ return [...map.values()].map(item=>({...item,songCount:item.tracks.length})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))
 })
-
-/* ─── Derivações: Artistas da categoria atual ─── */
-const artists = computed(() => {
-  if (!currentCategory.value) return []
-  const map = {}
-  for (const m of allMusicas.value) {
-    const tipos = Array.isArray(m.tipo) ? m.tipo : [m.tipo || "Sem estilo"]
-    if (!tipos.includes(currentCategory.value)) continue
-    const name = m.cantor || "Desconhecido"
-    if (!map[name]) map[name] = { name, songCount: 0, coverUrl: m.coverUrl || null }
-    map[name].songCount++
-  }
-  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
-})
-
-/* ─── Derivações: Músicas do artista atual ─── */
-const songs = computed(() => {
-  if (!currentArtist.value) return []
-  return allMusicas.value.filter(m => m.cantor === currentArtist.value && (Array.isArray(m.tipo) ? m.tipo : [m.tipo || "Sem estilo"]).includes(currentCategory.value))
-})
-
-/* ─── Busca reativa ─── */
-const searchResults = computed(() => {
-  const q = queryText.value.trim().toLowerCase()
-  if (!q) return []
-  return allMusicas.value.filter(m => {
-    const title = m.title?.toLowerCase() || ""
-    const cantor = m.cantor?.toLowerCase() || ""
-    const tipo = Array.isArray(m.tipo)
-      ? m.tipo.join(" ").toLowerCase()
-      : (m.tipo?.toLowerCase() || "")
-    return title.includes(q) || cantor.includes(q) || tipo.includes(q)
-  })
-})
-
-/* ─── Navegação ─── */
-function goRoot() {
-  currentCategory.value = null
-  currentArtist.value = null
-}
-
-function goCategory() {
-  currentArtist.value = null
-}
-
-function openCategory(name) {
-  currentCategory.value = name
-  currentArtist.value = null
-}
-
-function openArtist(name) {
-  currentArtist.value = name
-}
-
-/* ─── Modal ─── */
-function openModal() {
-  isOpen.value = true
-  nextTick(() => inputRef.value?.focus())
-}
-
-function closeModal() {
-  isOpen.value = false
-  queryText.value = ""
-}
-
-/* ─── Ações do player ─── */
-function play(m) {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura 🎶")
-    return
-  }
-  player.setFullList(songs.value)
-  player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) }).catch(() => {})
-  closeModal()
-}
-
-function addQueue(m) {
-     if (!userStore.hasActiveSubscription) {
-    toast.warning("Ative sua assinatura 🎶")
-    return
-  }
-  player.addToQueue(m, { playNow: false })
-  toast.success("Adicionada à fila ✓")
-}
-
-async function download(m) {
-  if (!userStore.hasActiveSubscription) {
-    toast.warning("Assinatura necessária")
-    return
-  }
-  if (!m.downloadUrl) return
-
-  const res = await fetch(m.downloadUrl)
-  const blob = await res.blob()
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(blob)
-  a.download = m.fileName || `${m.title}.mp3`
-  a.click()
-  URL.revokeObjectURL(a.href)
-
-  await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) })
-}
-async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await saveTrackOffline(userStore.user.uid,m);toast.success('Música salva offline.')}catch(e){toast.error(e.message)}}
+const songs=computed(()=>[...folderTracks.value].sort((a,b)=>sortBy.value==='newest' ? (b.createdAt?.seconds || 0)-(a.createdAt?.seconds || 0) : String(a.title || '').localeCompare(String(b.title || ''),'pt-BR',{numeric:true,sensitivity:'base'})))
+const searchIndex=computed(()=>createMusicSearch(available.value))
+const searchResults=computed(()=>searchIndex.value({text:queryText.value}))
+async function refreshOffline(){const uid=user.user?.uid,records=await listOffline(uid).catch(()=>[]);if(uid===user.user?.uid)offlineRecords.value=records}
+async function load(refresh=false){const run=++loadRun;loading.value=true;error.value='';await refreshOffline();try{if(navigator.onLine){const tracks=await getCatalog({refresh});if(run===loadRun)allMusicas.value=tracks}}catch(e){if(run===loadRun)error.value='Não foi possível carregar o catálogo. Confira a conexão e as regras do Firebase.'}finally{if(run===loadRun)loading.value=false}}
+function navigate(genre,artist){currentCategory.value=genre;currentArtist.value=artist;const query={...route.query};if(genre)query.estilo=genre;else delete query.estilo;if(artist)query.cantor=artist;else delete query.cantor;router.replace({query}).catch(()=>{})}
+const goRoot=()=>navigate(null,null),goCategory=()=>navigate(currentCategory.value,null),openCategory=name=>navigate(name,null),openArtist=name=>navigate(currentCategory.value,name)
+function openTrackFolder(track){const folder=folderOf(track);navigate(folder.genre,folder.artist);isOpen.value=false}
+function permitted(){if(!user.hasActiveSubscription){toast.warning('Ative sua assinatura para ouvir, baixar e salvar músicas.');return false}return true}
+function playFolder(tracks,folder){if(!permitted() || !tracks.length)return;player.replaceQueue(tracks,{folder});toast.success('Pasta em reprodução. Você pode navegar enquanto ouve.')}
+function queueFolder(tracks){if(!permitted())return;const added=player.addFolderToQueue(tracks);toast.success(`${added} músicas adicionadas à fila.`)}
+function play(track,fromSearch=false){if(!permitted())return;if(fromSearch)player.playbackFolder=folderOf(track);else player.playbackFolder=selectedFolder.value;player.addToQueue(track,{playNow:true});updateDoc(doc(db,'musicasV2',track.id),{playCount:increment(1)}).catch(()=>{});isOpen.value=false}
+function addQueue(track){if(permitted()){player.addToQueue(track);toast.success('Adicionada à fila.')}}
+async function download(track){if(!permitted())return;try{await downloadTrack(user.user.uid,track);if(navigator.onLine)updateDoc(doc(db,'musicasV2',track.id),{downloadCount:increment(1)}).catch(()=>{})}catch(e){toast.error(e.message)}}
+async function saveLocal(track){if(!permitted())return;try{await saveTrackOffline(user.user.uid,track);toast.success('Música salva neste aparelho.')}catch(e){toast.error(e.message)}}
+function playlist(tracks){try{library.openPicker(tracks)}catch(e){toast.error(e.message)}}
+function cancelBatch(){downloads.pause(lastJobId.value)}
+async function runBatch(tracks,mode,folder){if(!permitted()||!tracks.length)return;try{lastJobId.value=await downloads.enqueue(tracks,mode,folderLabel(folder));toast.success('Pasta adicionada à central de downloads. Você pode navegar.')}catch(e){toast.error(e.message)}}
+function networkChange(){online.value=navigator.onLine;if(online.value)load();else refreshOffline()}
+watch(()=>user.user?.uid,()=>{lastJobId.value='';refreshOffline()})
+watch(()=>[route.query.estilo,route.query.cantor],([genre,artist])=>{currentCategory.value=typeof genre==='string'?genre:null;currentArtist.value=typeof artist==='string'?artist:null})
+onMounted(()=>{load();window.addEventListener(OFFLINE_EVENT,refreshOffline);window.addEventListener('online',networkChange);window.addEventListener('offline',networkChange)})
+onBeforeUnmount(()=>{loadRun++;window.removeEventListener(OFFLINE_EVENT,refreshOffline);window.removeEventListener('online',networkChange);window.removeEventListener('offline',networkChange)})
 </script>
-
 <style scoped>
+
 .explorer-page {
   --bg: #0f0f13;
   --surface: #1a1a22;
@@ -1629,4 +1425,7 @@ async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.war
   }
 }
 .song-actions .offline-action{gap:6px;width:auto;min-height:44px;color:#a8edc5}.offline-action span{font-size:11px;white-space:nowrap}@media(max-width:600px){.song-row{grid-template-columns:44px minmax(0,1fr)}.song-actions{grid-column:1/-1;justify-content:flex-end;margin-top:4px}.song-actions .action-btn{min-width:44px;min-height:44px;justify-content:center}.song-title{animation:none;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}.song-tipo{display:none}}
+.folder-intro{padding:28px 24px 18px;max-width:1400px;margin:auto}.eyebrow{font-size:10px;letter-spacing:2px;color:#7ee8ba}.folder-intro h1{font-size:clamp(26px,4vw,38px);line-height:1.2;margin:10px 0}.folder-intro>p{color:#aebcb5;max-width:760px;line-height:1.65}.folder-options{display:flex;align-items:center;flex-wrap:wrap;gap:18px;margin-top:18px}.folder-options label{display:flex;align-items:center;gap:9px;font-size:13px;min-height:44px}.folder-options input{width:18px;height:18px;accent-color:#74e7ae}.refresh-button,.batch-status button{border:1px solid #315545;border-radius:10px;padding:12px;color:#bcead4}.folder-toolbar,.batch-status{margin:10px 24px 22px;padding:20px;border:1px solid #315545;border-radius:16px;background:linear-gradient(120deg,#173127,#141e1a)}.folder-toolbar strong{font-size:18px}.folder-toolbar small{display:block;color:#a8b9b0;margin-top:5px}.folder-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.folder-buttons button{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;min-height:46px;border-radius:10px;border:1px solid #37644d;font-size:13px;color:#d1e9dd;background:#1d3328}.folder-buttons button.primary{background:#8aefbd;color:#092b1a;font-weight:700}.folder-buttons button:disabled,.folder-card-actions button:disabled{opacity:.45;cursor:default}.folder-help{font-size:12px;color:#adc7b8;line-height:1.6;margin-top:16px}.folder-error{padding:14px 24px;color:#ffb5b5}.folder-card{padding:0!important;overflow:hidden;cursor:default!important}.folder-open{width:100%;display:flex;align-items:center;gap:12px;padding:18px;text-align:left;color:inherit;background:transparent}.folder-card-actions{border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr}.folder-card-actions button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;font-size:13px;color:#b4e9cf}.folder-card-actions button+button{border-left:1px solid var(--border)}.folder-open:focus-visible,.folder-card-actions button:focus-visible,.folder-buttons button:focus-visible,.song-actions button:focus-visible{outline:2px solid #8aefbd;outline-offset:-3px}.batch-status{display:flex;flex-wrap:wrap;align-items:center;gap:16px}.batch-status>div{flex:1;min-width:180px}.batch-status strong,.batch-status span{display:block;overflow-wrap:anywhere}.batch-status span{font-size:12px;color:#b5c5bc;margin-top:7px}.batch-status progress{accent-color:#87efb9;width:min(260px,100%);height:12px}.batch-status>p,.batch-status details{width:100%;font-size:13px}.batch-status summary{cursor:pointer}.batch-status ul{padding:12px 22px;overflow-wrap:anywhere}.saved-badge{color:#90e9b6;font-size:10px;margin-left:6px}.song-playing{border-color:#78d9a5!important;background:#182e23!important}.section-label select{margin-left:auto;border:1px solid #33473b;border-radius:8px;color:#c4d8ce;background:#19231e;padding:8px;font-size:12px;max-width:180px}.connection-note{color:#87dfb2!important;font-size:13px}.folder-search-panel{background:#12251b;color:#d7e9df;border:1px solid #315545;border-radius:18px;padding:20px;max-height:80dvh;overflow:auto}.folder-search-panel header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}.folder-search-panel header button,.search-result button{min-width:44px;min-height:44px;border:1px solid #315545;border-radius:10px;font-size:21px;color:#bcead4}.folder-search-panel input{width:100%;padding:14px;background:#0d1b14;border:1px solid #416b52;border-radius:10px;color:white}.search-result{display:flex;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #2a4535}.search-result>div{flex:1;min-width:0}.search-result strong{display:block;overflow-wrap:anywhere;font-size:14px}.search-result p{font-size:12px;color:#a7bcae;margin-top:6px}.folder-search-panel .results{max-height:none!important}.folder-search-panel .empty-hint{text-align:left;padding:20px 0!important}@media(max-width:600px){.folder-intro{padding:22px 16px 10px}.folder-options{gap:4px;align-items:flex-start;flex-direction:column}.folder-toolbar,.batch-status{margin:10px 12px 18px;padding:16px}.folder-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.folder-buttons button{padding:10px 7px;font-size:11px;line-height:1.4}.folder-open{padding:16px 12px}.song-actions{flex-wrap:wrap!important}.song-actions .offline-action{font-size:10px!important}.song-info{min-width:0}.song-title{overflow-wrap:anywhere}.folder-options label{font-size:12px}.section-label{flex-wrap:wrap}.section-label select{margin-left:0}.folder-search-panel{padding:16px}.folder-search-panel h2{font-size:19px}}@media(prefers-reduced-motion:reduce){.folder-card,.song-row{transition:none!important}}
 </style>
+
+<style scoped>.folder-card :deep(.folder-summary){padding:0 16px 10px}.song-actions{flex-wrap:wrap}.folder-toolbar :deep(.folder-summary){flex-basis:100%}</style>

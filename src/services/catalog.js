@@ -1,26 +1,28 @@
 import { collection, getDocs } from 'firebase/firestore'
-import { readLocalData, writeLocalData } from './offline.js'
-import { resolveMediaUrl } from '../utils/media.js'
+import { db } from '@/firebase'
+import { normalizeTrack } from '@/utils/media'
+import { matchesFolder } from '@/utils/folders.mjs'
+import { readLocalData, writeLocalData, listOffline } from './offline.js'
 
-let memory
-let loadedAt = 0
-let pending
-function snapshot(records) {
-  return { docs: records.map(record => ({ id: record.id, data: () => ({ ...record.data, downloadUrl: resolveMediaUrl(record.data.downloadUrl) }) })) }
-}
-export async function getMusicDocuments(db) {
-  if (memory && Date.now() - loadedAt < 300000) return snapshot(memory)
+let cached = null, pending = null, revision = 0
+export function invalidateCatalog() { revision++; cached = null; pending = null }
+if (typeof window !== 'undefined') window.addEventListener('repertorio:catalog-change', invalidateCatalog)
+export async function getCatalog({ refresh = false } = {}) {
+  if (refresh) invalidateCatalog()
+  if (!navigator.onLine) return (await readLocalData('catalog:repertorio-cd75a').catch(()=>[])) || []
+  if (cached && Date.now() - cached.at < 120000) return cached.tracks
   if (pending) return pending
-  pending = (async () => {
-    if (!navigator.onLine) {
-      const saved = await readLocalData('catalog')
-      return snapshot(saved || [])
-    }
-    const result = await getDocs(collection(db, 'musicas'))
-    memory = result.docs.map(document => ({ id: document.id, data: document.data() }))
-    loadedAt = Date.now()
-    await writeLocalData('catalog', memory).catch(() => {})
-    return snapshot(memory)
-  })().finally(() => { pending = null })
-  return pending
+  const run = revision
+  const task = getDocs(collection(db, 'musicasV2')).then(snapshot => {
+    const tracks = snapshot.docs.map(item => normalizeTrack({ ...item.data(), id: item.id, collectionName: 'musicasV2' }))
+    writeLocalData('catalog:repertorio-cd75a',tracks).catch(()=>{})
+    if (run === revision) cached = { tracks, at: Date.now() }
+    return tracks
+  }).finally(() => { if (pending === task) pending = null })
+  pending = task
+  return task
+}
+export async function getFolderTracks(folder, owner) {
+  const tracks = navigator.onLine ? await getCatalog() : (await listOffline(owner)).map(record => record.track)
+  return tracks.filter(track => matchesFolder(track, folder))
 }

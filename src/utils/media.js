@@ -20,7 +20,7 @@ export function resolveMediaUrl(value, base = configuredBase) {
 
 export function trackKey(track) {
   const id = String(track?.id || track?.objectKey || track?.fileId || objectKeyFromUrl(track?.downloadUrl) || track?.downloadUrl || '')
-  return id && (track?.collectionName === 'musicasV2' || track?.storageProvider === 'r2') ? 'v2:' + id : id
+  return id && (!track?.collectionName || track.collectionName === 'musicasV2' || track?.storageProvider === 'r2') ? 'v2:' + id : id
 }
 
 export function resolveTrackUrl(track, legacyBase=configuredBase, v2Base=configuredV2Base) {
@@ -33,7 +33,7 @@ export function resolveTrackUrl(track, legacyBase=configuredBase, v2Base=configu
 export function normalizeTrack(track) {
   return {
     ...track,
-    collectionName: track.collectionName || (track.storageProvider === 'r2' ? 'musicasV2' : 'musicas'),
+    collectionName: track.collectionName || (track.storageProvider === 'r2' ? 'musicasV2' : 'musicasV2'),
     id: String(track.id || track.objectKey || track.fileId || objectKeyFromUrl(track.downloadUrl) || track.downloadUrl || ''),
     cantor: track.cantor || track.artist || '',
     estilos: Array.isArray(track.estilos || track.tipo) ? (track.estilos || track.tipo) : (track.estilos || track.tipo) ? [track.estilos || track.tipo] : [],

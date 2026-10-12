@@ -30,4 +30,6 @@ test('worker de produção abre rotas offline sem consultar a rede e não interc
   let intercepted = false
   handlers.fetch({ request: { method:'GET', url:'https://firestore.googleapis.com/anything', mode:'cors' }, respondWith: () => { intercepted = true } })
   assert.equal(intercepted, false)
+  handlers.fetch({request:{method:'GET',url:'https://app.test/tone.wav?download=1',mode:'cors'},respondWith:()=>{intercepted=true}})
+  assert.equal(intercepted,false,'Áudio e downloads seguem direto para a rede, fora do cache do aplicativo')
 })

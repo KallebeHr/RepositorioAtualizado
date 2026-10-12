@@ -1,3 +1,4 @@
+import { parseFile } from 'music-metadata'
 import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
@@ -57,6 +58,8 @@ export function createApp({ env = process.env, uploadObject, objectPrefix = 'mus
       const fileName = path.basename(originalName).replace(/[\u0000-\u001f]/g, '')
       const objectKey = `${objectPrefix}/${objectPrefix === 'musicas-v2' && /^[a-f0-9-]{36}$/i.test(req.headers['x-upload-id'] || '') ? req.headers['x-upload-id'] : crypto.randomUUID()}-${fileName}`
       const mime = { '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.flac': 'audio/flac', '.opus': 'audio/ogg' }[extension]
+      let metadata = {}
+      try { const { format } = await parseFile(req.file.path,{duration:true,skipCovers:true}); if(Number.isFinite(format.duration)&&format.duration>0)metadata.durationSeconds=format.duration; if(Number.isFinite(format.bitrate)&&format.bitrate>0)metadata.bitrate=Math.round(format.bitrate); if(format.codec)metadata.codec=String(format.codec).slice(0,80) } catch {}
       req.on('aborted', abort)
       if (uploadObject) await uploadObject({ config, objectKey, file: req.file, mime })
       else {
@@ -69,7 +72,7 @@ export function createApp({ env = process.env, uploadObject, objectPrefix = 'mus
       }
       const downloadUrl = config.publicBase + '/' + objectKey.split('/').map(encodeURIComponent).join('/')
       await fsp.unlink(req.file.path).catch(() => {})
-      res.json({ fileId: objectKey, objectKey, storageProvider: 'r2', fileName, downloadUrl, size: req.file.size, contentType: mime })
+      res.json({ fileId: objectKey, objectKey, storageProvider: 'r2', fileName, downloadUrl, size: req.file.size, contentType: mime, ...metadata })
     } catch (error) {
       console.error('Upload R2:', error.name || 'erro')
       res.status(502).json({ error: 'Falha ao enviar para R2. Confira a configuração e a conexão.' })

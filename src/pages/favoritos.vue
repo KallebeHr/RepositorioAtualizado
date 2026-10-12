@@ -67,7 +67,7 @@ import { db } from '@/firebase'
 import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore'
 import { usePlayerStore } from '@/stores/usePlayerStore'
 import { useUserStore } from '@/stores/userStore'
-import { downloadTrack, favoriteId } from '@/services/downloads'
+import { downloadTrack, favoriteId, favoriteMatches } from '@/services/downloads'
 import { normalizeTrack, trackKey } from '@/utils/media'
 import { useToast } from 'vue-toast-notification'
 import { PlayIcon, ArrowDownTrayIcon, PlusCircleIcon, StarIcon } from '@heroicons/vue/24/solid'
@@ -77,16 +77,16 @@ let generation=0
 watch(()=>[user.user?.uid,user.user?.favorites],async()=>{
  const run=++generation;loading.value=true;error.value='';if(!user.user){favorites.value=[];loading.value=false;return}
  try{const results=await Promise.all((user.user.favorites||[]).map(async value=>{
- if(typeof value==='object' && value?.downloadUrl)return normalizeTrack(value)
+ if(typeof value==='object')value=value?.id || ''
  if(typeof value!=='string')return null
  const v2=value.startsWith('v2:'),id=v2?value.slice(3):value;if(!id)return null
- const snap=await getDoc(doc(db,v2?'musicasV2':'musicas',id));return snap.exists()?normalizeTrack({...snap.data(),id,collectionName:v2?'musicasV2':'musicas'}):null
+ const snap=await getDoc(doc(db,v2?'musicasV2':'musicasV2',id));return snap.exists()?normalizeTrack({...snap.data(),id,collectionName:v2?'musicasV2':'musicasV2'}):null
  }));if(run===generation)favorites.value=[...new Map(results.filter(Boolean).map(track=>[trackKey(track),track])).values()]}catch(e){if(run===generation)error.value=e.message}finally{if(run===generation)loading.value=false}
 },{immediate:true,deep:true})
 function permitted(){if(!user.hasActiveSubscription){toast.warning('Assinatura necessária');return false}return true}
 function enqueue(m){if(permitted())player.addToQueue(m)}
 function playNow(m){if(permitted()){player.setFullList(filtradas.value);player.addToQueue(m,{playNow:true})}}
-async function removeFavorite(m){try{const values=(user.user.favorites||[]).filter(value=>(typeof value==='object'?favoriteId(value):value)===favoriteId(m));if(values.length)await updateDoc(doc(db,'users',user.user.uid),{favorites:arrayRemove(...values)})}catch(e){toast.error(e.message)}}
+async function removeFavorite(m){try{const values=(user.user.favorites||[]).filter(value=>favoriteMatches(value,m));if(values.length)await updateDoc(doc(db,'users',user.user.uid),{favorites:arrayRemove(...values)})}catch(e){toast.error(e.message)}}
 async function download(m){if(permitted())try{await downloadTrack(user.user.uid,m)}catch(e){toast.error(e.message)}}
 async function baixarTodas(){for(const track of filtradas.value)await download(track)}
 </script>

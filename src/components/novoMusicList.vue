@@ -243,7 +243,7 @@ const inputRef = ref(null)
 
 /* ─── Carrega tudo 1x ao montar ─── */
 onMounted(async () => {
-  const snap = await getDocs(collection(db, "musicas"))
+  const snap = await getDocs(collection(db, "musicasV2"))
   allMusicas.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
   loading.value = false
 })
@@ -335,7 +335,7 @@ function play(m) {
     return
   }
   player.addToQueue(m, { playNow: true })
-  updateDoc(doc(db, "musicas", m.id), { playCount: increment(1) })
+  updateDoc(doc(db, "musicasV2", m.id), { playCount: increment(1) })
   closeModal()
 }
 
@@ -363,7 +363,7 @@ async function download(m) {
   a.click()
   URL.revokeObjectURL(a.href)
 
-  await updateDoc(doc(db, "musicas", m.id), { downloadCount: increment(1) })
+  await updateDoc(doc(db, "musicasV2", m.id), { downloadCount: increment(1) })
 }
 async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await saveTrackOffline(userStore.user.uid,m);toast.success('Música salva offline.')}catch(e){toast.error(e.message)}}
 </script>
