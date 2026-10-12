@@ -82,20 +82,25 @@
   <v-dialog v-model="showQueue" max-width="680" :z-index="11000" scrollable aria-labelledby="queue-title">
     <section class="modal queue-dialog">
       <header class="modal-head"><div class="head-left"><span class="queue-mark"><i class="mdi mdi-playlist-music" aria-hidden="true" /></span><div><span class="section-kicker">ESCOLHA O PRÓXIMO SOM</span><h3 id="queue-title">Sua fila de reprodução</h3><p>{{ player.queue.length }} {{ player.queue.length === 1 ? 'música' : 'músicas' }} · toque para ouvir</p></div></div><button class="btn-icon close-queue-btn" @click="toggleQueue" title="Fechar Fila" aria-label="Fechar Fila"><i class="mdi mdi-close" aria-hidden="true" /></button></header><button class="save-playlist-button" @click="savePlaylist"><i class="mdi mdi-playlist-plus"/> Salvar fila em playlist</button>
-      <div class="queue-toolbar"><span><span class="status-dot" aria-hidden="true" /> {{ player.isPlaying ? 'Sua música continua tocando' : 'Monte a sua sequência' }}</span><div class="actions"><button class="btn-clean" @click="clearQueue" :disabled="!player.queue.length" title="Limpar Fila">Limpar</button><button class="btn-pill" @click="downloadAllZip" :disabled="!player.queue.length"><i class="mdi mdi-folder-download-outline" aria-hidden="true" /> Baixar tudo</button></div></div>
+      <div class="queue-toolbar"><span><span class="status-dot" aria-hidden="true" /> {{ player.isPlaying ? 'Sua música continua tocando' : 'Monte a sua sequência' }}</span><div class="actions"><button class="btn-clean" @click="clearQueue" :disabled="!player.queue.length || queueDragging" title="Limpar Fila">Limpar</button><button class="btn-pill" @click="downloadAllZip" :disabled="!player.queue.length"><i class="mdi mdi-folder-download-outline" aria-hidden="true" /> Baixar tudo</button></div></div>
       <div class="continuation-setting"><label><input type="checkbox" :checked="player.continuousPlayback" @change="player.setContinuousPlayback($event.target.checked)"/> Continuar pela pasta ao terminar a fila</label><p v-if="player.continuationLabel">Próxima pasta: {{ player.continuationLabel }}</p><p v-if="player.continuing" role="status">Carregando a pasta…</p></div>
-      <div v-if="player.queue.length" class="list">
-        <div v-for="(q,i) in player.queue" :key="trackKey(q)" class="row" :class="{ active: i === player.currentIndex }">
+      <p class="queue-drag-help" id="queue-drag-help">Arraste pela alça ⋮⋮ para mudar a ordem. No celular, toque e deslize a alça. No teclado, use ↑ e ↓.</p>
+      <Draggable v-if="player.queue.length" :model-value="player.queue" @update:model-value="reorderQueue" :item-key="trackKey" handle=".queue-drag-handle" :animation="150" :force-fallback="true" :fallback-on-body="true" :fallback-tolerance="4" :delay="0" ghost-class="music-drag-placeholder" chosen-class="music-drag-selected" fallback-class="music-drag-preview" @start="queueDragging=true" @end="queueDragging=false" class="list" aria-label="Ordenar fila de reprodução" aria-describedby="queue-drag-help">
+        <template #item="{element:q,index:i}">
+        <div class="row" :class="{ active: i === player.currentIndex }">
+          <button type="button" class="queue-drag-handle" :aria-label="'Arrastar '+q.title+' na fila'" title="Arrastar para ordenar" @keydown.up.prevent="moveQueue(i,-1)" @keydown.down.prevent="moveQueue(i,1)"><i class="mdi mdi-drag" aria-hidden="true"/></button>
           <button class="meta" @click="playAt(i)" :aria-label="'Ouvir ' + q.title" :aria-current="i === player.currentIndex ? 'true' : undefined"><span class="row-number">{{ String(i+1).padStart(2,'0') }}</span><span class="mini"><img src="/LogoMusic.jpg" alt="" /><span v-if="i === player.currentIndex" class="playing-overlay" aria-hidden="true"><span class="activity-bars" :class="{ paused: !player.isPlaying }"><b /><b /><b /><b /></span></span></span><span class="text"><span class="rt">{{ q.title }}</span><span class="ra">{{ q.cantor }}</span></span></button>
           <div class="row-actions"><button @click="download(q)" title="Baixar" :aria-label="'Baixar ' + q.title"><i class="mdi mdi-download" aria-hidden="true" /></button><button @click="toggleFavorite(q)" class="favorite" :class="{ active: isFavorite(favoriteId(q)) }" :aria-pressed="!!isFavorite(favoriteId(q))" :aria-label="'Favoritar ' + q.title" title="Favoritar"><i :class="isFavorite(favoriteId(q)) ? 'mdi mdi-heart' : 'mdi mdi-heart-outline'" aria-hidden="true" /></button><button @click="remove(i)" title="Remover da Fila" :aria-label="'Remover ' + q.title + ' da fila'"><i class="mdi mdi-close" aria-hidden="true" /></button></div>
         </div>
-      </div>
+        </template>
+      </Draggable>
       <div v-else class="empty list"><i class="mdi mdi-music-note-plus" aria-hidden="true" /><h4>Sua próxima música começa aqui</h4><p>Adicione músicas pelo catálogo ou pelas pastas para montar sua fila.</p></div>
     </section>
   </v-dialog>
 </template>
 
 <script setup>
+import Draggable from 'vuedraggable'
 import { useLibraryStore } from '@/stores/useLibraryStore'
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue"
 import { usePlayerStore } from "@/stores/usePlayerStore"
@@ -177,6 +182,9 @@ function toggleQueue() {
   showQueue.value = !showQueue.value
 }
 
+const queueDragging=ref(false)
+function reorderQueue(list){try{player.reorderQueue(list)}catch(e){toast.warning(e.message)}}
+function moveQueue(index,direction){const to=index+direction;if(to<0||to>=player.queue.length)return;try{player.moveInQueue(index,to);toast.info('Ordem da fila atualizada.')}catch(e){toast.warning(e.message)}}
 function playAt(i) {
   if (!userStore.hasActiveSubscription)
     return toast.warning("Ative sua assinatura 🎶")
@@ -358,3 +366,10 @@ function savePlaylist(){try{useLibraryStore().openPicker(player.queue);showQueue
 </style>
 
 <style scoped>.save-playlist-button{margin:12px 20px;padding:10px 14px;border:1px solid #4b946c;color:#bff4d1;background:#1c3c29;border-radius:10px;min-height:44px}</style>
+
+<style scoped>
+.queue-drag-help{font-size:11px;line-height:1.4;color:#bdd4c7;margin:0 24px 12px;flex-shrink:0}
+.queue-drag-handle{display:grid;place-items:center;min-width:32px;min-height:44px;color:#b1d7bf;background:#82dfaa0a;border:1px solid #82dfaa1d;border-radius:10px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-size:21px;flex-shrink:0}
+.queue-drag-handle:active{cursor:grabbing}.queue-drag-handle:focus-visible{outline:2px solid #83efbc;outline-offset:2px}
+@media(max-width:600px){.queue-drag-help{margin-inline:16px;font-size:10px}.row{flex-wrap:nowrap}.row{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 8px}.queue-drag-handle{min-width:44px;grid-row:1/3;align-self:stretch}.row-actions{grid-column:2;justify-content:flex-end}.row-actions button{min-width:44px}.meta{width:100%}}
+</style>

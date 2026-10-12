@@ -19,10 +19,16 @@ As novas funções não criam outro Firebase e não dependem de uma conta de ser
 
 - Use **Playlist** na música, **Adicionar pasta à playlist** nas pastas ou **Salvar fila em playlist** dentro da fila do player.
 - Crie e renomeie listas em **Playlists**. Cada conta pode organizar até 100 listas, com até 500 faixas em cada uma. Uma música repetida é ignorada.
-- Arraste pela alça para ordenar; abra outra playlist no painel de destino para mover entre listas. No celular, segure a alça antes de arrastar. Os botões **↑**, **↓** e **Mover** oferecem a mesma organização sem arrastar.
+- Arraste pela alça para ordenar; abra outra playlist no painel de destino para mover entre listas. No celular, toque e deslize pela alça ⋮⋮; não é necessário esperar uma pressão longa. Os botões **↑**, **↓** e **Mover** oferecem a mesma organização sem arrastar.
 - Ouça uma playlist, salve suas faixas offline ou envie seu ZIP à central de downloads.
 - As listas ficam no Firebase em `users/UID/playlists`. O cache e as pendências locais são separados por conta. Ao recuperar a conexão, alterações pendentes tentam sincronizar automaticamente. Outra tela/aparelho carrega a versão sincronizada ao abrir/recarregar a biblioteca.
 - Uma faixa retirada do catálogo continua identificada como indisponível na playlist, para você decidir se deseja removê-la. Excluir uma lista não apaga áudios ou músicas salvas offline.
+
+### Ordenar a fila do player
+
+Abra **Fila** no player global e arraste pela alça ⋮⋮ para escolher a ordem das próximas faixas. Mover a faixa que está tocando mantém seu áudio e posição, sem reiniciar a reprodução. A ordem e a identificação da faixa atual são guardadas para a próxima abertura. No teclado, foque a alça e use ↑/↓. Os botões de ouvir, favoritar, baixar e remover continuam funcionando separadamente do gesto de arraste.
+
+Se o aplicativo instalado ainda mostra a versão anterior, gere/publice o novo build e aplique **Atualizar app** antes de testar a correção.
 
 ## 2. Histórico e retomada
 

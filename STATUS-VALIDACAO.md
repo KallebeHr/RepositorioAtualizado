@@ -2,9 +2,19 @@
 
 ## Resultado desta revisão
 
-**118 verificações aprovadas:** 66 testes de lógica/integração, 13 testes das regras Firestore e 39 fluxos completos no Chromium. Os 39 fluxos passaram juntos, sem erros de JavaScript. Os nove fluxos da nova biblioteca foram confirmados novamente após o ajuste do progresso da retomada.
+**70 testes de lógica/integração e 41 fluxos completos no Chromium aprovados nesta correção.** Os 41 fluxos passaram juntos, sem erros de JavaScript. Incluem os 39 fluxos anteriores e duas verificações adicionais de arraste na biblioteca e na fila. As regras não foram alteradas; os 13 testes de regras aprovados na revisão anterior continuam como referência dessa mesma configuração.
 
-O build final foi gerado em modo de produção depois de remover a saída dos testes. `npm test` passou com 66 testes. Os 13 testes de regras passaram novamente, incluindo a movimentação de faixas em um lote atômico. Há avisos de tamanho do bundle e imports já existentes, que não impediram a compilação.
+O build final foi gerado em modo de produção depois de remover a saída dos testes. Há avisos de tamanho do bundle e imports já existentes, que não impediram a compilação.
+
+## Correção do arrastar e soltar
+
+- A fila do player agora permite ordenar por mouse e toque; antes era uma lista fixa. As alças também aceitam ↑/↓ pelo teclado.
+- A música que está tocando conserva identidade, posição e reprodução durante a mudança de ordem. O teste confirmou nenhum novo evento de reprodução e apenas uma conexão Web Audio.
+- A ordem e o índice da faixa atual são restaurados após recarga, com o player pausado.
+- Playlists usam listas estáveis durante o gesto e arraste compatível com toque, sem exigir pressão longa. A prévia do arraste aparece acima dos diálogos.
+- Foi testado toque em viewport de celular: reordenação, movimentação entre as duas playlists em ambos os sentidos, rolagem durante o gesto e recarga com os IDs preservados.
+- Os quatro novos testes de lógica verificam preservação da faixa atual, deslocamento de outra música, fila pausada/restaurada e recusa de ordenações inválidas.
+- Os gestos de toque foram simulados pelo Chromium; esta revisão não foi executada em aparelhos Android/iOS físicos.
 
 ## Seis melhorias verificadas
 

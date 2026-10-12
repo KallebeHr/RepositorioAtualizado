@@ -1,3 +1,4 @@
+import { reorderKeepingCurrent, moveQueueItem } from '../utils/queue-order.mjs'
 import { defineStore } from 'pinia'
 import { useLibraryStore } from './useLibraryStore.js'
 import { resumePosition } from '../utils/music-library.mjs'
@@ -199,6 +200,18 @@ export const usePlayerStore = defineStore('player', {
       if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl)
       currentBlobUrl = null
       this.isPlaying = false; this.loading = false; this.currentIndex = -1
+    },
+    reorderQueue(ordered) {
+      this.checkpoint()
+      const next = reorderKeepingCurrent(this.queue, this.currentIndex, ordered)
+      this.queue = next.queue; this.currentIndex = next.currentIndex
+      this.persist()
+    },
+    moveInQueue(from, to) {
+      this.checkpoint()
+      const next = moveQueueItem(this.queue, this.currentIndex, from, to)
+      this.queue = next.queue; this.currentIndex = next.currentIndex
+      this.persist()
     },
     removeFromQueue(index) {
       this.checkpoint(true)
