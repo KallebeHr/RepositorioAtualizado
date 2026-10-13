@@ -67,7 +67,7 @@
           <v-list-item class="drawer-item support-link">
             <v-list-item-title>
               <a
-                href="https://wa.me/8695102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20"
+                href="https://wa.me/5586995117998?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20"
                 target="_blank"
                 >💬 Suporte WhatsApp</a
               >
@@ -304,7 +304,7 @@ const menuItems = [
 const libraryItems = [{ title: "FAVORITOS", href: "/favoritos" }, { title: "OFFLINE", href: "/Offline" }, { title: "PLAYLISTS", href: "/Playlists" }, { title: "HISTÓRICO", href: "/Historico" }, { title: "DOWNLOADS", href: "/Downloads" }, { title: "SEGUINDO", href: "/Seguindo" }];
 
 function comprarAssinatura() {
-  window.open("https://wa.me/5586995102595?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20repertorio.", "_blank");
+  window.open("https://wa.me/5586995117998?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20repertorio.", "_blank");
 }
 
 /**
