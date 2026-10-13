@@ -154,10 +154,10 @@ function queueFolder(tracks){if(!permitted())return;const added=player.addFolder
 function play(track,fromSearch=false){if(!permitted())return;if(fromSearch)player.playbackFolder=folderOf(track);else player.playbackFolder=selectedFolder.value;player.addToQueue(track,{playNow:true});updateDoc(doc(db,'musicasV2',track.id),{playCount:increment(1)}).catch(()=>{});isOpen.value=false}
 function addQueue(track){if(permitted()){player.addToQueue(track);toast.success('Adicionada à fila.')}}
 async function download(track){if(!permitted())return;try{await downloadTrack(user.user.uid,track);if(navigator.onLine)updateDoc(doc(db,'musicasV2',track.id),{downloadCount:increment(1)}).catch(()=>{})}catch(e){toast.error(e.message)}}
-async function saveLocal(track){if(!permitted())return;try{await saveTrackOffline(user.user.uid,track);toast.success('Música salva neste aparelho.')}catch(e){toast.error(e.message)}}
+async function saveLocal(track){if(!permitted())return;try{await saveTrackOffline(user.user.uid,track);toast.success('Música salva neste aparelho.')}catch(e){if(e.code!=='FEATURE_COMING_SOON')toast.error(e.message)}}
 function playlist(tracks){try{library.openPicker(tracks)}catch(e){toast.error(e.message)}}
 function cancelBatch(){downloads.pause(lastJobId.value)}
-async function runBatch(tracks,mode,folder){if(!permitted()||!tracks.length)return;try{lastJobId.value=await downloads.enqueue(tracks,mode,folderLabel(folder));toast.success('Pasta adicionada à central de downloads. Você pode navegar.')}catch(e){toast.error(e.message)}}
+async function runBatch(tracks,mode,folder){if(!permitted()||!tracks.length)return;try{lastJobId.value=await downloads.enqueue(tracks,mode,folderLabel(folder));toast.success('Pasta adicionada à central de downloads. Você pode navegar.')}catch(e){if(e.code!=='FEATURE_COMING_SOON')toast.error(e.message)}}
 function networkChange(){online.value=navigator.onLine;if(online.value)load();else refreshOffline()}
 watch(()=>user.user?.uid,()=>{lastJobId.value='';refreshOffline()})
 watch(()=>[route.query.estilo,route.query.cantor],([genre,artist])=>{currentCategory.value=typeof genre==='string'?genre:null;currentArtist.value=typeof artist==='string'?artist:null})

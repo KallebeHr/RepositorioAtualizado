@@ -1,5 +1,5 @@
 <template>
- <main class="offline-page">
+ <main v-if="releasedFeatures.offline" class="offline-page">
   <header><span class="eyebrow">SUA MÚSICA, NO SEU APARELHO</span><h1>Biblioteca offline</h1><p>{{ records.length }} músicas · {{ sizeText }} · {{ online ? 'Conectado' : 'Sem internet' }}</p></header>
   <section v-if="!records.length" class="offline-guide"><h2>Como ouvir sem internet</h2><ol><li>Com internet, entre na sua conta e abra Músicas ou Músicas V2.</li><li>Toque em <strong>Salvar offline</strong> e aguarde a confirmação.</li><li>Volte a esta biblioteca para ouvir, mesmo sem conexão.</li></ol><div class="catalog-links"><router-link to="/AllMusic">Escolher músicas</router-link><router-link to="/MusicasV2">Abrir Músicas V2</router-link><router-link v-if="!user.user" to="/RegisterAndLogin?mode=login">Entrar na conta</router-link></div></section>
   <p v-if="pwaError" role="alert" class="error">{{ pwaError }}</p>
@@ -9,6 +9,7 @@
   <p v-if="!loading && !records.length && user.user">Escolha uma música no catálogo ou nas pastas e toque em “Salvar offline”.</p>
   <p class="note">Disponível neste navegador e aparelho, para esta conta. Guarde espaço livre e mantenha o acesso ativo. Limpar os dados do navegador remove os arquivos.</p>
  </main>
+ <main v-else class="offline-page"><span class="eyebrow">NOVIDADES CHEGANDO</span><h1>Ouvir offline</h1><section class="offline-guide"><h2>Será liberado em breve</h2><p>O modo offline será disponibilizado em uma próxima liberação. Acompanhe as novidades ou converse com o suporte.</p><button @click="requestFeature('offline')">Ver aviso</button><div class="catalog-links"><router-link to="/AllMusic">Ouvir músicas no site</router-link></div></section></main>
 </template>
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -16,11 +17,12 @@ import { useUserStore } from '@/stores/userStore'
 import { usePlayerStore } from '@/stores/usePlayerStore'
 import { listOffline, removeOffline, clearOffline, OFFLINE_EVENT } from '@/services/offline'
 import { pwaError } from '@/services/pwa'
+import { requestFeature, releasedFeatures } from '@/services/feature-release'
 const user=useUserStore(), player=usePlayerStore(), records=ref([]), error=ref(''), loading=ref(false), search=ref(''), online=ref(navigator.onLine)
 const filtered=computed(()=>records.value.filter(r=>`${r.track.title} ${r.track.cantor}`.toLowerCase().includes(search.value.toLowerCase())))
 const sizeText=computed(()=>`${(records.value.reduce((sum,r)=>sum+r.size,0)/1048576).toFixed(1)} MB`)
 let generation=0
-async function refresh(){const run=++generation;loading.value=true;try{const data=await listOffline(user.user?.uid);if(run===generation)records.value=data}catch(e){error.value=e.message}finally{if(run===generation)loading.value=false}}
+async function refresh(){if(!releasedFeatures.offline)return;const run=++generation;loading.value=true;try{const data=await listOffline(user.user?.uid);if(run===generation)records.value=data}catch(e){error.value=e.message}finally{if(run===generation)loading.value=false}}
 function play(track){player.setFullList(filtered.value.map(r=>r.track));player.addToQueue(track,{playNow:true})}
 function playAll(){if(!filtered.value.length)return;player.replaceQueue(filtered.value.map(r=>r.track))}
 async function remove(track){try{await removeOffline(user.user?.uid,track)}catch(e){error.value=e.message}}

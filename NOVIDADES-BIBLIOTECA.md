@@ -1,3 +1,5 @@
+> Atualização de 13/10/2026: instalação e salvamento/escuta offline estão em espera na interface. A lógica abaixo permanece preservada para futura liberação. Consulte **ADICIONAIS-E-DISPOSITIVOS.md**.
+
 # Playlists, histórico, busca e downloads
 
 Esta versão mantém o Firebase único `repertorio-cd75a`, o catálogo `musicasV2`, os áudios no R2 e o envio administrativo pela API local. As novas áreas estão na barra **Playlists · Histórico · Downloads · Seguindo · Pastas**, logo abaixo dos controles de instalação/offline/equalizador, e também no menu lateral.

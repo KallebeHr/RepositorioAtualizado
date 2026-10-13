@@ -1,10 +1,14 @@
 # Comece aqui — Firebase único e áudios no R2
 
-Atualização de 12 de outubro de 2026. O site usa **repertorio-cd75a** para contas, perfis, assinaturas, chaves e catálogo. Todos os novos áudios são enviados ao R2 pela API local. O catálogo único fica em **musicasV2**, os cantores em **cantoresV2** e os estilos em **estilosV2**. O nome da coleção foi conservado para aproveitar os cadastros R2 existentes; as páginas antigas também consultam esse catálogo.
+Atualização de 13 de outubro de 2026. O site usa **repertorio-cd75a** para contas, perfis, assinaturas, chaves e catálogo. Todos os novos áudios são enviados ao R2 pela API local. O catálogo único fica em **musicasV2**, os cantores em **cantoresV2** e os estilos em **estilosV2**. O nome da coleção foi conservado para aproveitar os cadastros R2 existentes; as páginas antigas também consultam esse catálogo.
 
 A configuração web nova já está aplicada em `src/firebase.js`. A troca não copia dados automaticamente. Para conservar contas, assinaturas e músicas do Firebase antigo, leia primeiro **MIGRACAO-FIREBASE-R2.md**. Nenhum dado remoto foi migrado ou apagado nesta entrega.
 
-## Verificação do projeto real
+## Adicionais e aparelhos desta versão
+
+Leia **ADICIONAIS-E-DISPOSITIVOS.md** antes de publicar. O equalizador agora pede código para contas comuns, com concessão protegida no Firebase. A administração acompanha dispositivos recentes e alerta acima de quatro. Instalação e offline mostram “Em breve” por padrão; a implementação anterior e os arquivos já salvos foram preservados. Publique também os novos índices de `firestore.indexes.json`.
+
+## Verificação histórica do projeto real
 
 Em 12/10/2026, a consulta pública ao catálogo novo retornou **403 — PERMISSION_DENIED**. Os domínios `localhost`, `repertorioatualizado.com.br` e `www.repertorioatualizado.com.br` já aparecem como autorizados no Authentication. Publique as regras incluídas no Firestore antes de colocar esta versão em uso. Essa consulta não confirmou a configuração de e-mail/senha nem leu contas de usuários.
 
@@ -30,7 +34,7 @@ Espere os índices ficarem prontos antes de usar filtros que combinam estilo e d
 
 Para começar sem migrar contas: cadastre sua conta pelo site, abra Authentication e copie seu UID. No Firestore, abra `users/SEU_UID` e, usando o console da conta proprietária do projeto, defina `role` como texto `admin`, `subscription` como texto `ativa` e `subscriptionLifetime` como booleano `true`. Atualize o site. A migração também pode trazer o papel admin do perfil antigo, quando o perfil ainda não existe no destino.
 
-A senha fica somente no Authentication. Não crie campo `password` no perfil. Após mudar o projeto Firebase, entre novamente com seu e-mail e senha no aplicativo atualizado. Abra a versão nova com internet pelo menos uma vez antes de usar o modo offline.
+A senha fica somente no Authentication. Não crie campo `password` no perfil. Após mudar o projeto Firebase, entre novamente com seu e-mail e senha no aplicativo atualizado. Após a futura liberação do offline, abra a versão nova com internet pelo menos uma vez antes de ficar sem conexão.
 
 ## 3. Instalar e iniciar localmente
 
@@ -57,7 +61,7 @@ Abra `http://localhost:3000`. O envio usa **localhost:3004**, no mesmo computado
 
 O R2 usa a configuração privada de `b2-backend/.env.r2-v2`. Confira o botão **Verificar API R2 local** na administração. Essa verificação confirma a configuração; um envio pequeno confirma a permissão real no bucket. A chave de conta de serviço Firebase não é necessária para o envio normal; ela só é necessária para a migração opcional.
 
-Para testar instalação e offline no computador com build de produção:
+O aviso “Em breve” é o padrão desta entrega. Para testar a implementação preservada de instalação e offline, habilite as flags conforme **ADICIONAIS-E-DISPOSITIVOS.md** e gere o build de produção:
 
 ```powershell
 npm run app:local

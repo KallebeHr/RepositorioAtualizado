@@ -11,6 +11,7 @@ import { routes } from 'vue-router/auto-routes'
 import { auth, db } from '@/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
+import { requestFeature } from '@/services/feature-release'
 
 // ✅ importe o componente da Home
 import Home from '@/pages/index.vue'
@@ -60,6 +61,7 @@ function waitForAuth() {
 }
 
 router.beforeEach(async (to, from, next) => {
+  if (to.path === '/Offline' && from.matched.length && !requestFeature('offline')) return next(false)
   if (to.path.startsWith('/admin')) {
     if (!navigator.onLine) return next('/Offline')
     await waitForAuth()

@@ -118,6 +118,7 @@
           </div>
 
           <div class="user-actions">
+            <button class="admin-button user-device-action" @click="$emit('inspect-devices',user.uid)"><i class="mdi mdi-devices"/> Aparelhos · {{ devices.verified?devices.countFor(user.uid):'—' }} recentes</button>
             <button
               class="btn-toggle"
               :class="isActive(user) ? 'toggle-active' : 'toggle-normal'"
@@ -189,6 +190,9 @@ import {
   arrayUnion, deleteField, getCountFromServer, query, limit, startAfter, orderBy, documentId, where, getDoc,
 } from "firebase/firestore";
 import { useUserStore } from "@/stores/userStore";
+import { useDeviceAdminStore } from "@/stores/useDeviceAdminStore";
+defineEmits(["inspect-devices"]);
+const devices=useDeviceAdminStore();
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toast-notification";
 import * as XLSX from "xlsx";

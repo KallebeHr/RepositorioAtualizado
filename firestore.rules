@@ -84,6 +84,84 @@ service cloud.firestore {
     && request.resource.data.completed is bool && request.resource.data.lastPlayedAt is number
     && request.resource.data.updatedAt == request.time;
   }
+  // Adicional do equalizador: código, recibo e liberação são atômicos.
+  function eqKeyPath(id) { return /databases/$(database)/documents/equalizerKeys/$(id); }
+  function eqReceiptPath(id) { return /databases/$(database)/documents/equalizerRedemptions/$(id); }
+  function eqGrantPath(uid) { return /databases/$(database)/documents/users/$(uid)/addons/equalizer; }
+  function paidAccount() {
+   let u = get(userPath(request.auth.uid)).data;
+   return enabled() && u.get('subscription','inativa') == 'ativa'
+    && (u.get('subscriptionLifetime',false) == true || (u.get('subscriptionEnd',null) is timestamp && u.subscriptionEnd > request.time));
+  }
+  function validEqReceipt(d) {
+   let k = get(eqKeyPath(d.keyId)).data;
+   let nextKey = getAfter(eqKeyPath(d.keyId)).data;
+   let g = exists(eqGrantPath(request.auth.uid)) ? get(eqGrantPath(request.auth.uid)).data : {};
+   let current = g.get('active',false) == true && (g.get('lifetime',false) == true || (g.get('endAt',null) is timestamp && g.endAt > request.time));
+   let life = k.lifetime || (current && g.get('lifetime',false));
+   let base = current && !g.get('lifetime',false) ? g.endAt : request.time;
+   return paidAccount() && d.keys().hasOnly(['uid','keyId','feature','createdAt','lifetime','endAt'])
+    && d.uid == request.auth.uid && d.keyId.matches('^[a-f0-9]{64}$')
+    && d.feature == 'equalizer' && d.createdAt == request.time
+    && k.feature == 'equalizer' && k.active == true
+    && k.activationCount is int && k.activationCount >= 0
+    && (k.maxActivations == null || k.activationCount < k.maxActivations)
+    && nextKey.activationCount == k.activationCount + 1 && d.lifetime == life
+    && ((life && d.endAt == null) || (!life && k.durationDays is int && k.durationDays >= 1 && k.durationDays <= 36500
+     && d.endAt is timestamp && d.endAt >= base + duration.value(k.durationDays,'d') - duration.value(5,'m')
+     && d.endAt <= base + duration.value(k.durationDays,'d') + duration.value(5,'m')));
+  }
+  function validEqGrant(uid) {
+   let d = request.resource.data;
+   let r = getAfter(eqReceiptPath(d.receiptId)).data;
+   return uid == request.auth.uid && paidAccount()
+    && d.keys().hasOnly(['feature','active','lifetime','endAt','grantedAt','keyId','receiptId'])
+    && d.feature == 'equalizer' && d.active == true && d.grantedAt == request.time
+    && d.receiptId == receiptId(d.keyId) && !exists(eqReceiptPath(d.receiptId))
+    && validEqReceipt(r) && r.keyId == d.keyId && r.lifetime == d.lifetime && r.endAt == d.endAt;
+  }
+  match /users/{uid}/addons/{id} {
+   allow read: if signed() && (request.auth.uid == uid || admin());
+   allow create, update: if admin() || (id == 'equalizer' && validEqGrant(uid));
+   allow delete: if admin();
+  }
+  match /equalizerKeys/{id} {
+   allow get: if enabled();
+   allow list, create, delete: if admin();
+   allow update: if admin() || (paidAccount()
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activationCount'])
+    && request.resource.data.activationCount == resource.data.activationCount + 1
+    && !exists(eqReceiptPath(receiptId(id)))
+    && validEqReceipt(getAfter(eqReceiptPath(receiptId(id))).data)
+    && getAfter(eqGrantPath(request.auth.uid)).data.receiptId == receiptId(id));
+  }
+  match /equalizerRedemptions/{id} {
+   allow get: if admin() || (enabled() && id.matches('^[a-f0-9]{64}_' + request.auth.uid + '$'));
+   allow list: if admin();
+   allow create: if paidAccount() && id == receiptId(request.resource.data.keyId)
+    && validEqReceipt(request.resource.data)
+    && getAfter(eqGrantPath(request.auth.uid)).data.receiptId == id;
+   allow update, delete: if admin();
+  }
+  // Presença aproximada por instalação de navegador. Sem IP ou localização.
+  match /users/{uid}/devices/{id} {
+   allow read: if signed() && (request.auth.uid == uid || admin());
+   allow create, update: if enabled() && uid == request.auth.uid
+    && request.resource.data.keys().hasOnly(['uid','deviceId','browser','os','kind','installed','createdAt','lastSeen','lastLoginAt','loggedOut'])
+    && request.resource.data.uid == uid && request.resource.data.deviceId == id
+    && id.matches('^[a-f0-9-]{36}$')
+    && request.resource.data.browser is string && request.resource.data.browser.size() <= 60
+    && request.resource.data.os is string && request.resource.data.os.size() <= 60
+    && request.resource.data.kind in ['Celular','Tablet','Computador']
+    && request.resource.data.installed is bool && request.resource.data.loggedOut is bool
+    && request.resource.data.lastSeen == request.time && request.resource.data.lastLoginAt is timestamp
+    && (resource == null ? request.resource.data.createdAt == request.time && request.resource.data.lastLoginAt == request.time
+     : request.resource.data.createdAt == resource.data.createdAt
+      && (request.resource.data.lastLoginAt == resource.data.lastLoginAt || request.resource.data.lastLoginAt == request.time));
+   allow delete: if admin();
+  }
+  match /{path=**}/devices/{id} { allow read: if admin(); }
+  match /adminDeviceAlerts/{id} { allow read, write: if admin(); }
   match /accessKeys/{id} {
    allow get: if enabled();
    allow list, create, delete: if admin();

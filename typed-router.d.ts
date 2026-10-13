@@ -26,6 +26,7 @@ declare module 'vue-router/auto-routes' {
     '/favoritos': RouteRecordInfo<'/favoritos', '/favoritos', Record<never, never>, Record<never, never>>,
     '/Historico': RouteRecordInfo<'/Historico', '/Historico', Record<never, never>, Record<never, never>>,
     '/MusicasV2': RouteRecordInfo<'/MusicasV2', '/MusicasV2', Record<never, never>, Record<never, never>>,
+    '/Novidades': RouteRecordInfo<'/Novidades', '/Novidades', Record<never, never>, Record<never, never>>,
     '/Offline': RouteRecordInfo<'/Offline', '/Offline', Record<never, never>, Record<never, never>>,
     '/Pastas': RouteRecordInfo<'/Pastas', '/Pastas', Record<never, never>, Record<never, never>>,
     '/Playlists': RouteRecordInfo<'/Playlists', '/Playlists', Record<never, never>, Record<never, never>>,

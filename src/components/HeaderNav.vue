@@ -67,7 +67,7 @@
           <v-list-item class="drawer-item support-link">
             <v-list-item-title>
               <a
-                href="https://wa.me/5586995117998?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20"
+                href="https://wa.me/8695102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!%20"
                 target="_blank"
                 >💬 Suporte WhatsApp</a
               >
@@ -256,7 +256,7 @@ import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import { requestInstallation } from '@/services/pwa'
 import { useUserStore } from "@/stores/userStore";
 import { useRouter, useRoute } from "vue-router";
-import { signOut, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import "vue-toast-notification/dist/theme-sugar.css";
@@ -304,7 +304,7 @@ const menuItems = [
 const libraryItems = [{ title: "FAVORITOS", href: "/favoritos" }, { title: "OFFLINE", href: "/Offline" }, { title: "PLAYLISTS", href: "/Playlists" }, { title: "HISTÓRICO", href: "/Historico" }, { title: "DOWNLOADS", href: "/Downloads" }, { title: "SEGUINDO", href: "/Seguindo" }];
 
 function comprarAssinatura() {
-  window.open("https://wa.me/5586995117998?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20repertorio.", "_blank");
+  window.open("https://wa.me/5586995102595?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20repertorio.", "_blank");
 }
 
 /**
@@ -370,8 +370,7 @@ function toggleSearch() {
 
 async function logout() {
   try {
-    await signOut(auth);
-    userStore.clearUser();
+    await userStore.logout();
     router.replace("/");
   } catch (err) {
     console.error(err);

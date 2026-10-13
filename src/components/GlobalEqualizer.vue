@@ -11,7 +11,7 @@
           @keydown.esc.stop.prevent="closeEqLayer"
           @keydown.tab="trapEqFocus"
         >
-          <div class="eq-panel" tabindex="-1" ref="eqPanelRef" :style="eqSkin">
+          <div class="eq-panel" tabindex="-1" ref="eqPanelRef" :style="eqSkin" :inert="addons.activationOpen ? true : undefined">
             <header class="eq-header">
               <div class="eq-brand">
                 <p class="eq-model">REPERTÓRIO <span>EQ / 06</span></p>
@@ -49,11 +49,12 @@
             </header>
 
             <div class="eq-scroll" :inert="eqOptionsOpen ? true : undefined">
+              <div class="eq-license" :class="{locked:!addons.canEqualize}"><span><i class="mdi" :class="addons.canEqualize?'mdi-check-decagram':'mdi-lock-outline'"/>{{ addons.canEqualize?'Equalizador liberado nesta conta':'Ative com um código para usar os ajustes' }}</span><button v-if="!addons.canEqualize" @click="addons.requireEqualizer()">Ativar</button></div>
               <section class="eq-signal-section" aria-label="Análise do sinal">
                 <div class="eq-display">
                   <div class="eq-display-caption">
                     <span>ANÁLISE DO SINAL</span>
-                    <strong :class="{ active: eqEnabled }">{{ eqEnabled ? 'EQ ON' : 'BYPASS' }}</strong>
+                    <strong :class="{ active: eqEnabled && addons.canEqualize }">{{ eqEnabled && addons.canEqualize ? 'EQ ON' : 'BYPASS' }}</strong>
                   </div>
                   <div class="am-canvas" ref="amEl" aria-hidden="true"></div>
                   <span v-if="!player.sound" class="eq-no-signal">Selecione uma música para visualizar o áudio</span>
@@ -66,7 +67,7 @@
                   :class="{ on: eqEnabled }"
                   :aria-pressed="eqEnabled"
                   :aria-label="eqEnabled ? 'Desativar equalizador' : 'Ativar equalizador'"
-                  @click="eqEnabled = !eqEnabled; applyEqEnabled()"
+                  @click="togglePower"
                   type="button"
                 >
                   <span class="mdi mdi-power" aria-hidden="true"></span>
@@ -146,10 +147,13 @@
 import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
 import AudioMotionAnalyzer from "audiomotion-analyzer"
 import { usePlayerStore } from "@/stores/usePlayerStore"
+import { useAddonStore } from '@/stores/useAddonStore'
+const addons=useAddonStore()
 const player = usePlayerStore()
 const eqUIOpen = computed({ get: () => player.eqOpen, set: value => { player.eqOpen = value } })
 const eqPanelRef = ref(null)
-const eqEnabled = computed({ get: () => player.eq.enabled, set: value => { player.eq.enabled = value } })
+const eqEnabled = computed({ get: () => player.eq.enabled && addons.canEqualize, set: value => { if (addons.requireEqualizer()) player.eq.enabled = value } })
+function togglePower() { if (!addons.requireEqualizer()) return; player.eq.enabled = !player.eq.enabled; applyEqEnabled() }
 
 /* Bandas */
 const bands = computed(() => player.eq.bands)
@@ -164,7 +168,7 @@ function formatDb(v) { const n = Number(v || 0); return `${n > 0 ? '+' : ''}${n.
 function applyEqEnabled() { player.eqSetEnabled(eqEnabled.value).then(refreshVisualizer).catch(() => {}) }
 function onBandChange() { bands.value.forEach(b => player.eqSetBandGain(b.key, b.gain)) }
 function resetEq() { player.eqReset() }
-function applyPreset(name) { const presets = { bass: [6,4,1,-1,-1,0], vocal: [-2,-1,2,4,3,1], bright: [0,-1,-1,1,3,5] }; if (presets[name]) bands.value.forEach((b,i) => player.eqSetBandGain(b.key,presets[name][i])) }
+function applyPreset(name) { if (!addons.requireEqualizer()) return; const presets = { bass: [6,4,1,-1,-1,0], vocal: [-2,-1,2,4,3,1], bright: [0,-1,-1,1,3,5] }; if (presets[name]) bands.value.forEach((b,i) => player.eqSetBandGain(b.key,presets[name][i])) }
 function ensureEqConnection() { if (!player.current) return; return player.eqInitOrReconnect().then(refreshVisualizer).catch(() => {}) }
 
 /* =========================================================
@@ -309,11 +313,13 @@ onMounted(() => {
   } catch { /* O equalizador também funciona sem armazenamento disponível. */ }
 })
 async function toggleEqOptions() {
+  if (!addons.requireEqualizer()) return
   eqOptionsOpen.value = !eqOptionsOpen.value
   await nextTick()
   if (eqOptionsOpen.value) eqOptionsPanelRef.value?.querySelector('input')?.focus()
   else eqOptionsButtonRef.value?.focus()
 }
+watch(()=>addons.canEqualize,allowed=>{if(!allowed){eqOptionsOpen.value=false;activeKnobCleanup?.()}})
 function closeEqLayer() {
   if (eqOptionsOpen.value) {
     eqOptionsOpen.value = false
@@ -331,6 +337,7 @@ function changeFineGain(event, index) {
   event.target.value = String(bands.value[index].gain)
 }
 function savePersonalEq() {
+  if (!addons.requireEqualizer()) return
   eqSavedGains.value = bands.value.map(band => Number(band.gain))
   try {
     localStorage.setItem(eqPersonalStorageKey, JSON.stringify(eqSavedGains.value))
@@ -338,6 +345,7 @@ function savePersonalEq() {
   } catch { eqOptionsNotice.value = 'Ajuste guardado para esta sessão.' }
 }
 function restorePersonalEq() {
+  if (!addons.requireEqualizer()) return
   if (!eqSavedGains.value) return
   bands.value.forEach((band, index) => { band.gain = eqSavedGains.value[index] })
   onBandChange()
@@ -349,12 +357,14 @@ const eqPresetName = computed(() => {
 })
 let activeKnobCleanup = null
 function setKnobValue(index, value) {
+  if (!addons.requireEqualizer()) return
   const band = bands.value[index]
   if (!band || !Number.isFinite(Number(value))) return
   band.gain = Math.max(-12, Math.min(12, Math.round(value * 2) / 2))
   onBandChange()
 }
 function startKnobDrag(event, index) {
+  if (!addons.requireEqualizer()) return
   if (event.button !== 0 && event.pointerType !== 'touch') return
   activeKnobCleanup?.()
   const element = event.currentTarget
@@ -424,6 +434,8 @@ onBeforeUnmount(() => {
 
 </script>
 <style scoped>
+.eq-license{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;padding:9px 12px;border:1px solid #346558;border-radius:10px;background:#18382d;color:#b1efd3;font-size:11px}.eq-license.locked{border-color:#536681;background:#263349;color:#cfe0f6}.eq-license span{display:flex;align-items:center;gap:7px}.eq-license button{min-height:36px;padding:6px 12px;border-radius:8px;background:#a6ceff;color:#12263e;font-weight:700}
+
 /* ======================
         LAYOUT
 ====================== */

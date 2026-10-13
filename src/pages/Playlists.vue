@@ -8,7 +8,7 @@ const selectedRows=computed(()=>rowsOf(selected.value)),targetRows=computed(()=>
 const rows=id=>id===selected.value?selectedRows.value:id===target.value?targetRows.value:rowsOf(id),playable=id=>rows(id).map(r=>r.track).filter(t=>t.downloadUrl)
 let dragOwner=''
 function beginDrag(){dragOwner=library.owner;dragging.value=true}
-async function attempt(fn){error.value='';try{return await fn()}catch(e){error.value=e.message}}
+async function attempt(fn){error.value='';try{return await fn()}catch(e){if(e.code!=='FEATURE_COMING_SOON')error.value=e.message}}
 watch(()=>library.playlists.map(p=>p.id),ids=>{if(!ids.includes(selected.value))selected.value=ids[0]||'';if(!ids.includes(target.value)||target.value===selected.value)target.value='';},{immediate:true});watch(selected,()=>{if(target.value===selected.value)target.value=''})
 async function create(){if(creating.value)return;creating.value=true;try{const id=await attempt(()=>library.create(name.value));if(id){selected.value=id;name.value=''}}finally{creating.value=false}}
 function rename(id){const value=window.prompt('Novo nome da playlist',getList(id).name);if(value!==null)attempt(()=>library.change(id,{name:value}))}
@@ -24,4 +24,5 @@ function listen(track){player.addToQueue(track,{playNow:true});if(player.error)e
 function enqueue(id,mode){attempt(()=>downloads.enqueue(playable(id),mode,getList(id).name))}
 onMounted(()=>attempt(async()=>{catalog.value=await getCatalog()}))
 </script>
-<style scoped>.playlist-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.library-card{min-width:0}.library-card label{display:grid;gap:8px}.library-card h2{margin:18px 0 8px}.playlist-tracks{min-height:100px;padding-top:14px}.drag-handle{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;min-width:44px;flex-shrink:0}.drag-handle:active{cursor:grabbing}.sortable-ghost{opacity:.35;border:1px dashed #58d994}.track-info strong{font-size:14px}@media(max-width:800px){.playlist-columns{grid-template-columns:1fr}}</style>
+<style scoped>.playlist-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.library-card{min-width:0}.library-card label{display:grid;gap:8px}.library-card h2{margin:18px 0 8px}.playlist-tracks{min-height:100px;padding-top:14px}.drag-handle{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;min-width:44px;flex-shrink:0}.drag-handle:active{cursor:grabbing}.sortable-ghost{opacity:.35;border:1px dashed #58d994}.track-info strong{font-size:14px}@media(max-width:800px){.playlist-columns{grid-template-columns:1fr}}@media(max-width:600px){.library-card>.library-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.library-card>.library-actions button{min-width:0;white-space:normal;line-height:1.35}}
+</style>

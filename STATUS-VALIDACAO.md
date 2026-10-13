@@ -1,10 +1,39 @@
-# Validação — biblioteca atualizada em 12 de outubro de 2026
+# Validação — adicionais e dispositivos, 13 de outubro de 2026
 
-## Resultado desta revisão
+## Resultado desta entrega
 
-**70 testes de lógica/integração e 41 fluxos completos no Chromium aprovados nesta correção.** Os 41 fluxos passaram juntos, sem erros de JavaScript. Incluem os 39 fluxos anteriores e duas verificações adicionais de arraste na biblioteca e na fila. As regras não foram alteradas; os 13 testes de regras aprovados na revisão anterior continuam como referência dessa mesma configuração.
+- **77 testes de lógica/integração aprovados**, incluindo sete novos testes de política do equalizador e contagem de dispositivos.
+- **20 testes de regras Firestore aprovados**, incluindo concessão atômica, concorrência, prazo adulterado, revogação, assinatura inativa e privacidade dos dispositivos/alertas.
+- **47 fluxos completos aprovados no Chromium**, com os 41 anteriores e seis novos fluxos dos adicionais. A rodada completa passou sem erros de JavaScript. Os seis fluxos novos também foram executados após os últimos ajustes do aviso de ativação e da navegação para Novidades.
+- **5 fluxos adicionais aprovados no build em espera**, confirmando os avisos, ausência de instalação nativa e de novos arquivos offline, e preservação de downloads individuais/ZIP. Total: **52 fluxos distintos de navegador**.
 
-O build final foi gerado em modo de produção depois de remover a saída dos testes. Há avisos de tamanho do bundle e imports já existentes, que não impediram a compilação.
+O build final de produção foi gerado após os testes, com o Firebase real repertorio-cd75a e os dois recursos em espera por padrão. Há avisos existentes de tamanho do bundle e imports, sem impedir a compilação.
+
+O build final confirmou **79 arquivos de precache presentes**, projeto Firebase correto, flags públicas de instalação/offline em espera e ausência de endereços de emuladores e valores privados de armazenamento no JavaScript público. A configuração Firebase, a API local, os arquivos privados R2 e as imagens históricas do pacote anterior foram preservados.
+
+## O que foi verificado nesta atualização
+
+1. Gerar código limitado na administração; abrir a mesa com conta comum; pedir código somente ao tentar usar ajustes.
+2. Rejeitar código inexistente; validar um código real nos emuladores; conferir o recibo, contador e concessão; aplicar banda de grave sem novo elemento de áudio ou MediaElementSource.
+3. Revogar e expirar o adicional; conferir bypass no grafo Web Audio; conservar reprodução e volume. O horário é atualizado assim que chega um novo estado do servidor, sem esperar o próximo ciclo do relógio.
+4. Abrir duas abas da mesma instalação e contar uma vez. Entrar na mesma conta por cinco contextos independentes de navegador e conferir registro, contagem e alerta no Firestore.
+5. Abrir histórico paginado, revisar alerta, conferir telas de 320 pixels e sair de um contexto. A contagem voltou a quatro e o alerta foi encerrado.
+6. Conferir valores de R$ 5/R$ 20 e link de suporte. A navegação pelo banner Novidades conservou a reprodução e uma única fonte de áudio. Trocar de conta não transferiu a licença.
+7. Com flags em espera, instalar abre apenas o aviso; a oferta nativa não é chamada. Ouvir offline conserva a página e o áudio. Salvar faixa/pasta/playlist não faz download nem cria gravação/tarefa offline. O acesso direto mostra a página de espera.
+8. O registro de aparelhos foi exercitado com `crypto.randomUUID` indisponível: gerou UUID usando bytes aleatórios e gravou o registro. Sem API de aleatoriedade, o monitoramento não derruba o restante do site.
+9. Downloads individuais e ZIP continuam funcionando no build em espera. O service worker e os dados de versões anteriores permanecem preservados.
+
+## Limites da validação
+
+Os testes usam Firebase Auth/Firestore emulados e Chromium Linux. Gestos, tamanhos de tela, user agents e a restrição de volume do iOS são simulados; não houve teste em aparelhos físicos Android ou iPhone nesta entrega. A publicação das regras/índices e do site no domínio oficial precisa ser feita pelo operador conforme ADICIONAIS-E-DISPOSITIVOS.md. Não foi feita alteração no Firebase real, deploy remoto ou envio real de áudio ao R2 nesta tarefa.
+
+Presença significa atividade nos últimos sete minutos e depende do navegador. Alertas são produzidos com a administração aberta; não foi implementado bloqueio automático de sessões. Metadados de aparelho vêm do cliente e não certificam pessoas ou hardware. A liberação do equalizador protege a concessão no Firestore; não é DRM de áudio. A confirmação inicial/reabertura da licença requer internet.
+
+Videoclipes são anunciados em breve, com o valor informado pelo usuário. Não foi implementado catálogo/download de vídeos, cobrança automática ou notificações de compradores fictícios.
+
+## Verificações anteriores preservadas
+
+As funções abaixo permanecem como cobertura de regressão. Nesta entrega, instalação/offline são testados no modo liberado de emulação para confirmar a lógica preservada; no build público, os botões exibem o aviso em espera.
 
 ## Correção do arrastar e soltar
 

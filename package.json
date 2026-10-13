@@ -17,7 +17,8 @@
     "test:browser": "vite build --mode e2e && node scripts/build-pwa.mjs && firebase emulators:exec --only auth,firestore --project demo-repertorio \"node tests/browser.integration.mjs\"",
     "b2:cors:check": "node b2-backend/configure-cors.mjs",
     "b2:cors": "node b2-backend/configure-cors.mjs --apply",
-    "app:local": "npm run build && vite preview --port 3000 --strictPort"
+    "app:local": "npm run build && vite preview --port 3000 --strictPort",
+    "test:releases": "vite build --mode release-test && node scripts/build-pwa.mjs && firebase emulators:exec --only auth,firestore --project demo-repertorio \"node tests/releases.integration.mjs\""
   },
   "dependencies": {
     "@fontsource/bebas-neue": "^5.3.0",

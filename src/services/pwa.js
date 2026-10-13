@@ -1,4 +1,5 @@
 import { ref, shallowRef } from 'vue'
+import { requestFeature } from './feature-release.js'
 
 export const installPrompt = shallowRef(null)
 export const appInstalled = ref(false)
@@ -50,12 +51,14 @@ export function setupPwa() {
 }
 
 export function requestInstallation() {
+  if (!requestFeature('install')) return
   installDialogOpen.value = true
   // prompt() permanece no gesto de toque, sem esperar outra ação do usuário.
   if (installPrompt.value && !appInstalled.value) return installApp()
 }
 
 export async function installApp() {
+  if (!requestFeature('install')) return
   const prompt = installPrompt.value
   if (!prompt || installBusy.value) { installDialogOpen.value = true; return }
   installBusy.value = true; installMessage.value = ''

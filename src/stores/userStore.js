@@ -5,6 +5,7 @@ import { auth, db } from '@/firebase'
 import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { readLocalData, writeLocalData } from '@/services/offline'
 import { subscriptionActive } from '@/utils/access-policy.mjs'
+import { markDeviceLoggedOut } from '@/services/devices'
 export const useUserStore = defineStore('user', () => {
  const user = ref(null), loadingUser = ref(true), clock = ref(Date.now())
  let unsubscribeProfile, generation = 0
@@ -42,7 +43,7 @@ export const useUserStore = defineStore('user', () => {
   // O perfil salvo permite abrir a biblioteca mesmo sem internet.
   if (saved && !navigator.onLine) loadingUser.value = false
  })
- async function logout() { await signOut(auth); clearUser() }
+ async function logout() { await markDeviceLoggedOut(auth.currentUser?.uid); await signOut(auth); clearUser() }
  async function ativarAssinatura() { throw new Error('Use uma chave de acesso para ativar sua assinatura.') }
  return { user, loadingUser, hasActiveSubscription, setUser, clearUser, refresh, logout, ativarAssinatura }
 })

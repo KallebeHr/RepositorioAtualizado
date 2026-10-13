@@ -365,7 +365,7 @@ async function download(m) {
 
   await updateDoc(doc(db, "musicasV2", m.id), { downloadCount: increment(1) })
 }
-async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await saveTrackOffline(userStore.user.uid,m);toast.success('Música salva offline.')}catch(e){toast.error(e.message)}}
+async function saveLocal(m){if(!userStore.hasActiveSubscription)return toast.warning('Assinatura necessária');try{await saveTrackOffline(userStore.user.uid,m);toast.success('Música salva offline.')}catch(e){if(e.code!=='FEATURE_COMING_SOON')toast.error(e.message)}}
 </script>
 
 <style scoped>

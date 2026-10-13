@@ -3,7 +3,7 @@
   <div class="app-tools-intro"><strong>Seu repertório, sempre com você</strong><span :class="{disconnected:!online}"><i class="mdi" :class="online?'mdi-wifi':'mdi-wifi-off'" aria-hidden="true"/> {{ online?'Conectado':'Sem internet' }}</span></div>
   <div class="app-tool-actions">
    <button class="install-action" @click="requestInstallation"><i class="mdi mdi-cellphone-arrow-down" aria-hidden="true"/><span>{{ appInstalled?'App instalado':'Instalar app' }}</span></button>
-   <router-link to="/Offline" title="Biblioteca offline"><i class="mdi mdi-cloud-download-outline" aria-hidden="true"/><span>Ouvir offline</span></router-link>
+   <router-link to="/Offline" title="Biblioteca offline" @click="event => { if (!requestFeature('offline')) event.preventDefault() }"><i class="mdi mdi-cloud-download-outline" aria-hidden="true"/><span>Ouvir offline</span></router-link>
    <button @click="player.eqOpen=true" aria-label="Abrir equalizador pela barra"><i class="mdi mdi-tune-vertical" aria-hidden="true"/><span>Equalizador</span></button>
    <button v-if="updateAvailable" class="update-action" :disabled="player.isPlaying" @click="applyUpdate">{{ player.isPlaying?'Pause para atualizar':'Atualizar app' }}</button>
   </div>
@@ -48,6 +48,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { appInstalled, updateAvailable, installPrompt, installDialogOpen, installBusy, installMessage, pwaReady, pwaError, installApp, requestInstallation, applyUpdate } from '@/services/pwa'
 import { usePlayerStore } from '@/stores/usePlayerStore'
 import { installationPlatform } from '@/utils/pwa-platform.mjs'
+import { requestFeature } from '@/services/feature-release'
 const player = usePlayerStore(), online = ref(navigator.onLine), development = import.meta.env.DEV
 const platform = installationPlatform(navigator), secure = window.isSecureContext
 const installUrl = location.protocol === 'https:' ? location.origin + '/' : 'https://www.repertorioatualizado.com.br/'

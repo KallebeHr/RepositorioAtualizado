@@ -81,7 +81,7 @@ async function download(track) {
   } catch (err) { error.value = err.message || 'Não foi possível baixar. Confira o CORS do R2.' }
   finally { working.value = '' }
 }
-async function saveLocal(track){if(!permitted() || working.value)return;working.value=track.id;try{await saveTrackOffline(userStore.user.uid,track);message.value='Música salva neste aparelho. Abra Offline para ouvir sem internet.'}catch(e){error.value=e.message}finally{working.value=''}}
+async function saveLocal(track){if(!permitted() || working.value)return;working.value=track.id;try{await saveTrackOffline(userStore.user.uid,track);message.value='Música salva neste aparelho. Abra Offline para ouvir sem internet.'}catch(e){if(e.code!=='FEATURE_COMING_SOON')error.value=e.message}finally{working.value=''}}
 onMounted(()=>load(false))
 </script>
 

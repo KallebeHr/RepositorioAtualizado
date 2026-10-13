@@ -2,7 +2,7 @@ import { before,after,beforeEach,test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { initializeTestEnvironment,assertSucceeds,assertFails } from '@firebase/rules-unit-testing'
-import { doc,getDoc,getDocs,collection,setDoc,updateDoc,runTransaction,serverTimestamp,Timestamp,increment,writeBatch,query,orderBy,documentId,limit,startAfter } from 'firebase/firestore'
+import { doc,getDoc,getDocs,collection,collectionGroup,where,setDoc,updateDoc,runTransaction,serverTimestamp,Timestamp,increment,writeBatch,query,orderBy,documentId,limit,startAfter } from 'firebase/firestore'
 const projectId='demo-repertorio',hash='a'.repeat(64),hash2='b'.repeat(64)
 let env
 before(async()=>{env=await initializeTestEnvironment({projectId,firestore:{host:'127.0.0.1',port:8088,rules:await readFile('firestore.rules','utf8')}})})
@@ -44,3 +44,55 @@ test('preferências e histórico têm regras próprias e não vazam para adminis
  await assertFails(updateDoc(history,{positionSeconds:-1,updatedAt:serverTimestamp()}));await assertFails(updateDoc(prefs,{following:Array.from({length:101},(_,i)=>String(i)),updatedAt:serverTimestamp()}));await assertFails(updateDoc(prefs,{syncHistory:'true',updatedAt:serverTimestamp()}))
 })
 test('perfil desativado não pode escrever biblioteca privada',async()=>{await updateDoc(doc(client('admin'),'users','bob'),{disabled:true});await assertFails(setDoc(doc(client('bob'),'users','bob','playlists','x'),{name:'Teste',trackIds:[],createdAt:Date.now(),updatedAt:serverTimestamp()}))})
+
+async function seedEqualizer({maximum=1,lifetime=false}={}){
+ const db=client('admin');for(const uid of ['alice','bob'])await updateDoc(doc(db,'users',uid),{subscription:'ativa',subscriptionLifetime:true})
+ await setDoc(doc(db,'equalizerKeys',hash),{feature:'equalizer',active:true,activationCount:0,maxActivations:maximum,lifetime,durationDays:lifetime?0:30,code:'EQ-TESTE'})
+}
+async function redeemEq(uid,{days=30,writeGrant=true}={}){
+ const db=client(uid),key=doc(db,'equalizerKeys',hash),receiptId=hash+'_'+uid,receipt=doc(db,'equalizerRedemptions',receiptId),grant=doc(db,'users',uid,'addons','equalizer')
+ return runTransaction(db,async tx=>{
+  const [k,r,g]=await Promise.all([tx.get(key),tx.get(receipt),tx.get(grant)])
+  if(r.exists())throw new Error('já usado');if(k.data().maxActivations!==null&&k.data().activationCount>=k.data().maxActivations)throw new Error('limite')
+  const lifetime=k.data().lifetime||(g.exists()&&g.data().active&&g.data().lifetime),base=g.exists()&&g.data().active&&!g.data().lifetime&&g.data().endAt?.toMillis()>Date.now()?g.data().endAt.toMillis():Date.now(),endAt=lifetime?null:Timestamp.fromMillis(base+days*86400000)
+  tx.update(key,{activationCount:k.data().activationCount+1});tx.set(receipt,{uid,keyId:hash,feature:'equalizer',createdAt:serverTimestamp(),lifetime:!!lifetime,endAt})
+  if(writeGrant)tx.set(grant,{feature:'equalizer',active:true,lifetime:!!lifetime,endAt,grantedAt:serverTimestamp(),keyId:hash,receiptId})
+ })
+}
+test('código de equalizador concede adicional em transação, sem alterar a assinatura',async()=>{
+ await seedEqualizer();await assertSucceeds(redeemEq('alice'));const db=client('alice'),grant=(await getDoc(doc(db,'users','alice','addons','equalizer'))).data()
+ assert.equal(grant.active,true);assert.equal(grant.lifetime,false);assert.equal((await getDoc(doc(db,'users','alice'))).data().subscriptionLifetime,true)
+ await assertFails(updateDoc(doc(db,'users','alice','addons','equalizer'),{lifetime:true,endAt:null}));await assert.rejects(redeemEq('alice'),/já usado/)
+})
+test('códigos do equalizador resistem a concorrência e não podem ser enumerados por usuário',async()=>{
+ await seedEqualizer();const results=await Promise.allSettled([redeemEq('alice'),redeemEq('bob')]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1)
+ await assertFails(getDocs(collection(client('alice'),'equalizerKeys')));await assertFails(getDocs(collection(client('alice'),'equalizerRedemptions')))
+ assert.equal((await getDoc(doc(client('admin'),'equalizerKeys',hash))).data().activationCount,1)
+})
+test('concessão sem código, prazo adulterado e transação sem liberação são recusados',async()=>{
+ await seedEqualizer();const db=client('alice');await assertFails(setDoc(doc(db,'users','alice','addons','equalizer'),{feature:'equalizer',active:true,lifetime:true,endAt:null,grantedAt:serverTimestamp(),keyId:hash,receiptId:hash+'_alice'}))
+ await assertFails(redeemEq('alice',{days:36500}));await assertFails(redeemEq('alice',{writeGrant:false}));assert.equal((await getDoc(doc(client('admin'),'equalizerKeys',hash))).data().activationCount,0)
+})
+test('assinatura inativa, conta desativada e código desativado não concedem equalizador',async()=>{
+ await seedEqualizer();const db=client('admin');await updateDoc(doc(db,'users','alice'),{subscription:'inativa'});await assertFails(redeemEq('alice'))
+ await updateDoc(doc(db,'users','bob'),{disabled:true});await assertFails(redeemEq('bob'));await updateDoc(doc(db,'users','bob'),{disabled:false});await updateDoc(doc(db,'equalizerKeys',hash),{active:false});await assertFails(redeemEq('bob'))
+})
+test('administrador revoga licença; cliente não reativa nem lê a de outra conta',async()=>{
+ await seedEqualizer({maximum:null,lifetime:true});await assertSucceeds(redeemEq('alice'));await assertSucceeds(redeemEq('bob'));const grant=doc(client('admin'),'users','alice','addons','equalizer')
+ await assertSucceeds(updateDoc(grant,{active:false}));await assertFails(updateDoc(doc(client('alice'),'users','alice','addons','equalizer'),{active:true}));await assertFails(getDoc(doc(client('bob'),'users','alice','addons','equalizer')))
+ await assertSucceeds(updateDoc(grant,{active:true}));assert.equal((await getDoc(grant)).data().lifetime,true)
+})
+function device(uid,id='11111111-1111-4111-8111-111111111111'){return{uid,deviceId:id,browser:'Chrome',os:'Windows',kind:'Computador',installed:false,loggedOut:false,createdAt:serverTimestamp(),lastSeen:serverTimestamp(),lastLoginAt:serverTimestamp()}}
+test('aparelho só registra sua conta, com horário do servidor e metadados limitados',async()=>{
+ const id='11111111-1111-4111-8111-111111111111',db=client('alice'),ref=doc(db,'users','alice','devices',id)
+ await assertSucceeds(setDoc(ref,device('alice')));await assertSucceeds(updateDoc(ref,{lastSeen:serverTimestamp(),loggedOut:true}))
+ await assertFails(updateDoc(ref,{lastSeen:Timestamp.fromMillis(Date.now()+86400000)}));await assertFails(updateDoc(ref,{lastSeen:serverTimestamp(),ip:'1.2.3.4'}))
+ await assertFails(setDoc(doc(db,'users','bob','devices',id),device('bob')));await assertFails(updateDoc(ref,{lastSeen:serverTimestamp(),createdAt:serverTimestamp()}))
+})
+test('histórico e consulta global de aparelhos são privados; alertas só podem ser escritos por admin',async()=>{
+ const id='11111111-1111-4111-8111-111111111111';await setDoc(doc(client('alice'),'users','alice','devices',id),device('alice'))
+ await assertSucceeds(getDocs(collection(client('alice'),'users','alice','devices')));await assertFails(getDocs(collection(client('bob'),'users','alice','devices')))
+ await assertFails(getDocs(collectionGroup(client('alice'),'devices')));await assertFails(getDocs(collectionGroup(env.unauthenticatedContext().firestore(),'devices')))
+ await assertSucceeds(getDocs(query(collectionGroup(client('admin'),'devices'),where('lastSeen','>=',Timestamp.fromMillis(Date.now()-60000)),orderBy('lastSeen','desc'))))
+ await assertFails(setDoc(doc(client('alice'),'adminDeviceAlerts','alice'),{uid:'alice',count:5}));await assertSucceeds(setDoc(doc(client('admin'),'adminDeviceAlerts','alice'),{uid:'alice',count:5}));await assertFails(getDoc(doc(client('bob'),'adminDeviceAlerts','alice')))
+})

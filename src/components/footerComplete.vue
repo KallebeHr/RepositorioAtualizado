@@ -26,7 +26,7 @@
           <i class="mdi mdi-crown"></i>
           Baixar por cantores
         </a>
-        <a href="https://wa.me/5586995117998?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!">
+        <a href="https://wa.me/5586995102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!">
           <i class="mdi mdi-email-outline"></i>
           Entrar em contato
         </a>
@@ -37,7 +37,7 @@
           <i class="mdi mdi-instagram"></i>
         </a>
         <a
-          href="https://wa.me/5586995117998?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!"
+          href="https://wa.me/5586995102595?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20de%20suporte!"
           aria-label="WhatsApp"
           target="_blank"
         >

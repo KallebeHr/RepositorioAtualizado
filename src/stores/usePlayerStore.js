@@ -4,6 +4,7 @@ import { useLibraryStore } from './useLibraryStore.js'
 import { resumePosition } from '../utils/music-library.mjs'
 import { markRaw } from 'vue'
 import { useUserStore } from './userStore.js'
+import { useAddonStore } from './useAddonStore.js'
 import { getPlaybackSource } from '../services/offline.js'
 import { normalizeTrack, trackKey } from '../utils/media.js'
 import { applyPlaybackVolume, normalizeVolume } from '../utils/audio-volume.mjs'
@@ -251,10 +252,11 @@ export const usePlayerStore = defineStore('player', {
     _applyEq() {
       if (!source) return
       source.disconnect()
-      source.connect(this.eq.enabled ? input : output)
+      source.connect(this.eq.enabled && useAddonStore().canEqualize ? input : output)
     },
-    async eqSetEnabled(enabled) { this.eq.enabled = !!enabled; await this.eqInitOrReconnect(); this._applyEq(); this.persist() },
+    async eqSetEnabled(enabled) { if (!useAddonStore().requireEqualizer()) return false; this.eq.enabled = !!enabled; await this.eqInitOrReconnect(); this._applyEq(); this.persist(); return true },
     eqSetBandGain(key, value) {
+      if (!useAddonStore().requireEqualizer()) return false
       const index = this.eq.bands.findIndex(band => band.key === key)
       if (index < 0) return
       const gain = Math.max(-12, Math.min(12, Number(value) || 0))
@@ -262,7 +264,7 @@ export const usePlayerStore = defineStore('player', {
       if (filters[index]) filters[index].gain.value = gain
       this.persist()
     },
-    eqReset() { this.eq.bands.forEach(band => this.eqSetBandGain(band.key, 0)) },
+    eqReset() { if (!useAddonStore().requireEqualizer()) return false; this.eq.bands.forEach(band => this.eqSetBandGain(band.key, 0)); return true },
     _updateMediaSession() {
       if (!('mediaSession' in navigator) || !this.current) return
       try {
