@@ -8,7 +8,7 @@ export const releasedFeatures = Object.freeze({
 })
 export const featureNotice = ref('')
 export function requestFeature(feature) {
-  if (releasedFeatures[feature] === true) return true
+  if (releasedFeatures[feature] === false) return true
   featureNotice.value = feature
   return false
 }
