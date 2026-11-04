@@ -30,7 +30,8 @@ export function validarUploadZip(dados) {
   const tamanho = Number(dados.size)
   if (!Number.isInteger(tamanho) || tamanho < 1) throw new Error('O servidor retornou um tamanho de arquivo inválido.')
   if (tamanho > TAMANHO_MAXIMO_ZIP) throw new Error('O arquivo ultrapassa o limite de 4 GB por parte.')
-  return { url: dados.downloadUrl, objectKey: dados.objectKey, size: tamanho, fileName: dados.fileName || '', contentType: dados.contentType || 'application/zip' }
+  // O campo precisa se chamar 'tamanho' para bater com a validação das regras do Firestore.
+  return { url: dados.downloadUrl, objectKey: dados.objectKey, tamanho, fileName: dados.fileName || '', contentType: dados.contentType || 'application/zip' }
 }
 
 export function documentoDaParte({ nome, ordem, senha, ativo, arquivo }) {
