@@ -17,9 +17,9 @@
     </header>
 
     <!-- Loading -->
-    <div v-if="loading" class="status-state">
+    <div v-if="carregandoPartes" class="status-state">
       <div class="spinner"></div>
-      <p>Carregando músicas...</p>
+      <p>Carregando repertórios...</p>
     </div>
 
     <!-- Error -->
@@ -29,14 +29,15 @@
     </div>
 
     <!-- Main Card -->
-    <div v-if="!loading && musicas.length" class="main-card">
+    <div v-if="!carregandoPartes && partes.length" class="main-card">
       <!-- Card Header -->
       <div class="card-header">
         <div class="card-header-left">
-          <div class="month-badge">AGOSTO</div>
+          <div class="month-badge">REPERTÓRIO</div>
           <h2 class="card-title">Repertório Completo</h2>
           <p class="card-subtitle">
-            <span class="count-badge">5.772</span> músicas disponíveis
+            <span class="count-badge">{{ partes.length }}</span>
+            {{ partes.length === 1 ? 'parte disponível' : 'partes disponíveis' }}
           </p>
         </div>
         <div class="card-header-right">
@@ -57,38 +58,40 @@
 
       <div class="parts-grid">
         <button
-          v-for="(part, i) in parts"
-          :key="i"
+          v-for="(parte, i) in partes"
+          :key="parte.id"
           class="part-btn"
-          :class="{ 'is-loading': progress > 0 && progress < 100 }"
-          :disabled="progress > 0 && progress < 100"
-          @click="part.handler"
+          :class="{ 'is-loading': progresso > 0 && progresso < 100 }"
+          :disabled="progresso > 0 && progresso < 100"
+          @click="baixarParte(parte, i)"
         >
           <div class="part-number">{{ String(i + 1).padStart(2, '0') }}</div>
           <div class="part-info">
-            <span class="part-label">Parte {{ romanNumerals[i] }}</span>
-            <span class="part-size">{{ part.size }}</span>
+            <span class="part-label">{{ parte.nome }}</span>
+            <span class="part-size">
+              <template v-if="parte.senha">🔒 </template>{{ tamanhoLegivel(parte.tamanho) || 'Tamanho não informado' }}
+            </span>
           </div>
           <div class="part-arrow">
-            <span v-if="progress > 0 && progress < 100">{{ progress }}%</span>
+            <span v-if="progresso > 0 && progresso < 100">{{ progresso }}%</span>
             <span v-else>→</span>
           </div>
         </button>
       </div>
 
       <!-- Progress bar -->
-      <div v-if="progress !== null && progress > 0" class="progress-wrap">
+      <div v-if="progresso !== null && progresso > 0" class="progress-wrap">
         <div class="progress-bar-track">
-          <div class="progress-bar-fill" :style="{ width: progress + '%' }"></div>
+          <div class="progress-bar-fill" :style="{ width: progresso + '%' }"></div>
         </div>
-        <span class="progress-label">{{ progress }}%</span>
+        <span class="progress-label">{{ progresso }}%</span>
       </div>
     </div>
 
     <!-- Empty state -->
-    <div v-if="!loading && !musicas.length && !error" class="status-state">
+    <div v-if="!carregandoPartes && !partes.length && !error" class="status-state">
       <span class="state-icon">🎵</span>
-      <p>Nenhuma música disponível no momento.</p>
+      <p>Nenhum repertório disponível no momento.</p>
     </div>
 
     <!-- ══ UPSELL CARD ══ -->
@@ -189,24 +192,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue"
+import { ref, onMounted } from "vue"
 import { db } from "@/firebase"
-import { collection, query, orderBy, getDocs } from "firebase/firestore"
+import { collection, getDocs } from "firebase/firestore"
+import { partesVisiveis, tamanhoLegivel } from "@/services/repertorio-model.mjs"
 import { useUserStore } from "@/stores/userStore"
 import { useToast } from "vue-toast-notification"
-
-const loading = ref(true)
-const error = ref("")
-const musicas = ref([])
-const progress = ref(null)
-const showModalSenha = ref(false)
-const senhaDigitada = ref("")
-let resolveSenha
 
 const toast = useToast()
 const userStore = useUserStore()
 
-const romanNumerals = ["I", "II", "III", "IV", "V", "VI"]
+const partes = ref([])
+const carregandoPartes = ref(true)
+const error = ref("")
+const progresso = ref(null)
+const showModalSenha = ref(false)
+const senhaDigitada = ref("")
+let resolverSenha
 
 const extraCategories = [
   { icon: "🪗", label: "Forró das Antigas", url: "https://SUA_URL/forro-antigas" },
@@ -218,84 +220,69 @@ const extraCategories = [
 
 const proofEmojis = ["😄", "🎧", "🎵", "🔥"]
 
-
-const parts = [
-  { size: "~900 MB", handler: handleDownloadAllOneFevereiro },
-  { size: "~900 MB", handler: handleDownloadAllTwoFevereiro },
-  { size: "~900 MB", handler: handleDownloadAllTresFevereiro },
-  { size: "~900 MB", handler: handleDownloadAllQuatroFevereiro },
-  { size: "~900 MB", handler: handleDownloadAllCincoFevereiro },
-  { size: "~900 MB", handler: handleDownloadAllSeisFevereiro },
-]
-
-async function fetchMusicas() {
+async function fetchPartes() {
   try {
-    loading.value = true
-    const q = query(collection(db, "musicasV2"), orderBy("createdAt", "desc"))
-    const qs = await getDocs(q)
-    musicas.value = qs.docs.map(d => ({ id: d.id, ...d.data() }))
+    carregandoPartes.value = true
+    const qs = await getDocs(collection(db, "repertorios"))
+    partes.value = partesVisiveis(qs.docs.map(d => ({ id: d.id, ...d.data() })))
   } catch (err) {
-    console.error("[Repertorio] erro ao buscar:", err)
-    error.value = "Erro ao buscar músicas."
+    console.error("[Repertorio] erro ao buscar partes:", err)
+    error.value = "Erro ao buscar os repertórios."
   } finally {
-    loading.value = false
+    carregandoPartes.value = false
   }
 }
 
-function solicitarSenha() {
+function teste() {
+  toast.warning("Indisponivel no momento, volte mais tarde.")
+}
+
+function solicitarSenha(parte) {
   return new Promise((resolve) => {
-    resolveSenha = resolve
+    partePendente = parte
+    resolverSenha = resolve
     senhaDigitada.value = ""
     showModalSenha.value = true
   })
 }
-function teste() {
-      toast.warning("Indisponivel no momento, volte mais tarde.")
-    return
-}
+
+let partePendente = null
+
 function confirmarSenha() {
-  const ok = senhaDigitada.value === "1421"
+  const digitada = senhaDigitada.value
+  const esperada = String(partePendente?.senha ?? "")
+  senhaDigitada.value = ""
   showModalSenha.value = false
-  resolveSenha(ok)
+  resolverSenha(!esperada || digitada === esperada)
 }
 
 function cancelarSenha() {
   showModalSenha.value = false
-  resolveSenha(false)
+  resolverSenha(false)
 }
 
-function redirect(url) {
-  let counter = 3
-  const interval = setInterval(() => {
-    toast.info(`Redirecionando em ${counter}...`)
-    counter--
-    if (counter < 0) {
-      clearInterval(interval)
-      window.open(url, "_blank", "noopener")
-    }
-  }, 1000)
-}
-
-async function guardedDownload(url) {
+async function baixarParte(parte) {
   if (!userStore.hasActiveSubscription) {
     toast.warning("Você precisa ativar a assinatura para baixar músicas 🎶")
     return
   }
-  const ok = await solicitarSenha()
-  if (!ok) { toast.error("Senha incorreta! ❌"); return }
-  try { redirect(url) } catch (err) {
-    toast.error("Erro ao redirecionar para a página de download")
+  if (parte.senha) {
+    const liberado = await solicitarSenha(parte)
+    if (!liberado) {
+      toast.error("Senha incorreta! ❌")
+      return
+    }
+  }
+  progresso.value = null
+  toast.info(`Preparando "${parte.nome}" para download...`)
+  try {
+    window.open(parte.url, "_blank", "noopener")
+  } catch (err) {
+    toast.error("Erro ao abrir o link de download")
   }
 }
 
-async function handleDownloadAllOneFevereiro() { await guardedDownload("https://www.mediafire.com/file/4h5b5q8tma6urts/parte+1+AGT.rar/file") }
-async function handleDownloadAllTwoFevereiro() { await guardedDownload("https://www.mediafire.com/file/zkl41mfs4pfgstk/PARTE+4+AGT.rar/file") }
-async function handleDownloadAllTresFevereiro() { await guardedDownload("https://www.mediafire.com/file/njfmpmhf9d6bpmy/PARTE+6+AGT.rar/file") }
-async function handleDownloadAllQuatroFevereiro() { await guardedDownload("https://www.mediafire.com/file/iinh3v0ktfau77g/PARTE+3+AGT.rar/file") }
-async function handleDownloadAllCincoFevereiro() { await guardedDownload("https://www.mediafire.com/file/hacnnyn5bm7kf6a/PARTE+5+AGT.rar/file") }
-async function handleDownloadAllSeisFevereiro() { await guardedDownload("https://www.mediafire.com/file/5gfx13v03rs4gsp/PARTE+2+AGT.rar/file") }
-
-onMounted(() => fetchMusicas())
+onMounted(() => fetchPartes())
 </script>
 
 <style scoped>
@@ -643,16 +630,16 @@ onMounted(() => fetchMusicas())
 .part-arrow {
   font-size: 16px;
   color: rgba(255,255,255,0.25);
-  transition: all 0.25s ease;
   position: relative;
   z-index: 1;
+  transition: all 0.25s ease;
 }
 .part-btn:hover:not(:disabled) .part-arrow {
   color: #1db954;
-  transform: translateX(2px);
+  transform: translateX(3px);
 }
 
-/* ── Progress ── */
+/* ── Progress Bar ── */
 .progress-wrap {
   margin-top: 20px;
   display: flex;
