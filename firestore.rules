@@ -201,23 +201,28 @@ service cloud.firestore {
   match /estilos/{id} { allow read: if true; allow write: if admin(); }
   match /cantoresV2/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || (enabled() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads']) && request.resource.data.downloads == resource.data.get('downloads',0)+1); }
   match /estilosV2/{id} { allow read: if true; allow write: if admin(); }
-  function parteDoRepertorio(d) {
-   return d.keys().hasOnly(['nome','url','objectKey','fileName','tamanho','size','contentType','ordem','senha','ativo','criadoEm','atualizadoEm'])
+  function parteDoRepertorio(d, antigo) {
+   let base = d.keys().hasOnly(['nome','url','objectKey','fileName','tamanho','contentType','ordem','senha','ativo','criadoEm','atualizadoEm'])
     && d.nome is string && d.nome.size() >= 1 && d.nome.size() <= 120
     && d.ordem is int && d.ordem >= 0 && d.ordem <= 9999
     && d.senha is string && d.senha.size() <= 60
-    && d.ativo is bool
+    && d.ativo is bool;
+   // Editar só o nome, a ordem, a senha ou a visibilidade dispensa reenviar o arquivo.
+   if (antigo == null) return base
     && d.url is string && d.url.matches('^https://')
     && d.objectKey is string && d.objectKey.matches('^repertorios/')
     && d.tamanho is int && d.tamanho >= 1 && d.tamanho <= 4294967296
     && d.fileName is string && d.fileName.size() <= 200
     && d.contentType == 'application/zip';
+   return base && d.url == antigo.url && d.objectKey == antigo.objectKey
+    && d.tamanho == antigo.tamanho && d.fileName == antigo.fileName
+    && d.contentType == antigo.contentType;
   }
   // Lista de partes em ZIP do repertório. A senha aqui é só uma trava de tela.
   match /repertorios/{id} {
    allow read: if true;
-   allow create: if admin() && parteDoRepertorio(request.resource.data) && request.resource.data.criadoEm == request.time;
-   allow update: if admin() && parteDoRepertorio(request.resource.data);
+   allow create: if admin() && parteDoRepertorio(request.resource.data, null) && request.resource.data.criadoEm == request.time;
+   allow update: if admin() && parteDoRepertorio(request.resource.data, resource.data);
    allow delete: if admin();
   }
   match /{document=**} { allow read,write: if false; }
