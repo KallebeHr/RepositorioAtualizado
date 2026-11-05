@@ -203,17 +203,28 @@ service cloud.firestore {
   match /estilosV2/{id} { allow read: if true; allow write: if admin(); }
   // matches() exige que o padrão cubra a string INTEIRA (por isso o '.+' no fim).
   // Uma função de regra aceita só uma expressão: nada de if, let ou return no meio.
+  // Parte enviada por nós: tipo 'arquivo' e conteúdo na pasta repertorios do R2.
+  function parteArquivo(d) {
+   return d.tipo == 'arquivo'
+    && d.url is string && d.url.matches('https://.+')
+    && d.objectKey is string && d.objectKey.matches('repertorios/.+')
+    && d.tamanho is int && d.tamanho >= 1 && d.tamanho <= 4294967296
+    && d.contentType == 'application/zip'
+    && (!d.keys().hasAny(['fileName']) || (d.fileName is string && d.fileName.size() <= 260));
+  }
+  // Parte por link externo (MediaFire): tipo 'link' e endereço em outra hospedagem.
+  function parteLink(d) {
+   return d.tipo == 'link'
+    && d.url is string && d.url.matches('https://.+')
+    && (!d.keys().hasAny(['objectKey']) || (d.objectKey is string && d.objectKey.size() <= 300));
+  }
   function parteDoRepertorio(d) {
-   return d.keys().hasOnly(['nome','url','objectKey','fileName','tamanho','contentType','ordem','senha','ativo','criadoEm','atualizadoEm'])
+   return d.keys().hasOnly(['nome','tipo','url','objectKey','fileName','tamanho','contentType','ordem','senha','ativo','criadoEm','atualizadoEm'])
     && d.nome is string && d.nome.size() >= 1 && d.nome.size() <= 120
     && d.ordem is int && d.ordem >= 0 && d.ordem <= 9999
     && d.senha is string && d.senha.size() <= 60
     && d.ativo is bool
-    && d.url is string && d.url.matches('https://.+')
-    && d.objectKey is string && d.objectKey.matches('repertorios/.+')
-    && d.tamanho is int && d.tamanho >= 1 && d.tamanho <= 4294967296
-    && (!d.keys().hasAny(['fileName']) || (d.fileName is string && d.fileName.size() <= 260))
-    && d.contentType == 'application/zip';
+    && (parteArquivo(d) || parteLink(d));
   }
   match /repertorios/{id} {
    allow read: if true;
