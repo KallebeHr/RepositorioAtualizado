@@ -51,7 +51,6 @@
         </RouterLink>
       </div>
 
-      <!-- Novidades, em versão compacta -->
       <section class="news" aria-label="Novidades do repertório">
         <header class="news-head">
           <h2>Novidades</h2>
@@ -99,7 +98,6 @@
 
       <Autoscroll />
 
-      <!-- Plataformas -->
       <div class="platforms">
         <div class="platforms-header">
           <div class="platforms-divider"></div>
@@ -136,15 +134,16 @@ const userStore = useUserStore()
 /* ===================== BASE ===================== */
 .home {
   position: relative;
-  min-height: 100vh;
+  /* O layout já reserva a altura da tela; a Home só preenche esse espaço. */
   width: 100%;
+  min-height: 100%;
   background: url('/BG/BG-home.jpg') no-repeat center center / cover;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   text-align: center;
-  overflow-x: hidden;
-  padding: clamp(52px, 6vw, 76px) clamp(14px, 4vw, 28px) clamp(36px, 5vw, 56px);
+  overflow: clip;
+  padding: clamp(40px, 5vw, 60px) clamp(14px, 4vw, 28px) clamp(28px, 4vw, 44px);
   font-family: 'Syne', sans-serif;
 }
 
@@ -296,7 +295,7 @@ const userStore = useUserStore()
 /* ===================== NOVIDADES ===================== */
 .news {
   width: 100%;
-  margin-top: 26px;
+  margin-top: 22px;
   text-align: left;
 }
 
@@ -381,7 +380,7 @@ const userStore = useUserStore()
 /* ===================== PLATAFORMAS ===================== */
 .platforms {
   width: 100%;
-  margin-top: 26px;
+  margin-top: 22px;
 }
 .platforms-header {
   display: flex;
@@ -437,7 +436,7 @@ const userStore = useUserStore()
 }
 
 @media (max-width: 480px) {
-  .home { padding: 44px 13px 34px; }
+  .home { padding: 34px 13px 26px; }
   .buttons { gap: 8px; }
   .btn { flex: 1 1 calc(50% - 8px); padding: 10px 12px; font-size: 0.75rem; }
   .btn:first-child { flex-basis: 100%; }
