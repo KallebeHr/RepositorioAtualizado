@@ -2,18 +2,11 @@
   <section class="home">
     <div class="overlay"></div>
 
-    <!-- Elementos decorativos animados -->
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
 
-    <!-- Linhas de grade decorativas -->
-    <div class="grid-lines">
-      <span v-for="n in 5" :key="n" class="grid-line"></span>
-    </div>
-
     <div class="content">
-      <!-- Badge superior -->
       <div class="badge">
         <span class="badge-dot"></span>
         Atualizado mensalmente
@@ -21,7 +14,7 @@
 
       <h1 class="title">
         O Repertório que
-        <span class="title-accent">Cresce<br />com Você.</span>
+        <span class="title-accent">Cresce com Você.</span>
       </h1>
 
       <p class="subtitle">
@@ -34,29 +27,75 @@
           href="https://wa.me/5586995102595?text=Ol%C3%A1!%20tenho%20interesse%20no%20*REPERTORIO%20ATUALIZADO*"
           class="btn btn-primary"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.114 1.532 5.836L.057 23.887l6.24-1.638A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.784 9.784 0 01-4.988-1.365l-.358-.213-3.713.976.992-3.624-.233-.373A9.77 9.77 0 012.182 12C2.182 6.578 6.578 2.182 12 2.182S21.818 6.578 21.818 12 17.422 21.818 12 21.818z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.114 1.532 5.836L.057 23.887l6.24-1.638A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.784 9.784 0 01-4.988-1.365l-.358-.213-3.713.976.992-3.624-.233-.373A9.77 9.77 0 012.182 12C2.182 6.578 6.578 2.182 12 2.182S21.818 6.578 21.818 12 17.422 21.818 12 21.818z"/></svg>
           Comprar Assinatura
         </a>
         <a v-else class="btn btn-success-inactive">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
           Assinatura Ativa!
         </a>
 
         <RouterLink to="/AllMusic" class="btn btn-secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
           Ouvir Agora
         </RouterLink>
 
         <RouterLink to="/Repertorios" class="btn btn-outline">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Baixar Repertório
         </RouterLink>
 
         <RouterLink to="/Pastas" class="btn btn-outline">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
           Ver Pastas
         </RouterLink>
       </div>
+
+      <!-- Novidades, em versão compacta -->
+      <section class="news" aria-label="Novidades do repertório">
+        <header class="news-head">
+          <h2>Novidades</h2>
+          <RouterLink to="/Novidades" class="news-more">Ver tudo <span aria-hidden="true">→</span></RouterLink>
+        </header>
+
+        <div class="news-grid">
+          <article class="news-card">
+            <span class="news-icon" aria-hidden="true"><i class="mdi mdi-folder-zip-outline" /></span>
+            <div class="news-body">
+              <span class="news-tag">DISPONÍVEL</span>
+              <h3>Repertórios em ZIP</h3>
+              <p>As partes do repertório ficam na página Repertório, com senha opcional e download liberado para assinantes.</p>
+            </div>
+          </article>
+
+          <article class="news-card">
+            <span class="news-icon" aria-hidden="true"><i class="mdi mdi-tune-vertical" /></span>
+            <div class="news-body">
+              <span class="news-tag">ATIVAÇÃO POR CÓDIGO</span>
+              <h3>Equalizador pessoal</h3>
+              <p>Ajuste grave, voz e agudo e guarde sua combinação favorita. Adicional de R$ 5.</p>
+            </div>
+          </article>
+
+          <article class="news-card">
+            <span class="news-icon" aria-hidden="true"><i class="mdi mdi-play-box-outline" /></span>
+            <div class="news-body">
+              <span class="news-tag muted">EM BREVE</span>
+              <h3>Videoclipes</h3>
+              <p>Liberação de videoclipes para baixar ou ouvir offline. Consulte o suporte.</p>
+            </div>
+          </article>
+
+          <article class="news-card">
+            <span class="news-icon" aria-hidden="true"><i class="mdi mdi-cloud-download-outline" /></span>
+            <div class="news-body">
+              <span class="news-tag muted">{{ releasedFeatures.offline ? 'DISPONÍVEL' : 'EM BREVE' }}</span>
+              <h3>Ouvir offline</h3>
+              <p>Salve suas músicas no aparelho para ouvir quando estiver sem internet.</p>
+            </div>
+          </article>
+        </div>
+      </section>
 
       <Autoscroll />
 
@@ -74,26 +113,11 @@
         </p>
 
         <ul class="platforms-list">
-          <li>
-            <span class="platform-icon">▶</span>
-            YouTube & Shorts
-          </li>
-          <li>
-            <span class="platform-icon">◈</span>
-            Instagram & Reels
-          </li>
-          <li>
-            <span class="platform-icon">♪</span>
-            TikTok
-          </li>
-          <li>
-            <span class="platform-icon">◉</span>
-            Jogos e Lives
-          </li>
-          <li>
-            <span class="platform-icon">★</span>
-            Comerciais & Marcas
-          </li>
+          <li><span class="platform-icon">▶</span> YouTube &amp; Shorts</li>
+          <li><span class="platform-icon">◈</span> Instagram &amp; Reels</li>
+          <li><span class="platform-icon">♪</span> TikTok</li>
+          <li><span class="platform-icon">◉</span> Jogos e Lives</li>
+          <li><span class="platform-icon">★</span> Comerciais &amp; Marcas</li>
         </ul>
       </div>
     </div>
@@ -101,14 +125,14 @@
 </template>
 
 <script setup>
-import { usePlayerStore } from "@/stores/usePlayerStore";
-import { useUserStore } from "@/stores/userStore";
-const userStore = useUserStore();
+import Autoscroll from '@/components/autoscroll.vue'
+import { useUserStore } from '@/stores/userStore'
+import { releasedFeatures } from '@/services/feature-release'
+
+const userStore = useUserStore()
 </script>
 
 <style scoped>
-
-
 /* ===================== BASE ===================== */
 .home {
   position: relative;
@@ -116,15 +140,14 @@ const userStore = useUserStore();
   width: 100%;
   background: url('/BG/BG-home.jpg') no-repeat center center / cover;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   text-align: center;
-  overflow: hidden;
-  padding: clamp(80px, 10vw, 120px) clamp(16px, 5vw, 40px) clamp(40px, 6vw, 60px);
+  overflow-x: hidden;
+  padding: clamp(52px, 6vw, 76px) clamp(14px, 4vw, 28px) clamp(36px, 5vw, 56px);
   font-family: 'Syne', sans-serif;
 }
 
-/* ===================== OVERLAY ===================== */
 .overlay {
   position: absolute;
   inset: 0;
@@ -134,331 +157,303 @@ const userStore = useUserStore();
   z-index: 1;
 }
 
-/* ===================== ORBS DECORATIVOS ===================== */
+/* ===================== ORBS ===================== */
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.18;
+  filter: blur(70px);
+  opacity: 0.16;
   animation: floatOrb 8s ease-in-out infinite;
   pointer-events: none;
   z-index: 1;
 }
-.orb-1 {
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, #22c55e, transparent 70%);
-  top: -150px; left: -150px;
-  animation-delay: 0s;
-}
-.orb-2 {
-  width: 350px; height: 350px;
-  background: radial-gradient(circle, #4ade80, transparent 70%);
-  bottom: -100px; right: -80px;
-  animation-delay: -3s;
-}
-.orb-3 {
-  width: 200px; height: 200px;
-  background: radial-gradient(circle, #86efac, transparent 70%);
-  top: 40%; left: 60%;
-  animation-delay: -5s;
-}
+.orb-1 { width: 380px; height: 380px; background: radial-gradient(circle, #22c55e, transparent 70%); top: -140px; left: -140px; }
+.orb-2 { width: 280px; height: 280px; background: radial-gradient(circle, #00c3ff, transparent 70%); bottom: -90px; right: -90px; animation-delay: 2s; }
+.orb-3 { width: 220px; height: 220px; background: radial-gradient(circle, #22c55e, transparent 70%); top: 45%; left: 55%; animation-delay: 4s; }
 
 @keyframes floatOrb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(30px, -20px) scale(1.05); }
-  66%       { transform: translate(-20px, 15px) scale(0.97); }
-}
-
-/* ===================== GRADE DECORATIVA ===================== */
-.grid-lines {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: space-evenly;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.04;
-}
-.grid-line {
-  width: 1px;
-  height: 100%;
-  background: linear-gradient(180deg, transparent, #22c55e, transparent);
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-22px) scale(1.06); }
 }
 
 /* ===================== CONTEÚDO ===================== */
 .content {
   position: relative;
   z-index: 2;
-  color: #fff;
   width: 100%;
-  max-width: 860px;
+  max-width: 660px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
-  animation: fadeUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ===================== BADGE ===================== */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  color: #4ade80;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 0.66rem;
+  letter-spacing: 1.4px;
   text-transform: uppercase;
-  padding: 6px 16px;
-  border-radius: 100px;
-  margin-bottom: 28px;
-  animation: fadeUp 0.9s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 999px;
+  padding: 5px 13px;
+  margin-bottom: 18px;
 }
 .badge-dot {
-  width: 7px; height: 7px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
-  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 10px #22c55e;
+  animation: pulse-dot 2s ease-in-out infinite;
 }
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 6px #22c55e; }
-  50%       { box-shadow: 0 0 16px #22c55e, 0 0 30px rgba(34,197,94,0.4); }
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.8); }
 }
 
-/* ===================== TÍTULO ===================== */
 .title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(3rem, 8vw, 6.5rem);
-  font-weight: 400;
-  line-height: 1.0;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  margin: 0 0 20px;
-  animation: fadeUp 0.9s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+  font-size: clamp(1.9rem, 5vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -1px;
+  color: #fff;
+  margin-bottom: 12px;
 }
 .title-accent {
-  color: #22c55e;
-  display: inline-block;
-  text-shadow: 0 0 60px rgba(34, 197, 94, 0.4);
+  display: block;
+  background: linear-gradient(100deg, #22c55e, #00c3ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-style: italic;
 }
 
-/* ===================== SUBTÍTULO ===================== */
 .subtitle {
-  font-size: clamp(0.9rem, 2.2vw, 1.15rem);
-  color: rgba(255,255,255,0.65);
-  max-width: 500px;
-  line-height: 1.7;
-  margin: 0 0 40px;
-  animation: fadeUp 0.9s 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  font-size: clamp(0.82rem, 2vw, 0.98rem);
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.6;
+  max-width: 420px;
+  margin-bottom: 22px;
 }
-.subtitle strong {
-  color: #4ade80;
-  font-weight: 700;
-}
+.subtitle strong { color: #22c55e; }
 
 /* ===================== BOTÕES ===================== */
 .buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
   justify-content: center;
-  margin-bottom: 48px;
-  animation: fadeUp 0.9s 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+  gap: 9px;
+  width: 100%;
 }
-
-a { text-decoration: none; }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 13px 24px;
-  border-radius: 12px;
-  font-family: 'Syne', sans-serif;
-  font-size: 0.88rem;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 10px 16px;
+  border-radius: 11px;
+  font-size: 0.79rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  text-decoration: none;
+  border: 1px solid transparent;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   white-space: nowrap;
 }
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
 
-/* Primário - CTA principal */
 .btn-primary {
-  background: #22c55e;
-  color: #000;
-  box-shadow: 0 4px 24px rgba(34, 197, 94, 0.4);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #052e16;
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.3);
 }
-.btn-primary:hover {
-  background: #16a34a;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.5);
-}
-
-/* Sucesso inativo */
-.btn-success-inactive {
-  background: rgba(34, 197, 94, 0.1);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  cursor: default;
-}
-
-/* Secundário */
 .btn-secondary {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
-  backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.16);
 }
-.btn-secondary:hover {
-  background: rgba(255,255,255,0.18);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+.btn-success-inactive {
+  background: rgba(34, 197, 94, 0.14);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.4);
 }
-
-/* Outline */
 .btn-outline {
   background: transparent;
-  color: rgba(255,255,255,0.75);
-  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 .btn-outline:hover {
-  border-color: rgba(34, 197, 94, 0.5);
+  border-color: rgba(34, 197, 94, 0.6);
+  color: #fff;
+}
+
+/* ===================== NOVIDADES ===================== */
+.news {
+  width: 100%;
+  margin-top: 26px;
+  text-align: left;
+}
+
+.news-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.news-head h2 {
+  font-size: clamp(1rem, 2.4vw, 1.2rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+.news-more {
+  font-size: 0.72rem;
+  font-weight: 600;
   color: #4ade80;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.news-more:hover { text-decoration: underline; }
+
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.news-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.news-card:hover {
+  border-color: rgba(34, 197, 94, 0.4);
   transform: translateY(-2px);
+}
+
+.news-icon {
+  display: grid;
+  place-items: center;
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.14);
+  color: #4ade80;
+  font-size: 17px;
+}
+.news-icon i { line-height: 1; }
+
+.news-body { min-width: 0; }
+.news-tag {
+  display: block;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  color: #4ade80;
+  margin-bottom: 3px;
+}
+.news-tag.muted { color: rgba(255, 255, 255, 0.42); }
+.news-body h3 {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 3px;
+  line-height: 1.25;
+}
+.news-body p {
+  font-size: 0.71rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ===================== PLATAFORMAS ===================== */
 .platforms {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(16px);
-  padding: clamp(24px, 4vw, 36px) clamp(20px, 4vw, 40px);
-  border-radius: 20px;
   width: 100%;
-  animation: fadeUp 0.9s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-  position: relative;
-  overflow: hidden;
+  margin-top: 26px;
 }
-.platforms::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(34,197,94,0.05) 0%, transparent 60%);
-  pointer-events: none;
-}
-
 .platforms-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 14px;
+  gap: 11px;
+  margin-bottom: 10px;
 }
 .platforms-divider {
-  height: 1px;
   flex: 1;
-  background: linear-gradient(90deg, transparent, rgba(34,197,94,0.4), transparent);
-  max-width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.5), transparent);
 }
 .platforms-header h3 {
-  font-size: clamp(0.95rem, 2.2vw, 1.25rem);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #fff;
-  margin: 0;
+  font-size: clamp(0.82rem, 2vw, 0.95rem);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
   white-space: nowrap;
 }
-
 .platforms-desc {
-  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
-  color: rgba(255,255,255,0.55);
-  max-width: 560px;
-  margin: 0 auto 24px;
+  font-size: 0.73rem;
   line-height: 1.6;
+  color: rgba(255, 255, 255, 0.45);
+  max-width: 460px;
+  margin: 0 auto 14px;
 }
-
 .platforms-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
 }
-
 .platforms-list li {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-  font-size: clamp(0.78rem, 1.6vw, 0.9rem);
-  font-weight: 600;
-  padding: 7px 16px;
-  border-radius: 100px;
-  transition: background 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
-  cursor: default;
-}
-.platforms-list li:hover {
-  background: rgba(34, 197, 94, 0.18);
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
-}
-.platform-icon {
+  gap: 6px;
   font-size: 0.7rem;
-  opacity: 0.7;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.platform-icon { font-size: 0.75rem; color: #4ade80; }
+
+/* ===================== RESPONSIVO ===================== */
+@media (max-width: 720px) {
+  .news-grid { grid-template-columns: 1fr; }
+  .content { max-width: 520px; }
 }
 
-/* ===================== RESPONSIVIDADE ===================== */
-@media (max-width: 640px) {
-  .home {
-    padding: 72px 16px 40px;
-  }
-  .content {
-    gap: 0;
-  }
-  .buttons {
-    flex-direction: column;
-    width: 100%;
-    gap: 10px;
-  }
-  .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 14px 20px;
-    font-size: 0.9rem;
-  }
-  .platforms-header {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .platforms-divider { display: none; }
-  .platforms-header h3 {
-    white-space: normal;
-    text-align: center;
-  }
-  .platforms-list {
-    gap: 8px;
-  }
-  .orb-1 { width: 280px; height: 280px; }
-  .orb-2 { width: 200px; height: 200px; }
-  .orb-3 { display: none; }
+@media (max-width: 480px) {
+  .home { padding: 44px 13px 34px; }
+  .buttons { gap: 8px; }
+  .btn { flex: 1 1 calc(50% - 8px); padding: 10px 12px; font-size: 0.75rem; }
+  .btn:first-child { flex-basis: 100%; }
+  .news-card { padding: 12px; }
+  .news-body p { font-size: 0.69rem; }
+  .platforms-list li { font-size: 0.66rem; padding: 4px 10px; }
 }
 
-@media (max-width: 380px) {
-  .title { font-size: 2.6rem; }
-  .btn { font-size: 0.85rem; }
+@media (max-width: 360px) {
+  .title { font-size: 1.65rem; }
+  .btn { flex-basis: 100%; }
+  .news-icon { width: 28px; height: 28px; font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb, .badge-dot { animation: none; }
+  .news-card:hover, .btn:hover { transform: none; }
 }
 </style>
