@@ -201,6 +201,7 @@ service cloud.firestore {
   match /estilos/{id} { allow read: if true; allow write: if admin(); }
   match /cantoresV2/{id} { allow read: if true; allow create,delete: if admin(); allow update: if admin() || (enabled() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads']) && request.resource.data.downloads == resource.data.get('downloads',0)+1); }
   match /estilosV2/{id} { allow read: if true; allow write: if admin(); }
+  // matches() exige que o padrão cubra a string INTEIRA (por isso o '.+' no fim).
   // Uma função de regra aceita só uma expressão: nada de if, let ou return no meio.
   function parteDoRepertorio(d) {
    return d.keys().hasOnly(['nome','url','objectKey','fileName','tamanho','contentType','ordem','senha','ativo','criadoEm','atualizadoEm'])
@@ -208,8 +209,8 @@ service cloud.firestore {
     && d.ordem is int && d.ordem >= 0 && d.ordem <= 9999
     && d.senha is string && d.senha.size() <= 60
     && d.ativo is bool
-    && d.url is string && d.url.matches('^https://')
-    && d.objectKey is string && d.objectKey.matches('^repertorios/')
+    && d.url is string && d.url.matches('https://.+')
+    && d.objectKey is string && d.objectKey.matches('repertorios/.+')
     && d.tamanho is int && d.tamanho >= 1 && d.tamanho <= 4294967296
     && (!d.keys().hasAny(['fileName']) || (d.fileName is string && d.fileName.size() <= 260))
     && d.contentType == 'application/zip';

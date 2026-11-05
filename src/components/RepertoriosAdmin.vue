@@ -79,7 +79,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
-import { db } from '@/firebase'
+import { db, auth } from '@/firebase'
 import { collection, doc, getDocs, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { V2_UPLOAD_URL } from '@/services/music-v2'
 import { documentoDaParte, tamanhoLegivel } from '@/services/repertorio-model.mjs'
@@ -106,7 +106,8 @@ async function carregar() {
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (Number(a.ordem) || 0) - (Number(b.ordem) || 0))
   } catch (err) {
-    erro.value = 'Não foi possível ler a coleção repertorios. Confira as regras do Firestore e o papel admin da conta.'
+    console.error('[Repertorios] FALHA ao ler a coleção', { codigo: err.code, mensagem: err.message })
+    erro.value = 'Não foi possível ler a coleção repertorios' + (err.code ? ` (código: ${err.code})` : '') + '.'
   } finally {
     carregando.value = false
   }
@@ -167,14 +168,20 @@ async function enviarParte() {
   sucesso.value = ''
   status.value = 'Preparando o envio'
   progresso.value = 0
+  let etapa = 'preparar'
+  const tipos = objeto => Object.fromEntries(Object.entries(objeto).map(([k, v]) => [k, v === null ? 'null' : (typeof v === 'object' ? (v?.constructor?.name || 'object') : typeof v) + (typeof v === 'string' ? `(${v.length})` : '')]))
 
   try {
     let dadosArquivo = null
     if (arquivo.value) {
+      etapa = 'enviar o ZIP ao R2'
       status.value = 'Enviando o ZIP para o R2'
+      console.info('[Repertorios] enviando ZIP', { nome: arquivo.value.name, bytes: arquivo.value.size, api: V2_UPLOAD_URL })
       dadosArquivo = await enviarArquivoZip(arquivo.value)
+      console.info('[Repertorios] resposta do servidor', dadosArquivo)
     }
 
+    etapa = 'montar o documento'
     status.value = 'Salvando no Firebase'
     const id = editandoId.value || doc(collection(db, 'repertorios')).id
     const documento = {
@@ -182,13 +189,19 @@ async function enviarParte() {
       atualizadoEm: serverTimestamp(),
     }
     if (!editandoId.value) documento.criadoEm = serverTimestamp()
+    console.info('[Repertorios] gravando no Firestore', { colecao: 'repertorios', id, operacao: editandoId.value ? 'editar' : 'criar', campos: tipos(documento) })
+
+    etapa = 'salvar no Firestore'
     await setDoc(doc(db, 'repertorios', id), documento, { merge: true })
+    console.info('[Repertorios] gravado com sucesso', id)
 
     sucesso.value = editandoId.value ? 'Parte atualizada.' : 'Parte enviada e publicada na página Repertório.'
     limparFormulario()
     await carregar()
   } catch (err) {
-    erro.value = err.response?.data?.error || err.message || 'Não foi possível concluir o envio.'
+    console.error('[Repertorios] FALHA na etapa "' + etapa + '"', { codigo: err.code, mensagem: err.message, resposta: err.response?.data, status: err.response?.status, usuario: auth.currentUser?.uid })
+    const detalhe = err.response?.data?.error || err.message || 'Não foi possível concluir o envio.'
+    erro.value = `Falhou ao ${etapa}: ${detalhe}` + (err.code ? ` (código: ${err.code})` : '') + (err.response?.status ? ` (HTTP ${err.response.status})` : '')
   } finally {
     enviando.value = false
     status.value = ''
@@ -205,6 +218,7 @@ async function remover(parte) {
     sucesso.value = 'Parte removida da lista.'
     await carregar()
   } catch (err) {
+    console.error('[Repertorios] FALHA ao remover', { codigo: err.code, mensagem: err.message })
     erro.value = err.message || 'Não foi possível remover a parte.'
   } finally {
     enviando.value = false
