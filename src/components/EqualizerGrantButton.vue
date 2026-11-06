@@ -18,7 +18,8 @@ import { useToast } from 'vue-toast-notification'
 import { dateMillis } from '@/utils/access-policy.mjs'
 
 // Adicional do equalizador por conta. Cada liberação dá 30 dias.
-export const EQUALIZER_GRANT_DAYS = 30
+// O prazo fica em uma constante local: <script setup> não aceita exportações.
+const DIAS_DE_ACESSO = 30
 
 const props = defineProps({
   uid: { type: String, required: true },
@@ -52,7 +53,7 @@ async function alternar() {
   const alvo = !liberado.value
   const quem = props.nome || props.uid
   const pergunta = alvo
-    ? `Liberar o equalizador para ${quem} por ${EQUALIZER_GRANT_DAYS} dias?`
+    ? `Liberar o equalizador para ${quem} por ${DIAS_DE_ACESSO} dias?`
     : `Revogar o equalizador de ${quem}? A assinatura de músicas continua funcionando.`
   if (!window.confirm(pergunta)) return
 
@@ -65,12 +66,12 @@ async function alternar() {
         feature: 'equalizer',
         active: true,
         lifetime: false,
-        endAt: new Date(Date.now() + EQUALIZER_GRANT_DAYS * 24 * 60 * 60 * 1000),
+        endAt: new Date(Date.now() + DIAS_DE_ACESSO * 24 * 60 * 60 * 1000),
         grantedAt: serverTimestamp(),
         keyId: 'admin',
         receiptId: `admin_${props.uid}`,
       }, { merge: true })
-      toast.success(`Equalizador liberado por ${EQUALIZER_GRANT_DAYS} dias para ${quem}.`)
+      toast.success(`Equalizador liberado por ${DIAS_DE_ACESSO} dias para ${quem}.`)
     } else {
       await setDoc(ref, { active: false }, { merge: true })
       toast.info(`Equalizador revogado de ${quem}.`)
