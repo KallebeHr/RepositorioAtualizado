@@ -4,13 +4,21 @@ import { normalizeTrack } from '@/utils/media'
 import { matchesFolder } from '@/utils/folders.mjs'
 import { readLocalData, writeLocalData, listOffline } from './offline.js'
 
+// O catálogo muda poucas vezes por mês. Guardar por muito mais tempo evita
+// reler milhares de músicas a cada troca de tela. O painel avisa quando algo muda.
+export const CATALOG_TTL_MS = 6 * 60 * 60 * 1000
+
 let cached = null, pending = null, revision = 0
 export function invalidateCatalog() { revision++; cached = null; pending = null }
-if (typeof window !== 'undefined') window.addEventListener('repertorio:catalog-change', invalidateCatalog)
+if (typeof window !== 'undefined') {
+  window.addEventListener('repertorio:catalog-change', invalidateCatalog)
+  // Sair da conta troca o que pode ser visto: a próxima leitura vem do servidor.
+  window.addEventListener('repertorio:catalog-reset', invalidateCatalog)
+}
 export async function getCatalog({ refresh = false } = {}) {
   if (refresh) invalidateCatalog()
   if (!navigator.onLine) return (await readLocalData('catalog:repertorio-cd75a').catch(()=>[])) || []
-  if (cached && Date.now() - cached.at < 120000) return cached.tracks
+  if (cached && Date.now() - cached.at < CATALOG_TTL_MS) return cached.tracks
   if (pending) return pending
   const run = revision
   const task = getDocs(collection(db, 'musicasV2')).then(snapshot => {
