@@ -11,20 +11,23 @@ export const useDeviceAdminStore = defineStore('device-admin', () => {
   const groups = computed(() => groupRecentDevices(records.value, clock.value))
   const connected = computed(() => groups.value.reduce((n,g) => n + g.count, 0))
   const excess = computed(() => groups.value.filter(g => g.alert))
-  let started = false, unsubscribeDevices, unsubscribeAlerts, timer, refreshTimer, generation = 0, synchronizing = false
+  // Sem recarga por tempo: o listener já entrega as mudanças em tempo real, e o SDK reconecta sozinho.
+  let started = false, unsubscribeDevices, unsubscribeAlerts, timer, generation = 0, synchronizing = false
   const observed = new Map(), loadingProfiles = new Set()
   function reset() {
     unsubscribeDevices?.(); unsubscribeAlerts?.(); unsubscribeDevices = null; unsubscribeAlerts = null
-    clearInterval(timer); clearInterval(refreshTimer); records.value = []; alerts.value = []; profiles.value = {}
+    clearInterval(timer); records.value = []; alerts.value = []; profiles.value = {}
     observed.clear(); loadingProfiles.clear(); verified.value = false; loading.value = false; error.value = ''; generation++
   }
   function subscribeDevices() {
     unsubscribeDevices?.(); verified.value = false
     const run = generation
-    unsubscribeDevices = onSnapshot(query(collectionGroup(db, 'devices'), where('lastSeen', '>=', Timestamp.fromMillis(Date.now() - DEVICE_RECENT_MS)), orderBy('lastSeen','desc')), { includeMetadataChanges: true }, snap => {
+    // Sem includeMetadataChanges: ele repetia a entrega a cada mudança de cache.
+    // A confirmação de que o dado veio do servidor continua no metadata da entrega.
+    unsubscribeDevices = onSnapshot(query(collectionGroup(db, 'devices'), where('lastSeen', '>=', Timestamp.fromMillis(Date.now() - DEVICE_RECENT_MS)), orderBy('lastSeen','desc')), snap => {
       if (run !== generation) return
       records.value = snap.docs.map(d => ({ id:d.id, ...d.data() })); loading.value = false
-      verified.value = !snap.metadata.fromCache && !snap.metadata.hasPendingWrites
+      verified.value = !snap.metadata.fromCache
       if (verified.value) error.value = ''
     }, e => { if(run === generation) { loading.value=false; verified.value=false; error.value = e.code==='permission-denied' ? 'Sem permissão para monitorar dispositivos. Publique as regras atualizadas e confira o perfil administrador.' : e.code==='failed-precondition' ? 'O índice de dispositivos ainda não está pronto. Publique firestore.indexes.json e aguarde a criação.' : 'Não foi possível acompanhar os dispositivos. Confira a conexão.' } })
   }
@@ -38,7 +41,6 @@ export const useDeviceAdminStore = defineStore('device-admin', () => {
       if (run===generation) alerts.value=snap.docs.map(d=>({id:d.id,...d.data()}))
     }, () => { if(run===generation) error.value='Não foi possível abrir o histórico de alertas. Confira as regras do Firebase.' })
     timer=setInterval(()=>{clock.value=Date.now();online.value=navigator.onLine},15000)
-    refreshTimer=setInterval(()=>{if(navigator.onLine)subscribeDevices()},3*60*1000)
   }
   function start(){if(started)return;started=true;connect()}
   function stop(){started=false;reset()}
