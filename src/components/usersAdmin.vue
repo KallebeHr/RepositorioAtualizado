@@ -181,7 +181,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { db } from "@/firebase";
 import {
   collection,
@@ -207,7 +207,7 @@ const toast     = useToast();
 const totalUsers=ref(null)
 const page = ref(0), hasNext=ref(false), lookup=ref(''), lookupKind=ref('email'), lookupMode=ref(false), actionScope=ref('page')
 let cursors=[null], lastDoc=null
-const allUsers       = ref([]);   // todos os usuários carregados
+const allUsers       = ref([]);
 const loading        = ref(false);
 const updatingUsers  = ref(false);
 const search         = ref("");
@@ -233,28 +233,14 @@ async function resetPages(){lookupMode.value=false;lookup.value='';page.value=0;
 async function allForAction(){if(actionScope.value==='page')return filteredUsers.value;if(!window.confirm('Consultar toda a base para esta ação? Isso consome leituras no Firebase.'))return [];const list=[];let cursor=null;do{const terms=[orderBy(documentId()),limit(100)];if(cursor)terms.push(startAfter(cursor));const snap=await getDocs(query(collection(db,'users'),...terms));list.push(...snap.docs.map(mapUser));cursor=snap.size===100?snap.docs.at(-1):null}while(cursor);const text=search.value.trim().toLowerCase();return list.filter(u=>(selectedFilter.value==='todos'||(selectedFilter.value==='ativos'?isActive(u):!isActive(u)))&&(!text||`${u.firstName} ${u.lastName} ${u.email} ${u.uid} ${u.customID}`.toLowerCase().includes(text)))}
 function isActive(u){return u.subscription==='ativa' && (u.subscriptionLifetime || (u.subscriptionEnd && u.subscriptionEnd>new Date()))}
 
-// ── STATS (sempre sobre TODOS os usuários) ─────────────────────────────────
-const activeUsers = computed(() =>
-  allUsers.value.filter((u) => isActive(u)).length
-);
-const normalUsers = computed(() =>
-  allUsers.value.filter((u) => !isActive(u)).length
-);
+const activeUsers = computed(() => allUsers.value.filter(isActive).length);
+const normalUsers = computed(() => allUsers.value.filter(u => !isActive(u)).length);
 
-// ── FILTER + SEARCH ────────────────────────────────────────────────────────
 const filteredUsers = computed(() => {
   const s = search.value.trim().toLowerCase();
-
   let list = [...allUsers.value];
-
-  // Filtro de status
-  if (selectedFilter.value === "ativos") {
-    list = list.filter(isActive);
-  } else if (selectedFilter.value === "normais") {
-    list = list.filter(u => !isActive(u));
-  }
-
-  // Busca
+  if (selectedFilter.value === "ativos") list = list.filter(isActive);
+  else if (selectedFilter.value === "normais") list = list.filter(u => !isActive(u));
   if (s) {
     list = list.filter((u) => {
       const name   = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
@@ -265,15 +251,11 @@ const filteredUsers = computed(() => {
       return name.includes(s) || email.includes(s) || cid.includes(s) || uid.includes(s) || date.includes(s);
     });
   }
-
   return list;
 });
 
-function setFilter(type) {
-  selectedFilter.value = type;
-}
+function setFilter(type) { selectedFilter.value = type }
 
-// ── DATAS ──────────────────────────────────────────────────────────────────
 function toDate(val) {
   if (!val) return null;
   if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
@@ -282,21 +264,154 @@ function toDate(val) {
   const d = new Date(val);
   return isNaN(d.getTime()) ? null : d;
 }
+function formatDate(ts) { const d = toDate(ts); return d ? d.toLocaleDateString("pt-BR") : "—" }
 
-function formatDate(ts) {
-  const d = toDate(ts);
-  return d ? d.toLocaleDateString("pt-BR") : "—";
+// ── ASSINATURA ──
+async function toggleSubscription(user) {
+  const activate = !isActive(user);
+  const ref = doc(db, "users", user.uid);
+  try {
+    if (activate) {
+      const days = Number(window.prompt(`Liberar assinatura de músicas para ${user.firstName || user.email} por quantos dias?`, "30"));
+      if (!Number.isFinite(days) || days < 1) return;
+      const start = new Date();
+      const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+      await updateDoc(ref, {
+        subscription: "ativa",
+        subscriptionLifetime: false,
+        subscriptionStart: start,
+        subscriptionEnd: end,
+      });
+      user.subscription = "ativa";
+      user.subscriptionLifetime = false;
+      user.subscriptionStart = start;
+      user.subscriptionEnd = end;
+      toast.success(`Assinatura ativada por ${days} dias para ${user.firstName || user.email}.`);
+    } else {
+      if (!window.confirm(`Desativar a assinatura de ${user.firstName || user.email}?`)) return;
+      await updateDoc(ref, {
+        subscription: "normal",
+        subscriptionLifetime: false,
+        subscriptionStart: null,
+        subscriptionEnd: null,
+      });
+      user.subscription = "normal";
+      user.subscriptionLifetime = false;
+      user.subscriptionStart = null;
+      user.subscriptionEnd = null;
+      toast.info(`Assinatura desativada de ${user.firstName || user.email}.`);
+    }
+  } catch (e) {
+    toast.error("Não foi possível alterar a assinatura: " + e.message);
+  }
+}
+
+// ── ATUALIZAR VENCIDAS ──
+async function updateExpiredUsers() {
+  updatingUsers.value = true;
+  const now = new Date();
+  let updated = 0;
+  try {
+    for (const user of allUsers.value) {
+      const endDate = toDate(user.subscriptionEnd);
+      if (!user.subscriptionLifetime && user.subscription === "ativa" && endDate && endDate < now) {
+        await updateDoc(doc(db, "users", user.uid), {
+          subscriptionLifetime: false,
+          subscription: "normal",
+          subscriptionStart: null,
+          subscriptionEnd: null,
+        });
+        user.subscription = "normal";
+        user.subscriptionLifetime = false;
+        user.subscriptionStart = null;
+        user.subscriptionEnd = null;
+        updated++;
+      }
+    }
+    if (updated > 0) toast.success(`${updated} assinatura(s) expirada(s) atualizada(s) para Normal.`);
+    else toast.info("Nenhuma assinatura vencida nesta página.");
+  } catch (e) {
+    toast.error("Erro ao atualizar: " + e.message);
+  } finally {
+    updatingUsers.value = false;
+  }
+}
+
+// ── SENHAS LEGADAS ──
+async function removeLegacyPasswords() {
+  if (!window.confirm("Remover o campo password dos perfis listados nesta página?")) return;
+  let removidos = 0;
+  try {
+    for (const user of allUsers.value) {
+      if (!user.password) continue;
+      await updateDoc(doc(db, "users", user.uid), { password: deleteField() });
+      delete user.password;
+      removidos++;
+    }
+    toast.success(removidos ? `${removidos} senha(s) antiga(s) removida(s).` : "Nenhuma senha antiga nesta página.");
+  } catch (e) {
+    toast.error("Não foi possível remover as senhas: " + e.message);
+  }
+}
+
+// ── MENSAGENS ──
+function openMessageModal(user) { selectedUser.value = user; messageText.value = ""; showModal.value = true }
+function closeMessageModal() { showModal.value = false; selectedUser.value = null; messageText.value = "" }
+async function sendMessage() {
+  const texto = messageText.value.trim();
+  if (!selectedUser.value || !texto) return;
+  try {
+    await updateDoc(doc(db, "users", selectedUser.value.uid), { messages: arrayUnion(texto) });
+    toast.success("Mensagem enviada.");
+    closeMessageModal();
+  } catch (e) {
+    toast.error("Não foi possível enviar: " + e.message);
+  }
+}
+function openMassMessageModal() { massMessageText.value = ""; showMassModal.value = true }
+function closeMassMessageModal() { showMassModal.value = false; massMessageText.value = "" }
+async function sendMassMessage() {
+  const texto = massMessageText.value.trim();
+  if (!texto) return;
+  const alvos = await allForAction();
+  if (!alvos.length) return;
+  if (!window.confirm(`Enviar a mensagem para ${alvos.length} conta(s)?`)) return;
+  let enviados = 0;
+  try {
+    for (const u of alvos) {
+      await updateDoc(doc(db, "users", u.uid), { messages: arrayUnion(texto) });
+      enviados++;
+    }
+    toast.success(`Mensagem enviada para ${enviados} conta(s).`);
+    closeMassMessageModal();
+  } catch (e) {
+    toast.error("Envio interrompido: " + e.message);
+  }
+}
+
+// ── EXCEL ──
+async function exportUsersToExcel() {
+  const lista = await allForAction();
+  if (!lista.length) return;
+  const linhas = lista.map((u) => ({
+    Nome: `${u.firstName || ""} ${u.lastName || ""}`.trim(),
+    Email: u.email || "",
+    Numero: u.numero || "",
+    ID: u.customID || u.uid,
+    Assinatura: isActive(u) ? "Ativa" : "Normal",
+    Inicio: formatDate(u.subscriptionStart),
+    Fim: u.subscriptionLifetime ? "Vitalicio" : formatDate(u.subscriptionEnd),
+    Inscrito: formatDate(u.createdAt),
+  }));
+  const planilha = XLSX.utils.json_to_sheet(linhas);
+  const arquivo = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(arquivo, planilha, "Usuarios");
+  XLSX.writeFile(arquivo, `usuarios-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 </script>
 
 <style scoped>
-.admin-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 28px 20px 120px;
-  color: #e8f4ec;
-  font-family: Inter, system-ui, sans-serif;
-}
+.admin-container { max-width: 1200px; margin: 0 auto; padding: 28px 20px 120px; color: #e8f4ec; font-family: Inter, system-ui, sans-serif; }
 .header { position: relative; margin-bottom: 26px; }
 .title { font-size: clamp(24px, 4vw, 34px); display: flex; align-items: center; gap: 10px; }
 .title-icon { color: #58d783; }
@@ -311,19 +426,38 @@ function formatDate(ts) {
 .search-wrapper { margin-bottom: 18px; }
 .search-box { display: flex; align-items: center; gap: 8px; background: #17281d; border: 1px solid #33503c; border-radius: 12px; padding: 10px 12px; }
 .search-box input { flex: 1; background: transparent; border: none; color: #e8f4ec; outline: none; font-size: 13px; }
+.search-clear { background: transparent; border: none; color: #9db8a8; cursor: pointer; font-size: 16px; }
+.results-hint { font-size: 12px; color: #9db8a8; margin-top: 8px; }
+.loading-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px; color: #9db8a8; }
+.spinner { width: 28px; height: 28px; border: 2px solid #33503c; border-top-color: #58d783; border-radius: 50%; animation: girar 0.8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg) } }
 .user-list { display: flex; flex-direction: column; gap: 12px; }
 .user-card { position: relative; display: flex; gap: 16px; padding: 18px; border-radius: 16px; background: #17281d; border: 1px solid #33503c; flex-wrap: wrap; }
+.card-accent { position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px; border-radius: 0 3px 3px 0; }
+.accent-active { background: #1db954; }
+.accent-normal { background: #ffb84d; }
 .user-info { flex: 1; min-width: 220px; }
 .name { font-size: 16px; font-weight: 700; }
 .info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin: 10px 0; }
 .info-item { font-size: 12px; color: #c3d8c9; overflow-wrap: anywhere; }
 .info-item em { display: block; font-size: 10px; color: #8fa898; font-style: normal; }
 .subscription-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: #bff4d1; }
+.badge-normal { color: #ffd8a3; }
+.badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #1db954; }
+.badge-dot-off { background: #ffb84d; }
 .user-actions { display: flex; flex-direction: column; gap: 8px; min-width: 190px; }
 .user-actions :deep(.btn-eq) { width: 100%; justify-content: center; }
+.user-device-action { justify-content: center; }
+.btn-toggle, .btn-msg { min-height: 44px; padding: 10px 14px; border-radius: 10px; border: 1px solid #41624a; background: #1a2b1f; color: #cbebd6; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.toggle-active { border-color: #7fb894; color: #d8ffe8; }
+.toggle-dot { width: 8px; height: 8px; border-radius: 50%; background: #ffb84d; }
+.toggle-active .toggle-dot { background: #1db954; box-shadow: 0 0 8px #1db954; }
 .no-results { padding: 40px; text-align: center; color: #9db8a8; }
 .modal-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.7); z-index: 9999; padding: 20px; }
 .modal-content { width: 100%; max-width: 460px; background: #17281d; border: 1px solid #33503c; border-radius: 18px; padding: 22px; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.modal-close { background: transparent; border: none; color: #9db8a8; font-size: 18px; cursor: pointer; }
+.modal-hint { font-size: 12px; color: #9db8a8; margin-top: 10px; }
 .modal-content textarea { width: 100%; min-height: 120px; background: #0f1c14; border: 1px solid #33503c; border-radius: 10px; padding: 12px; color: #e8f4ec; font-size: 13px; }
 .modal-buttons { display: flex; gap: 10px; margin-top: 14px; }
 .btn-cancel, .btn-send { flex: 1; min-height: 44px; border-radius: 10px; border: 1px solid #41624a; background: #1a2b1f; color: #cbebd6; cursor: pointer; }
@@ -332,9 +466,10 @@ function formatDate(ts) {
   .stats-panel { grid-template-columns: 1fr; }
   .user-card { flex-direction: column; }
   .user-actions { min-width: 0; }
+  .user-actions :deep(.btn-eq), .btn-toggle, .btn-msg, .user-device-action { width: 100%; }
 }
 @media (max-width: 380px) {
   .stats-panel { grid-template-columns: 1fr; }
-  .info-grid   { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr; }
 }
 </style>
